@@ -1,0 +1,163 @@
+"""Bounded website downloads for AgentDesk AI."""
+from __future__ import annotations
+
+import ipaddress
+import re
+import socket
+import uuid
+from pathlib import Path
+from urllib.parse import unquote, urljoin, urlsplit
+
+import httpx
+from pydantic import BaseModel, Field, field_validator
+
+from ..security.paths import resolve_within_allowed
+from .base import BaseTool, RiskLevel, ToolContext, ToolResult, Verification
+
+MAX_DOWNLOAD_BYTES = 20 * 1024 * 1024
+MAX_REDIRECTS = 5
+
+
+def _validate_public_url(url: str) -> None:
+    parsed = urlsplit(url)
+    if parsed.scheme not in ("http", "https") or not parsed.hostname:
+        raise ValueError("Only public http:// or https:// website URLs are supported")
+    if parsed.username or parsed.password:
+        raise ValueError("URLs containing user credentials are not allowed")
+    if parsed.port not in (None, 80, 443):
+        raise ValueError("Non-standard URL ports are not allowed")
+    host = parsed.hostname.rstrip(".").lower()
+    if host in {"localhost", "localhost.localdomain"} or host.endswith((".localhost", ".local", ".internal")):
+        raise ValueError("Local and internal network hosts are not allowed")
+    try:
+        addresses = {ipaddress.ip_address(host)}
+    except ValueError:
+        try:
+            addresses = {
+                ipaddress.ip_address(result[4][0])
+                for result in socket.getaddrinfo(host, parsed.port or (443 if parsed.scheme == "https" else 80))
+            }
+        except OSError as exc:
+            raise ValueError(f"Could not resolve website host: {exc}") from exc
+    if not addresses or any(not address.is_global for address in addresses):
+        raise ValueError("Local, private, and reserved network addresses are not allowed")
+
+
+class DownloadWebContentArgs(BaseModel):
+    url: str = Field(description="Direct URL of a file or public webpage (no YouTube/video extraction)")
+    output_path: str | None = Field(default=None, description="Absolute destination path inside an allowed directory")
+    save_as_webpage: bool = Field(default=False, description="Save an HTML webpage instead of a direct file")
+
+    @field_validator("url")
+    @classmethod
+    def _url_not_blank(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("url must not be blank")
+        return value
+
+
+class DownloadWebContentTool(BaseTool):
+    name = "download_web_content"
+    description = (
+        "Download a public direct file URL or save a public webpage as HTML into an allowed directory. "
+        "Maximum 20 MB; private/local hosts and video extraction are blocked. Requires approval."
+    )
+    risk_level = RiskLevel.HIGH
+    args_schema = DownloadWebContentArgs
+
+    @staticmethod
+    def _safe_filename(value: str) -> str:
+        name = Path(value.replace("\\", "/")).name
+        name = re.sub(r"[^A-Za-z0-9._ -]", "_", name).strip(" .")
+        return name[:180] or "download"
+
+    def _destination(self, args: DownloadWebContentArgs, url: str) -> Path:
+        if args.output_path:
+            return resolve_within_allowed(args.output_path, self.ctx.allowed_directories)
+        parsed = urlsplit(url)
+        filename = unquote(Path(parsed.path).name)
+        if args.save_as_webpage:
+            filename = f"{Path(filename).stem or 'webpage'}.html"
+        filename = self._safe_filename(filename)
+        if not self.ctx.allowed_directories:
+            raise ValueError("No allowed directory is configured for downloads")
+        return resolve_within_allowed(
+            str(self.ctx.allowed_directories[0] / "Downloads" / filename),
+            self.ctx.allowed_directories,
+        )
+
+    def execute(self, args: BaseModel) -> ToolResult:
+        try:
+            a = DownloadWebContentArgs.model_validate(args.model_dump())
+            current_url = a.url
+            _validate_public_url(current_url)
+            destination = self._destination(a, current_url)
+        except (ValueError, httpx.InvalidURL) as exc:
+            return ToolResult(success=False, error=f"Invalid download request: {exc}")
+        if destination.exists():
+            return ToolResult(success=False, error=f"Destination already exists (not overwritten): {destination}")
+
+        temporary = destination.with_name(f".{destination.name}.{uuid.uuid4().hex}.part")
+        try:
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            with httpx.Client(timeout=20, follow_redirects=False) as client:
+                for redirect_count in range(MAX_REDIRECTS + 1):
+                    _validate_public_url(current_url)
+                    with client.stream("GET", current_url, headers={"User-Agent": "AgentDeskAI/1.0"}) as response:
+                        if response.status_code in (301, 302, 303, 307, 308):
+                            location = response.headers.get("location")
+                            if not location or redirect_count == MAX_REDIRECTS:
+                                return ToolResult(success=False, error="Website redirect limit exceeded or Location is missing")
+                            current_url = urljoin(current_url, location)
+                            _validate_public_url(current_url)
+                            continue
+                        response.raise_for_status()
+                        content_type = response.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+                        if a.save_as_webpage and content_type != "text/html":
+                            return ToolResult(success=False, error=f"Expected an HTML page, received {content_type or 'unknown content'}")
+                        if not a.save_as_webpage and content_type == "text/html":
+                            return ToolResult(
+                                success=False,
+                                error="URL returned a webpage; set save_as_webpage=true to save it as HTML",
+                            )
+                        length = response.headers.get("content-length")
+                        if length and int(length) > MAX_DOWNLOAD_BYTES:
+                            return ToolResult(success=False, error="Download exceeds the 20 MB size limit")
+                        written = 0
+                        with temporary.open("wb") as output:
+                            for chunk in response.iter_bytes():
+                                written += len(chunk)
+                                if written > MAX_DOWNLOAD_BYTES:
+                                    return ToolResult(success=False, error="Download exceeds the 20 MB size limit")
+                                output.write(chunk)
+                        if written == 0:
+                            return ToolResult(success=False, error="The website returned an empty response")
+                        break
+                else:
+                    return ToolResult(success=False, error="Website redirect limit exceeded")
+            if a.save_as_webpage and destination.suffix.lower() not in (".html", ".htm"):
+                destination = destination.with_suffix(".html")
+                if destination.exists():
+                    return ToolResult(success=False, error=f"Destination already exists (not overwritten): {destination}")
+            temporary.replace(destination)
+        except (httpx.HTTPError, OSError, ValueError) as exc:
+            return ToolResult(success=False, error=f"Could not download website content: {exc}")
+        finally:
+            if temporary.exists():
+                temporary.unlink()
+        return ToolResult(
+            success=True,
+            output={"path": str(destination), "url": current_url, "bytes_written": written, "content_type": content_type},
+        )
+
+    def verify(self, args: BaseModel, result: ToolResult) -> Verification:
+        if not result.success:
+            return Verification(passed=False, checks=[], details="tool reported failure")
+        target = Path(result.output["path"])
+        valid = target.is_file() and target.stat().st_size == result.output["bytes_written"]
+        return Verification(passed=valid, checks=[f"download saved with expected size: {valid}"])
+
+
+def web_tools(ctx: ToolContext | None = None) -> list[BaseTool]:
+    return [DownloadWebContentTool(ctx)]

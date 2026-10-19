@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-slate-100 text-slate-900 antialiased;
+}
+
+/* Follow Windows/browser theme, including changes made by the local agent. */
+@media (prefers-color-scheme: dark) {
+  :root { color-scheme: dark; }
+  body { background: #0f172a; color: #e2e8f0; }
+  .bg-white, .bg-white\/95 { background-color: #1e293b; }
+  .bg-slate-50, .bg-slate-100 { background-color: #172033; }
+  .text-slate-900, .text-slate-800, .text-slate-700 { color: #e2e8f0; }
+  .text-slate-600, .text-slate-500 { color: #b4c1d4; }
+  .border-slate-200, .border-slate-300 { border-color: #475569; }
+  input, textarea, select { background-color: #0f172a; color: #f1f5f9; }
+}

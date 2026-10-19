@@ -1,0 +1,90 @@
+"""Application configuration loaded from environment variables.
+
+All secrets come from the environment (or a local .env file). Nothing here
+prints or exposes secret values.
+"""
+from __future__ import annotations
+
+from functools import lru_cache
+from pathlib import Path
+
+from pydantic import AliasChoices, Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore", populate_by_name=True
+    )
+
+    app_name: str = "AgentDesk AI"
+    app_version: str = "0.1.0"
+
+    # --- AI provider ---
+    # "groq" (primary, real LLM with tool calling), "openai" (alternative),
+    # or "mock" (explicit offline/test mode only - never a silent fallback).
+    ai_provider: str = "groq"
+    # Verified tool-calling model on Groq (see docs/GROQ_SETUP.md). Check
+    # https://console.groq.com/docs/models for the current catalogue -
+    # model IDs and availability change over time.
+    ai_model: str = "openai/gpt-oss-120b"
+    groq_api_key: str | None = None
+    openai_api_key: str | None = None
+    gemini_api_key: str | None = None
+    # Explicit opt-in: another provider may have separate billing/data handling.
+    ai_fallback_provider: str = "none"
+    ai_fallback_model: str = ""
+    gemini_model: str = "gemini-3.8-flash"
+    openai_agent_model: str = "gpt-5.4-mini"
+    # Local agent handles PC work. Cloud is explicit unless automatic fallback is opted in.
+    ai_cloud_mode: str = "explicit"
+    discovery_directories: str = Field(default="", validation_alias=AliasChoices("AGENTDESK_DISCOVERY_DIRECTORIES", "discovery_directories"))
+    ai_timeout_seconds: int = 30
+    ai_max_retries: int = 2
+    # Bound on agentic-loop tool steps per task (cost + runaway protection).
+    agent_max_steps: int = 10
+
+    # --- Database ---
+    database_url: str = "sqlite:///./agentdesk.db"
+
+    # --- Frontend ---
+    frontend_origin: str = "http://localhost:5173"
+
+    # --- Security ---
+    allowed_directories: str = Field(
+        default="", validation_alias=AliasChoices("AGENTDESK_ALLOWED_DIRECTORIES", "allowed_directories")
+    )
+    approved_applications: str = Field(
+        default="chrome,notepad,calc,explorer",
+        validation_alias=AliasChoices("AGENTDESK_APPROVED_APPLICATIONS", "approved_applications"),
+    )
+    test_dir: str = Field(
+        default="./agentdesk_test", validation_alias=AliasChoices("AGENTDESK_TEST_DIR", "test_dir")
+    )
+    tool_timeout_seconds: int = 30
+
+    def resolved_allowed_directories(self) -> list[Path]:
+        raw = [p.strip() for p in self.allowed_directories.split(",") if p.strip()]
+        if not raw:
+            raw = [str(Path.home()), str(Path(self.test_dir).resolve())]
+        return [Path(p).expanduser() for p in raw]
+
+    def resolved_approved_applications(self) -> list[str]:
+        return [a.strip().lower() for a in self.approved_applications.split(",") if a.strip()]
+
+    def resolved_discovery_directories(self) -> list[Path]:
+        extra = [Path(p.strip()).expanduser() for p in self.discovery_directories.split(",") if p.strip()]
+        return list(dict.fromkeys([*self.resolved_allowed_directories(), *extra]))
+
+    @property
+    def is_mock_mode(self) -> bool:
+        return self.ai_provider.strip().lower() == "mock"
+
+    @property
+    def groq_configured(self) -> bool:
+        return bool(self.groq_api_key)
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()

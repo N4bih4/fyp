@@ -1,0 +1,1084 @@
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { spokenReply, isSpeechEcho, afterInterruption, finishOnce } from './voice';
+import {
+  api,
+  type ActionOut,
+  type ConfigStatus,
+  type RiskLevel,
+  type TaskOut,
+} from './api';
+
+/** Task statuses that are still in flight; the active task is polled while in one of these. */
+const TRANSITIONAL = new Set([
+  'created',
+  'planned',
+  'awaiting_approval',
+  'approved',
+  'executing',
+  'waiting_retry',
+]);
+
+const POLL_INTERVAL_MS = 2000;
+
+interface SpeechRecognitionResultLike {
+  readonly isFinal: boolean;
+  readonly 0: { readonly transcript: string };
+}
+
+interface SpeechRecognitionEventLike extends Event {
+  readonly resultIndex: number;
+  readonly results: ArrayLike<SpeechRecognitionResultLike>;
+}
+
+interface SpeechRecognitionErrorEventLike extends Event {
+  readonly error: string;
+}
+
+interface SpeechRecognitionLike {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
+  onend: (() => void) | null;
+  start(): void;
+  stop(): void;
+  abort(): void;
+}
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+
+function errMsg(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
+function prettyStatus(status: string): string {
+  if (status === 'awaiting_input') return 'Aapke jawab ka intezar';
+  return status.replace(/_/g, ' ');
+}
+
+function riskClasses(risk: RiskLevel): string {
+  switch (risk) {
+    case 'low':
+      return 'bg-emerald-100 text-emerald-800 border-emerald-300';
+    case 'medium':
+      return 'bg-amber-100 text-amber-800 border-amber-300';
+    case 'high':
+      return 'bg-red-100 text-red-800 border-red-300';
+  }
+}
+
+function statusClasses(status: string): string {
+  if (status === 'succeeded' || status === 'completed' || status === 'approved')
+    return 'bg-emerald-100 text-emerald-800 border-emerald-300';
+  if (status === 'failed' || status === 'rejected')
+    return 'bg-red-100 text-red-800 border-red-300';
+  if (status === 'running' || status === 'executing')
+    return 'bg-blue-100 text-blue-800 border-blue-300';
+  if (status === 'pending' || status === 'awaiting_approval' || status === 'planned')
+    return 'bg-amber-100 text-amber-800 border-amber-300';
+  return 'bg-slate-100 text-slate-700 border-slate-300';
+}
+
+function formatValue(v: unknown): string {
+  if (v === null || v === undefined) return '—';
+  if (typeof v === 'string') return v;
+  try {
+    return JSON.stringify(v);
+  } catch {
+    return String(v);
+  }
+}
+
+function Spinner({ label }: { label?: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5" role="status" aria-label={label ?? 'loading'}>
+      <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+        <path
+          className="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+        />
+      </svg>
+      {label ? <span className="text-sm">{label}</span> : null}
+    </span>
+  );
+}
+
+function Verification({ value }: { value: unknown }) {
+  if (value === null || value === undefined)
+    return <span className="text-slate-400">Not verified yet</span>;
+  if (typeof value === 'object') {
+    const v = value as { passed?: unknown; checks?: unknown; message?: unknown };
+    return (
+      <span className="inline-flex flex-wrap items-center gap-2">
+        {v.passed === true && (
+          <span className="rounded-full border border-emerald-300 bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">
+            verified
+          </span>
+        )}
+        {v.passed === false && (
+          <span className="rounded-full border border-red-300 bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">
+            verification failed
+          </span>
+        )}
+        {v.message !== undefined && v.message !== null && (
+          <span className="text-sm">{formatValue(v.message)}</span>
+        )}
+        {Array.isArray(v.checks) && v.checks.length > 0 && (
+          <ul className="w-full list-disc pl-5 text-sm text-slate-600">
+            {v.checks.map((c, i) => (
+              <li key={i}>{formatValue(c)}</li>
+            ))}
+          </ul>
+        )}
+      </span>
+    );
+  }
+  return <span className="text-sm">{formatValue(value)}</span>;
+}
+
+function ArgsSummary({ args }: { args: Record<string, unknown> }) {
+  const entries = Object.entries(args ?? {});
+  if (entries.length === 0) return <span className="text-sm text-slate-400">no arguments</span>;
+  return (
+    <dl className="grid grid-cols-1 gap-1">
+      {entries.map(([k, v]) => (
+        <div key={k} className="flex items-start gap-2 text-sm">
+          <dt className="shrink-0 font-medium text-slate-500">{k}:</dt>
+          <dd className="break-all font-mono text-xs text-slate-800">{formatValue(v)}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+interface ActionCardProps {
+  action: ActionOut;
+  taskStatus: TaskOut['status'];
+  busy: boolean;
+  onApprove: (actionId: string) => void;
+  onReject: (actionId: string) => void;
+}
+
+function ActionCard({ action, taskStatus, busy, onApprove, onReject }: ActionCardProps) {
+  const approvable = taskStatus === 'awaiting_approval' && action.status === 'pending';
+  return (
+    <li className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-sm font-semibold text-slate-900">{action.tool_name}</span>
+          <span
+            className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${riskClasses(action.risk)}`}
+          >
+            {action.risk} risk
+          </span>
+        </div>
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-semibold ${statusClasses(action.status)}`}
+        >
+          {(action.status === 'running') && <Spinner />}
+          {prettyStatus(action.status)}
+        </span>
+      </div>
+
+      <div className="mt-2">
+        <ArgsSummary args={action.args} />
+      </div>
+
+      {action.result !== undefined && action.result !== null && (
+        <p className="mt-2 text-sm text-slate-600">
+          <span className="font-medium text-slate-700">Result: </span>
+          {formatValue(action.result)}
+        </p>
+      )}
+
+      <div className="mt-2 text-sm">
+        <span className="font-medium text-slate-700">Verification: </span>
+        <Verification value={action.verification} />
+      </div>
+
+      {action.error && (
+        <p role="alert" className="mt-2 rounded-md bg-red-50 p-2 text-sm text-red-700">
+          {action.error}
+        </p>
+      )}
+
+      {approvable && (
+        <div className="mt-3 flex gap-2">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => onApprove(action.id)}
+            className="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+          >
+            Approve
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => onReject(action.id)}
+            className="rounded-md bg-white px-3 py-1.5 text-sm font-medium text-red-700 ring-1 ring-inset ring-red-300 hover:bg-red-50 disabled:opacity-50"
+          >
+            Reject
+          </button>
+        </div>
+      )}
+    </li>
+  );
+}
+
+function Badge({ className, children }: { className: string; children: ReactNode }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${className}`}
+    >
+      {children}
+    </span>
+  );
+}
+
+export default function App() {
+  const [config, setConfig] = useState<ConfigStatus | null>(null);
+  const [configError, setConfigError] = useState<string | null>(null);
+  const [command, setCommand] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [activeTask, setActiveTask] = useState<TaskOut | null>(null);
+  const [history, setHistory] = useState<TaskOut[]>([]);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [banner, setBanner] = useState<string | null>(null);
+  const [busyAction, setBusyAction] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [voiceLanguage, setVoiceLanguage] = useState('ur-PK');
+  const [listening, setListening] = useState(false);
+  const [handsFree, setHandsFree] = useState(false);
+  const [voiceMessage, setVoiceMessage] = useState<string | null>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const spokenTaskStates = useRef(new Set<string>());
+  const handsFreeRef = useRef(false);
+  const voiceWaitingForTaskRef = useRef(false);
+  const voiceTaskActiveRef = useRef(false);
+  const voiceSpeakingRef = useRef(false);
+  const spokenTextRef = useRef('');
+  const speechFinishRef = useRef<() => void>(() => {});
+  const speechEpochRef = useRef(0);
+  const interruptedSpeechRef = useRef(false);
+  const voiceQueueRef = useRef<string[]>([]);
+  const voiceCommandRef = useRef('');
+  const voiceDebounceRef = useRef<number | null>(null);
+  const voiceRestartRef = useRef<number | null>(null);
+  const voiceNetworkErrorsRef = useRef(0);
+  const submittingRef = useRef(submitting);
+  const startListeningRef = useRef<() => void>(() => {});
+  const runCommandRef = useRef<(text: string) => Promise<void>>(async () => {});
+  const drainVoiceQueueRef = useRef<() => void>(() => {});
+
+  submittingRef.current = submitting;
+  const busy = busyAction !== null || submitting;
+
+  const upsertHistory = useCallback((t: TaskOut) => {
+    setHistory((prev) => {
+      const idx = prev.findIndex((x) => x.id === t.id);
+      if (idx === -1) return [t, ...prev].slice(0, 20);
+      const next = prev.slice();
+      next[idx] = t;
+      return next;
+    });
+  }, []);
+
+  const loadConfig = useCallback(async () => {
+    try {
+      const c = await api.config();
+      setConfig(c);
+      setConfigError(null);
+      // A successful backend check clears only stale connection warnings.
+      // Keep command/validation errors until the user handles them.
+      setBanner((current) => current?.startsWith('Backend se connection nahi ho raha.') ? null : current);
+    } catch (e) {
+      setConfig(null);
+      setConfigError(errMsg(e));
+    }
+  }, []);
+
+  const loadHistory = useCallback(async () => {
+    try {
+      const list = await api.listTasks(20);
+      setHistory(list);
+      setHistoryError(null);
+    } catch (e) {
+      setHistoryError(errMsg(e));
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadConfig();
+    void loadHistory();
+    // Only retry read-only status checks; never automatically repeat PC commands.
+    const reconnect = window.setInterval(() => { void loadConfig(); }, 5000);
+    const onFocus = () => { void loadConfig(); };
+    window.addEventListener('focus', onFocus);
+    return () => {
+      window.clearInterval(reconnect);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [loadConfig, loadHistory]);
+
+  const refreshTask = useCallback(
+    async (id: string) => {
+      const t = await api.getTask(id);
+      setActiveTask(t);
+      upsertHistory(t);
+    },
+    [upsertHistory],
+  );
+
+  const activeId = activeTask?.id ?? null;
+  const transitional = activeTask ? TRANSITIONAL.has(activeTask.status) : false;
+
+  useEffect(() => {
+    if (!activeId || !transitional) return;
+    const timer = window.setInterval(() => {
+      void refreshTask(activeId).catch((e) => setBanner(errMsg(e)));
+    }, POLL_INTERVAL_MS);
+    return () => window.clearInterval(timer);
+  }, [activeId, transitional, refreshTask]);
+
+  async function mutate(label: string, fn: () => Promise<TaskOut>) {
+    setBusyAction(label);
+    setBanner(null);
+    try {
+      const t = await fn();
+      setActiveTask(t);
+      upsertHistory(t);
+    } catch (e) {
+      setBanner(errMsg(e));
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  const approveThenRun = async (id: string, actionIds?: string[]) => {
+    const approved = await api.approve(id, actionIds);
+    if (approved.status === 'approved') {
+      return api.run(id);
+    }
+    return approved;
+  };
+
+  const runCommand = async (rawCommand: string) => {
+    const trimmed = rawCommand.trim();
+    if (!trimmed || submitting) return;
+    setSubmitting(true);
+    setBanner(null);
+    try {
+      const t = activeTask && ['awaiting_approval', 'awaiting_input'].includes(activeTask.status)
+        ? await api.replyTask(activeTask.id, trimmed)
+        : await api.createTask(trimmed, crypto.randomUUID());
+      setActiveTask(t);
+      upsertHistory(t);
+      setCommand('');
+    } catch (e) {
+      setBanner(errMsg(e));
+      if (voiceWaitingForTaskRef.current) {
+        voiceWaitingForTaskRef.current = false;
+        voiceTaskActiveRef.current = false;
+        if (handsFreeRef.current) {
+          voiceRestartRef.current = window.setTimeout(() => {
+            voiceRestartRef.current = null;
+            drainVoiceQueueRef.current();
+            startListeningRef.current();
+          }, 1500);
+        }
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+  runCommandRef.current = runCommand;
+
+  const submitCommand = (e: FormEvent) => {
+    e.preventDefault();
+    void runCommand(command);
+  };
+
+  const stopHandsFree = (message: string) => {
+    const queuedCount = voiceQueueRef.current.length;
+    handsFreeRef.current = false;
+    setHandsFree(false);
+    setListening(false);
+    voiceWaitingForTaskRef.current = false;
+    voiceTaskActiveRef.current = false;
+    voiceSpeakingRef.current = false;
+    speechEpochRef.current += 1;
+    speechFinishRef.current = () => {};
+    interruptedSpeechRef.current = false;
+    spokenTextRef.current = '';
+    voiceQueueRef.current = [];
+    voiceCommandRef.current = '';
+    if (voiceDebounceRef.current !== null) window.clearTimeout(voiceDebounceRef.current);
+    if (voiceRestartRef.current !== null) window.clearTimeout(voiceRestartRef.current);
+    voiceDebounceRef.current = null;
+    voiceRestartRef.current = null;
+    recognitionRef.current?.abort();
+    recognitionRef.current = null;
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    setVoiceMessage(
+      queuedCount > 0 ? `${message} Cleared ${queuedCount} queued command(s).` : message,
+    );
+  };
+
+  const toggleVoiceInput = () => {
+    if (handsFreeRef.current) {
+      stopHandsFree('Hands-free voice mode stopped.');
+      return;
+    }
+    const speechWindow = window as typeof window & {
+      SpeechRecognition?: SpeechRecognitionConstructor;
+      webkitSpeechRecognition?: SpeechRecognitionConstructor;
+    };
+    const Recognition = speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition;
+    if (!Recognition) {
+      setVoiceMessage('Voice input is not supported in this browser. Please use Chrome or type your command.');
+      return;
+    }
+
+    handsFreeRef.current = true;
+    setHandsFree(true);
+    voiceNetworkErrorsRef.current = 0;
+    setVoiceMessage('Hands-free is on. Speak commands at any time; they will run one by one.');
+
+    drainVoiceQueueRef.current = () => {
+      if (
+        !handsFreeRef.current ||
+        voiceTaskActiveRef.current ||
+        voiceQueueRef.current.length === 0 ||
+        submittingRef.current
+      )
+        return;
+      const nextCommand = voiceQueueRef.current.shift();
+      if (!nextCommand) return;
+      voiceTaskActiveRef.current = true;
+      voiceWaitingForTaskRef.current = true;
+      setCommand(nextCommand);
+      setVoiceMessage(
+        voiceQueueRef.current.length
+          ? `Working on: ${nextCommand}. ${voiceQueueRef.current.length} command(s) queued.`
+          : `Working on: ${nextCommand}. Keep speaking to queue more commands.`,
+      );
+      void runCommandRef.current(nextCommand);
+    };
+
+    startListeningRef.current = () => {
+      if (!handsFreeRef.current || recognitionRef.current) return;
+      const recognition = new Recognition();
+      recognition.lang = voiceLanguage;
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.onresult = (event) => {
+        if (!handsFreeRef.current) return;
+        const heard = Array.from({ length: event.results.length - event.resultIndex }, (_, offset) => event.results[event.resultIndex + offset][0].transcript.trim()).filter(Boolean).join(' ');
+        // Ignore the assistant's own short reply if the microphone hears it.
+        if (voiceSpeakingRef.current && isSpeechEcho(heard, spokenTextRef.current)) return;
+        if (heard && voiceSpeakingRef.current) {
+          interruptedSpeechRef.current = true;
+          voiceSpeakingRef.current = false;
+          speechFinishRef.current();
+          window.speechSynthesis.cancel();
+          setVoiceMessage('Ji, sun raha hoon. Agli command batayein.');
+        }
+        const finalText = Array.from({ length: event.results.length - event.resultIndex }, (_, offset) => {
+          const result = event.results[event.resultIndex + offset];
+          return result.isFinal ? result[0].transcript.trim() : '';
+        }).filter(Boolean).join(' ');
+        if (!finalText) return;
+        voiceNetworkErrorsRef.current = 0;
+        const nextText = interruptedSpeechRef.current ? afterInterruption(finalText) : finalText;
+        interruptedSpeechRef.current = false;
+        if (!nextText) return;
+        voiceCommandRef.current = [voiceCommandRef.current, nextText].filter(Boolean).join(' ').trim();
+        setVoiceMessage(`Heard: ${voiceCommandRef.current}. Finish speaking or pause briefly to send.`);
+        if (voiceDebounceRef.current !== null) window.clearTimeout(voiceDebounceRef.current);
+        voiceDebounceRef.current = window.setTimeout(() => {
+          voiceDebounceRef.current = null;
+          const transcript = voiceCommandRef.current.trim();
+          voiceCommandRef.current = '';
+          if (!transcript || !handsFreeRef.current) return;
+          voiceQueueRef.current.push(transcript);
+          setVoiceMessage(
+            voiceTaskActiveRef.current
+              ? `Queued: ${transcript}. ${voiceQueueRef.current.length} command(s) waiting.`
+              : `Starting: ${transcript}`,
+          );
+          drainVoiceQueueRef.current();
+        }, 2200);
+      };
+      recognition.onerror = (event) => {
+        if (!handsFreeRef.current) return;
+        if (event.error === 'network') {
+          voiceNetworkErrorsRef.current += 1;
+          setVoiceMessage('Voice service network error. Hands-free will keep retrying; check internet or microphone access.');
+          return;
+        }
+        if (event.error === 'no-speech' || event.error === 'aborted') return;
+        stopHandsFree(
+          event.error === 'not-allowed' || event.error === 'service-not-allowed'
+            ? 'Microphone access was blocked. Allow microphone access for this site and try again.'
+            : `Voice input stopped (${event.error}). Check microphone permission and try again.`,
+        );
+      };
+      recognition.onend = () => {
+        setListening(false);
+        if (recognitionRef.current === recognition) recognitionRef.current = null;
+        if (!handsFreeRef.current) return;
+        const delay = voiceNetworkErrorsRef.current
+          ? Math.min(1000 * 2 ** (voiceNetworkErrorsRef.current - 1), 15000)
+          : 350;
+        voiceRestartRef.current = window.setTimeout(() => {
+          voiceRestartRef.current = null;
+          startListeningRef.current();
+        }, delay);
+      };
+      recognitionRef.current = recognition;
+      try {
+        recognition.start();
+        setListening(true);
+        setVoiceMessage('Hands-free is on. Listening… Speak a command.');
+      } catch (error) {
+        recognitionRef.current = null;
+        setListening(false);
+        stopHandsFree(`Could not start voice input: ${errMsg(error)}`);
+      }
+    };
+    startListeningRef.current();
+  };
+
+  useEffect(() => {
+    if (!activeTask) return;
+    if (!['awaiting_input', 'awaiting_approval', 'waiting_retry', 'completed', 'failed', 'rejected', 'cancelled'].includes(activeTask.status)) return;
+    const stateKey = `${activeTask.id}:${activeTask.status}`;
+    if (spokenTaskStates.current.has(stateKey)) return;
+    spokenTaskStates.current.add(stateKey);
+    const isTerminal = ['completed', 'failed', 'rejected', 'cancelled'].includes(activeTask.status);
+    const finishVoiceTask = () => {
+      if ((isTerminal || activeTask.status === 'awaiting_input' || activeTask.status === 'awaiting_approval' || activeTask.status === 'waiting_retry') && voiceTaskActiveRef.current) {
+        voiceWaitingForTaskRef.current = false;
+        voiceTaskActiveRef.current = false;
+        drainVoiceQueueRef.current();
+      }
+      startListeningRef.current();
+    };
+    if (!('speechSynthesis' in window)) {
+      if (handsFreeRef.current) finishVoiceTask();
+      return;
+    }
+
+    const message = spokenReply(activeTask, voiceLanguage);
+    const utterance = new SpeechSynthesisUtterance(message);
+    utterance.lang = voiceLanguage;
+    const epoch = ++speechEpochRef.current;
+    window.speechSynthesis.cancel();
+    spokenTextRef.current = message;
+    voiceSpeakingRef.current = true;
+    const finish = finishOnce(() => {
+      if (epoch !== speechEpochRef.current) return;
+      voiceSpeakingRef.current = false;
+      if (handsFreeRef.current) finishVoiceTask();
+    });
+    speechFinishRef.current = finish;
+    utterance.onend = finish;
+    utterance.onerror = finish;
+    if (handsFreeRef.current) startListeningRef.current();
+    window.speechSynthesis.speak(utterance);
+  }, [activeTask, voiceLanguage]);
+
+  useEffect(
+    () => () => {
+      handsFreeRef.current = false;
+      voiceQueueRef.current = [];
+      voiceTaskActiveRef.current = false;
+      if (voiceDebounceRef.current !== null) window.clearTimeout(voiceDebounceRef.current);
+      if (voiceRestartRef.current !== null) window.clearTimeout(voiceRestartRef.current);
+      recognitionRef.current?.abort();
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    },
+    [],
+  );
+
+  const selectTask = (t: TaskOut) => {
+    setBanner(null);
+    setActiveTask(t);
+    void refreshTask(t.id).catch((e) => setBanner(errMsg(e)));
+  };
+
+  const doneCount =
+    activeTask?.actions.filter((a) => a.status === 'succeeded').length ?? 0;
+  const totalCount = activeTask?.actions.length ?? 0;
+
+  return (
+    <div className="min-h-screen">
+      {activeTask?.status === 'awaiting_approval' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+          <section role="dialog" aria-modal="true" aria-labelledby="confirmation-title" className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl max-h-[85vh] overflow-y-auto">
+            <h2 id="confirmation-title" className="text-xl font-semibold">Shall I do this?</h2>
+            <p className="mt-2 text-sm text-slate-600">Review the exact action and location. Deletion can affect important files. Say haan kar do or cancel, or use the buttons.</p>
+            {activeTask.actions.filter(a => a.status === 'pending').map(a => (
+              <div key={a.id} className="mt-3 rounded-lg border p-3">
+                <p className="font-semibold">{prettyStatus(a.tool_name)}</p>
+                <ArgsSummary args={a.args} />
+              </div>
+            ))}
+            <form className="mt-4 flex gap-2" onSubmit={submitCommand}>
+              <input aria-label="Confirmation or corrected path" autoFocus value={command} onChange={e => setCommand(e.target.value)} className="min-w-0 flex-1 rounded border p-2" placeholder="Yes, no, or a corrected path..." />
+              <button disabled={busy} className="rounded bg-blue-700 px-3 text-white">Reply</button>
+            </form>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button disabled={busy} onClick={() => void mutate('confirm', () => approveThenRun(activeTask.id))} className="rounded-lg bg-emerald-700 px-4 py-2 text-white">Yes, do it</button>
+              <button disabled={busy} onClick={() => void mutate('cancel', () => api.cancel(activeTask.id))} className="rounded-lg border px-4 py-2">Cancel</button>
+              <button disabled={busy} onClick={toggleVoiceInput} className="rounded-lg border px-4 py-2">{handsFree ? 'Stop microphone' : 'Use microphone'}</button>
+            </div>
+          </section>
+        </div>
+      )}
+      {/* Header */}
+      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-700 text-lg font-bold text-white"
+              aria-hidden="true"
+            >
+              AX
+            </div>
+            <div>
+              <h1 className="text-lg font-bold leading-tight text-slate-900">Agent X AI</h1>
+              <p className="text-xs text-slate-500">Natural-language Windows desktop assistant</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {config ? (
+              config.mock_mode || !config.ai_configured ? (
+                <Badge className="border-amber-300 bg-amber-100 text-amber-800">
+                  <span className="h-2 w-2 rounded-full bg-amber-500" aria-hidden="true" />
+                  {config.mock_mode ? 'Mock AI mode' : 'AI key missing'}
+                </Badge>
+              ) : (
+                <Badge className="border-emerald-300 bg-emerald-100 text-emerald-800">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
+                  {config.ai_provider === 'openai' ? 'OpenAI connected' : `${config.ai_provider} connected`}
+                </Badge>
+              )
+            ) : configError ? (
+              <Badge className="border-red-300 bg-red-100 text-red-800">Backend unreachable</Badge>
+            ) : (
+              <Badge className="border-slate-300 bg-slate-100 text-slate-600">Connecting…</Badge>
+            )}
+            {config?.platform && (
+              <Badge className="border-slate-300 bg-slate-100 text-slate-700">
+                {config.platform}
+              </Badge>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowSettings((s) => !s)}
+              aria-expanded={showSettings}
+              className="rounded-md bg-white px-3 py-1.5 text-sm font-medium text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-slate-50"
+            >
+              {showSettings ? 'Hide settings' : 'Settings'}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[1fr_320px]">
+        {/* Main column */}
+        <div className="flex min-w-0 flex-col gap-6">
+          {banner && (
+            <div
+              role="alert"
+              className="flex items-start justify-between gap-3 rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800"
+            >
+              <p>{banner}</p>
+              <button
+                type="button"
+                onClick={() => setBanner(null)}
+                className="shrink-0 font-semibold underline hover:text-red-900"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
+          {/* Command input */}
+          <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-base font-semibold text-slate-900">New command</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Talk to it like Gemini: open Chrome/YouTube, close a tab or app, create or zip
+              folders, edit a document, or draft an email (you still send or cancel it). If it
+              asks “did you mean this one?”, answer yes and it will continue.
+            </p>
+            <form onSubmit={submitCommand} className="mt-4 flex flex-col gap-3 sm:flex-row">
+              <label htmlFor="command-input" className="sr-only">
+                Natural-language command
+              </label>
+              <input
+                id="command-input"
+                type="text"
+                value={command}
+                onChange={(e) => setCommand(e.target.value)}
+                placeholder="Open Chrome, create a folder, move a file…"
+                disabled={submitting}
+                autoComplete="off"
+                className="min-w-0 flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-base shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:bg-slate-50"
+              />
+              <label htmlFor="voice-language" className="sr-only">
+                Voice language
+              </label>
+              <select
+                id="voice-language"
+                value={voiceLanguage}
+                onChange={(e) => setVoiceLanguage(e.target.value)}
+                disabled={listening || submitting}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              >
+                <option value="ur-PK">Urdu</option>
+                <option value="hi-IN">Hindi</option>
+                <option value="en-US">English</option>
+              </select>
+              <button
+                type="button"
+                onClick={toggleVoiceInput}
+                disabled={submitting && !handsFree}
+                aria-pressed={handsFree}
+                className={`rounded-lg px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50 ${
+                  listening ? 'bg-red-600 hover:bg-red-700' : 'bg-indigo-600 hover:bg-indigo-700'
+                }`}
+              >
+                {handsFree ? (listening ? 'Stop hands-free' : 'Hands-free on') : '🎙 Start hands-free'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  interruptedSpeechRef.current = true;
+                  speechFinishRef.current();
+                  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+                  startListeningRef.current();
+                  setVoiceMessage('Bolna rok diya. Agli command batayein.');
+                }}
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              >
+                Stop speaking
+              </button>
+              <button
+                type="submit"
+                disabled={submitting || command.trim().length === 0}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-700 px-5 py-2.5 text-base font-semibold text-white hover:bg-blue-800 disabled:opacity-50"
+              >
+                {submitting ? <Spinner label="Planning…" /> : 'Run command'}
+              </button>
+            </form>
+            {voiceMessage && (
+              <p className="mt-2 text-sm text-slate-600" aria-live="polite">{voiceMessage}</p>
+            )}
+            {config && !config.browser_connected && (
+              <p className="mt-2 text-sm text-amber-800">
+                Browser tabs abhi connected nahi.{' '}
+                <a href="/browser-extension/setup.html" target="_blank" rel="noreferrer" className="font-semibold underline">Chrome/Edge setup kholein</a>
+              </p>
+            )}
+            <p className="mt-1 text-xs text-slate-500">
+              Keep hands-free on to speak more commands while work is running; commands are queued and run one by one. When a confirmation appears, say yes / haan kar do to approve, or no / cancel to stop. Voice input needs microphone permission and internet; transcripts go to the selected AI provider.
+            </p>
+          </section>
+
+          {/* Active task */}
+          {activeTask ? (
+            <section
+              aria-live="polite"
+              className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h2 className="text-base font-semibold text-slate-900">Current task</h2>
+                  <p className="mt-1 break-words text-sm text-slate-700">
+                    <span className="font-medium">Command:</span> “{activeTask.command}”
+                  </p>
+                  <p className="mt-1 font-mono text-xs text-slate-400">id: {activeTask.id}</p>
+                </div>
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${statusClasses(activeTask.status)}`}
+                >
+                  {(activeTask.status === 'executing' ||
+                    activeTask.status === 'awaiting_approval') && <Spinner />}
+                  {prettyStatus(activeTask.status)}
+                </span>
+              </div>
+
+              {activeTask.plan_note && (
+                <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
+                  <span className="font-medium text-slate-700">Plan: </span>
+                  {activeTask.plan_note}
+                </p>
+              )}
+
+              {activeTask.provider_note && <p className="mt-3 rounded bg-blue-50 p-3 text-sm">{activeTask.provider_note}</p>}
+              {activeTask.status === 'waiting_retry' && (
+                <div className="mt-3 rounded-lg bg-amber-50 p-4 text-sm" role="status">
+                  <p>AI limit par task pause hai. Volume, brightness aur simple app commands abhi bhi use kar sakti hain.</p>
+                  {activeTask.retry_at && <p className="mt-1">Resume after: {new Date(activeTask.retry_at * 1000).toLocaleString()}</p>}
+                  <button disabled={busy || Date.now() < (activeTask.retry_at ?? 0) * 1000} onClick={() => void mutate('resume', () => api.run(activeTask.id))} className="mt-2 rounded bg-blue-700 px-4 py-2 text-white disabled:opacity-50">Resume task</button>
+                </div>
+              )}
+              {activeTask.error && (
+                <p role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                  {activeTask.error}
+                </p>
+              )}
+
+              {totalCount > 0 && (
+                <p className="mt-3 text-sm text-slate-600">
+                  Progress: {doneCount} of {totalCount} actions succeeded
+                </p>
+              )}
+
+              <h3 className="mt-4 text-sm font-semibold text-slate-900">Planned actions</h3>
+              {activeTask.actions.length === 0 ? (
+                <p className="mt-2 text-sm text-slate-500">
+                  Reply above with the missing details to continue.
+                </p>
+              ) : (
+                <ul className="mt-2 flex flex-col gap-3">
+                  {activeTask.actions
+                    .slice()
+                    .sort((a, b) => a.seq - b.seq)
+                    .map((a) => (
+                      <ActionCard
+                        key={a.id}
+                        action={a}
+                        taskStatus={activeTask.status}
+                        busy={busy}
+                        onApprove={(actionId) =>
+                          void mutate(`approve-${actionId}`, () =>
+                            approveThenRun(activeTask.id, [actionId]),
+                          )
+                        }
+                        onReject={(actionId) =>
+                          void mutate(`reject-${actionId}`, () =>
+                            api.reject(activeTask.id, [actionId]),
+                          )
+                        }
+                      />
+                    ))}
+                </ul>
+              )}
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                {activeTask.status === 'awaiting_approval' && (
+                  <>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() =>
+                        void mutate('approve-all', () => approveThenRun(activeTask.id))
+                      }
+                      className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                    >
+                      {busyAction === 'approve-all' ? <Spinner label="Approving…" /> : 'Approve all'}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() =>
+                        void mutate('reject-all', () => api.reject(activeTask.id))
+                      }
+                      className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-red-700 ring-1 ring-inset ring-red-300 hover:bg-red-50 disabled:opacity-50"
+                    >
+                      Reject
+                    </button>
+                  </>
+                )}
+                {activeTask.status === 'approved' && (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void mutate('run', () => api.run(activeTask.id))}
+                    className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800 disabled:opacity-50"
+                  >
+                    {busyAction === 'run' ? <Spinner label="Starting…" /> : 'Execute'}
+                  </button>
+                )}
+                {transitional && (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void mutate('cancel', () => api.cancel(activeTask.id))}
+                    className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    Cancel task
+                  </button>
+                )}
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => {
+                    setBanner(null);
+                    void refreshTask(activeTask.id).catch((e) => setBanner(errMsg(e)));
+                  }}
+                  className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  Refresh
+                </button>
+              </div>
+            </section>
+          ) : (
+            <section className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm">
+              <p className="text-sm text-slate-500">
+                No task yet. Type a command above and press <strong>Run command</strong> to see the
+                AI-generated plan here.
+              </p>
+            </section>
+          )}
+        </div>
+
+        {/* Sidebar */}
+        <aside className="flex min-w-0 flex-col gap-6">
+          {showSettings && (
+            <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h2 className="text-base font-semibold text-slate-900">Settings</h2>
+              {configError && (
+                <p role="alert" className="mt-2 text-sm text-red-600">
+                  {configError}
+                </p>
+              )}
+              {config ? (
+                <dl className="mt-3 grid grid-cols-1 gap-3 text-sm">
+                  <div>
+                    <dt className="font-medium text-slate-500">AI provider</dt>
+                    <dd className="text-slate-800">{config.ai_provider}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-slate-500">Backup API</dt>
+                    <dd>{config.fallback_configured ? config.fallback_provider : 'Not configured'}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-slate-500">Local agent</dt>
+                    <dd>PC commands run locally. {config.cloud_mode === 'automatic' ? 'Unmatched requests may use cloud AI.' : 'Use AI: or research for cloud reasoning.'}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-slate-500">Browser tab controls</dt>
+                    <dd>{config.browser_connected ? 'Browser connected' : 'Browser extension setup required'}</dd>
+                    <a className="text-blue-600 underline" href="/browser-extension/setup.html" target="_blank" rel="noreferrer">Chrome / Edge setup</a>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-slate-500">AI model</dt>
+                    <dd className="font-mono text-xs text-slate-800">{config.ai_model}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-slate-500">AI configured</dt>
+                    <dd className="text-slate-800">{config.ai_configured ? 'Yes' : 'No'}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-slate-500">Mode</dt>
+                    <dd className="text-slate-800">
+                      {config.mock_mode ? 'Mock (safe testing)' : 'Live'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-slate-500">Allowed directories</dt>
+                    <dd>
+                      {config.allowed_directories.length === 0 ? (
+                        <span className="text-slate-400">none configured</span>
+                      ) : (
+                        <ul className="list-disc pl-5 font-mono text-xs text-slate-700">
+                          {config.allowed_directories.map((d) => (
+                            <li key={d} className="break-all">{d}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-slate-500">Approved applications</dt>
+                    <dd>
+                      {config.approved_applications.length === 0 ? (
+                        <span className="text-slate-400">none configured</span>
+                      ) : (
+                        <ul className="list-disc pl-5 text-slate-700">
+                          {config.approved_applications.map((a) => (
+                            <li key={a}>{a}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </dd>
+                  </div>
+                </dl>
+              ) : (
+                !configError && <p className="mt-2 text-sm text-slate-500">Loading…</p>
+              )}
+              <p className="mt-4 rounded-lg bg-slate-50 p-3 text-xs text-slate-500">
+                Secrets such as API keys are configured in the backend <code>.env</code> file and
+                are never stored in, or sent to, the frontend.
+              </p>
+            </section>
+          )}
+
+          <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold text-slate-900">Task history</h2>
+              <button
+                type="button"
+                onClick={() => void loadHistory()}
+                className="text-sm font-medium text-blue-700 hover:text-blue-900"
+              >
+                Reload
+              </button>
+            </div>
+            {historyError && (
+              <p role="alert" className="mt-2 text-sm text-red-600">
+                {historyError}
+              </p>
+            )}
+            {history.length === 0 ? (
+              <p className="mt-2 text-sm text-slate-500">No tasks yet.</p>
+            ) : (
+              <ul className="mt-3 flex max-h-[480px] flex-col gap-2 overflow-y-auto">
+                {history.map((t) => (
+                  <li key={t.id}>
+                    <button
+                      type="button"
+                      onClick={() => selectTask(t)}
+                      aria-current={activeTask?.id === t.id}
+                      className={`w-full rounded-lg border p-3 text-left transition hover:border-blue-300 hover:bg-blue-50 ${
+                        activeTask?.id === t.id
+                          ? 'border-blue-400 bg-blue-50'
+                          : 'border-slate-200 bg-white'
+                      }`}
+                    >
+                      <p className="truncate text-sm font-medium text-slate-900">{t.command}</p>
+                      <div className="mt-1.5 flex items-center justify-between gap-2">
+                        <span
+                          className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${statusClasses(t.status)}`}
+                        >
+                          {prettyStatus(t.status)}
+                        </span>
+                        <span className="text-xs text-slate-400">
+                          {new Date(t.created_at).toLocaleString()}
+                        </span>
+                      </div>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </aside>
+      </main>
+
+      <footer className="border-t border-slate-200 bg-white">
+        <p className="mx-auto max-w-7xl px-4 py-4 text-xs text-slate-500">
+          Agent X AI · Local desktop assistant
+        </p>
+      </footer>
+    </div>
+  );
+}
