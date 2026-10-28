@@ -6,6 +6,8 @@ import {
   type ConfigStatus,
   type RiskLevel,
   type TaskOut,
+  type UsageOut,
+  apiToken,
 } from './api';
 
 /** Task statuses that are still in flight; the active task is polled while in one of these. */
@@ -205,6 +207,19 @@ function ActionCard({ action, taskStatus, busy, onApprove, onReject }: ActionCar
         </p>
       )}
 
+      {action.rollback_status && (
+        <p
+          className={`mt-2 text-xs ${action.rollback_status === 'failed' ? 'text-red-700' : 'text-slate-600'}`}
+          data-testid="rollback-status"
+        >
+          <span className="font-medium">Undo: </span>
+          {action.rollback_status === 'available' && 'this change can be undone'}
+          {action.rollback_status === 'unsupported' && 'not supported for this kind of action'}
+          {action.rollback_status === 'done' && `undone and verified${action.rollback_detail ? ` (${action.rollback_detail})` : ''}`}
+          {action.rollback_status === 'failed' && `undo failed: ${action.rollback_detail ?? 'unknown reason'}`}
+        </p>
+      )}
+
       {approvable && (
         <div className="mt-3 flex gap-2">
           <button
@@ -287,6 +302,13 @@ export default function App() {
     });
   }, []);
 
+  const [usage, setUsage] = useState<UsageOut | null>(null);
+  const activeStatus = activeTask?.status;
+  useEffect(() => {
+    // Refresh local plan usage whenever a task is created or changes state.
+    void api.usage().then(setUsage).catch(() => setUsage(null));
+  }, [activeTask?.id, activeStatus]);
+
   const loadConfig = useCallback(async () => {
     try {
       const c = await api.config();
@@ -337,12 +359,28 @@ export default function App() {
   const transitional = activeTask ? TRANSITIONAL.has(activeTask.status) : false;
 
   useEffect(() => {
-    if (!activeId || !transitional) return;
+    if (!activeId || !(transitional || busyAction)) return;
     const timer = window.setInterval(() => {
       void refreshTask(activeId).catch((e) => setBanner(errMsg(e)));
     }, POLL_INTERVAL_MS);
     return () => window.clearInterval(timer);
-  }, [activeId, transitional, refreshTask]);
+  }, [activeId, transitional, busyAction, refreshTask]);
+
+  const pauseRun = async () => {
+    if (!activeTask) return;
+    try {
+      setActiveTask(await api.pause(activeTask.id));
+    } catch (e) {
+      setBanner(errMsg(e));
+    }
+  };
+
+  const undoChanges = () => {
+    if (!activeTask) return;
+    const n = activeTask.actions.filter((a) => a.rollback_status === 'available' || a.rollback_status === 'failed').length;
+    if (!window.confirm(`Undo ${n} completed change(s)? Anything edited since the action will be left alone and reported.`)) return;
+    void mutate('rollback', () => api.rollback(activeTask.id));
+  };
 
   async function mutate(label: string, fn: () => Promise<TaskOut>) {
     setBusyAction(label);
@@ -633,7 +671,7 @@ export default function App() {
               <button disabled={busy} className="rounded bg-blue-700 px-3 text-white">Reply</button>
             </form>
             <div className="mt-4 flex flex-wrap gap-3">
-              <button disabled={busy} onClick={() => void mutate('confirm', () => approveThenRun(activeTask.id))} className="rounded-lg bg-emerald-700 px-4 py-2 text-white">Yes, do it</button>
+              <button disabled={busy} onClick={() => void mutate('confirm', () => approveThenRun(activeTask.id, activeTask.actions.filter(a => a.status === 'pending').map(a => a.id)))} className="rounded-lg bg-emerald-700 px-4 py-2 text-white">Yes, do it</button>
               <button disabled={busy} onClick={() => void mutate('cancel', () => api.cancel(activeTask.id))} className="rounded-lg border px-4 py-2">Cancel</button>
               <button disabled={busy} onClick={toggleVoiceInput} className="rounded-lg border px-4 py-2">{handsFree ? 'Stop microphone' : 'Use microphone'}</button>
             </div>
@@ -717,7 +755,7 @@ export default function App() {
               folders, edit a document, or draft an email (you still send or cancel it). If it
               asks “did you mean this one?”, answer yes and it will continue.
             </p>
-            <form onSubmit={submitCommand} className="mt-4 flex flex-col gap-3 sm:flex-row">
+            <form onSubmit={submitCommand} className="mt-4 flex flex-wrap gap-3">
               <label htmlFor="command-input" className="sr-only">
                 Natural-language command
               </label>
@@ -729,7 +767,7 @@ export default function App() {
                 placeholder="Open Chrome, create a folder, move a file…"
                 disabled={submitting}
                 autoComplete="off"
-                className="min-w-0 flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-base shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:bg-slate-50"
+                className="min-w-[14rem] basis-full flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-base shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:bg-slate-50"
               />
               <label htmlFor="voice-language" className="sr-only">
                 Voice language
@@ -783,10 +821,15 @@ export default function App() {
             {config && !config.browser_connected && (
               <p className="mt-2 text-sm text-amber-800">
                 Browser tabs abhi connected nahi.{' '}
-                <a href="/browser-extension/setup.html" target="_blank" rel="noreferrer" className="font-semibold underline">Chrome/Edge setup kholein</a>
+                <a href={`/browser-extension/setup.html#token=${encodeURIComponent(apiToken())}`} target="_blank" rel="noreferrer" className="font-semibold underline">Chrome/Edge setup kholein</a>
               </p>
             )}
             <p className="mt-1 text-xs text-slate-500">
+              {usage && usage.plan !== 'unlimited' && (
+                <span className="mb-1 block font-medium" data-testid="usage-line">
+                  Plan {usage.plan}: tasks today {usage.used.tasks_day}/{usage.limits.tasks_day ?? '∞'}, cloud AI calls today {usage.used.ai_calls_day}/{usage.limits.ai_calls_day ?? '∞'}
+                </span>
+              )}
               Keep hands-free on to speak more commands while work is running; commands are queued and run one by one. When a confirmation appears, say yes / haan kar do to approve, or no / cancel to stop. Voice input needs microphone permission and internet; transcripts go to the selected AI provider.
             </p>
           </section>
@@ -822,6 +865,29 @@ export default function App() {
               )}
 
               {activeTask.provider_note && <p className="mt-3 rounded bg-blue-50 p-3 text-sm">{activeTask.provider_note}</p>}
+              {activeTask.status === 'executing' && (
+                <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg bg-blue-50 p-3 text-sm text-blue-900" role="status">
+                  <Spinner label="Running…" />
+                  <button type="button" onClick={() => void pauseRun()} className="rounded-md bg-white px-3 py-1.5 font-medium ring-1 ring-inset ring-blue-300 hover:bg-blue-100">
+                    Pause after current action
+                  </button>
+                </div>
+              )}
+              {activeTask.status === 'paused' && (
+                <div className="mt-3 rounded-lg bg-amber-50 p-4 text-sm" role="status">
+                  <p>Task paused. The remaining approved actions have not run.</p>
+                  <button type="button" disabled={busy} onClick={() => void mutate('resume', () => api.run(activeTask.id))} className="mt-2 rounded bg-blue-700 px-4 py-2 text-white disabled:opacity-50">Resume task</button>
+                </div>
+              )}
+              {activeTask.partial && (
+                <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900" role="status" data-testid="partial-banner">
+                  <p className="font-semibold">Only part of this task was completed</p>
+                  <p>
+                    {activeTask.partial.succeeded} succeeded, {activeTask.partial.failed} failed, {activeTask.partial.not_run} did not run.
+                    {activeTask.partial.changes_remain.length > 0 && ` Changes already made: ${activeTask.partial.changes_remain.join(', ')}.`}
+                  </p>
+                </div>
+              )}
               {activeTask.status === 'waiting_retry' && (
                 <div className="mt-3 rounded-lg bg-amber-50 p-4 text-sm" role="status">
                   <p>AI limit par task pause hai. Volume, brightness aur simple app commands abhi bhi use kar sakti hain.</p>
@@ -883,7 +949,7 @@ export default function App() {
                       }
                       className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
                     >
-                      {busyAction === 'approve-all' ? <Spinner label="Approving…" /> : 'Approve all'}
+                      {busyAction === 'approve-all' ? <Spinner label="Approving…" /> : activeTask.actions.some((a) => a.status === 'pending' && a.risk === 'high') ? 'Approve all except high-risk' : 'Approve all'}
                     </button>
                     <button
                       type="button"
@@ -907,6 +973,17 @@ export default function App() {
                     {busyAction === 'run' ? <Spinner label="Starting…" /> : 'Execute'}
                   </button>
                 )}
+                {!['executing', 'awaiting_approval', 'approved', 'paused'].includes(activeTask.status) &&
+                  activeTask.actions.some((a) => a.rollback_status === 'available' || a.rollback_status === 'failed') && (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={undoChanges}
+                      className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-red-700 ring-1 ring-inset ring-red-300 hover:bg-red-50 disabled:opacity-50"
+                    >
+                      {busyAction === 'rollback' ? <Spinner label="Undoing…" /> : 'Undo changes'}
+                    </button>
+                  )}
                 {transitional && (
                   <button
                     type="button"

@@ -43,6 +43,26 @@ def _validate_public_url(url: str) -> None:
         raise ValueError("Local, private, and reserved network addresses are not allowed")
 
 
+def _require_public_peer(response) -> None:
+    """Defence against DNS rebinding: the hostname was validated by a separate lookup,
+    so also check the address the socket actually connected to. No response body is
+    read or saved if it was a private/local address. (A GET request has already been
+    sent by then, so this limits data exposure, not the request itself.)"""
+    stream = (getattr(response, "extensions", None) or {}).get("network_stream")  # real httpx responses always carry extensions
+    getter = getattr(stream, "get_extra_info", None)
+    if getter is None:
+        return
+    peer = getter("server_addr")
+    if not peer:
+        return
+    try:
+        address = ipaddress.ip_address(str(peer[0]).split("%", 1)[0])
+    except ValueError as exc:
+        raise ValueError("Connected to an unrecognised network address; download refused") from exc
+    if not address.is_global:
+        raise ValueError("The connection reached a private or local network address; download refused")
+
+
 class DownloadWebContentArgs(BaseModel):
     url: str = Field(description="Direct URL of a file or public webpage (no YouTube/video extraction)")
     output_path: str | None = Field(default=None, description="Absolute destination path inside an allowed directory")
@@ -105,6 +125,7 @@ class DownloadWebContentTool(BaseTool):
                 for redirect_count in range(MAX_REDIRECTS + 1):
                     _validate_public_url(current_url)
                     with client.stream("GET", current_url, headers={"User-Agent": "AgentDeskAI/1.0"}) as response:
+                        _require_public_peer(response)
                         if response.status_code in (301, 302, 303, 307, 308):
                             location = response.headers.get("location")
                             if not location or redirect_count == MAX_REDIRECTS:

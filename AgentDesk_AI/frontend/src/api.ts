@@ -12,6 +12,7 @@ export type TaskStatus =
   | 'executing'
   | 'completed'
   | 'waiting_retry'
+  | 'paused'
   | 'failed'
   | 'cancelled'
   | 'rejected';
@@ -38,6 +39,8 @@ export interface ActionOut {
   result?: unknown;
   verification?: unknown;
   error?: string | null;
+  rollback_status?: 'available' | 'unsupported' | 'done' | 'failed' | null;
+  rollback_detail?: string | null;
 }
 
 export interface TaskOut {
@@ -50,6 +53,13 @@ export interface TaskOut {
   updated_at: string;
   retry_at?: number | null;
   provider_note?: string | null;
+  partial?: {
+    succeeded: number;
+    not_run: number;
+    failed: number;
+    changes_remain: string[];
+    rollback_available: string[];
+  } | null;
   actions: ActionOut[];
 }
 
@@ -69,6 +79,15 @@ export interface ConfigStatus {
   allowed_directories: string[];
   approved_applications: string[];
   platform: string;
+  plan?: string;
+}
+
+export interface UsageOut {
+  plan: string;
+  limits: Record<string, number>;
+  used: Record<string, number>;
+  remaining: Record<string, number>;
+  resets_at_utc: string;
 }
 
 export interface HealthOut {
@@ -80,17 +99,40 @@ export interface HealthOut {
 // the normal launcher serves both the UI and API from the backend.
 const BASE_URL = '';
 
+// The launcher opens the UI as /#token=...; the fragment is never sent to the
+// server. Keep the token for this tab only and remove it from the address bar.
+const TOKEN_KEY = 'agentdesk_api_token';
+export function apiToken(): string {
+  try {
+    const match = /(?:^#|&)token=([^&]+)/.exec(window.location.hash);
+    if (match) {
+      sessionStorage.setItem(TOKEN_KEY, decodeURIComponent(match[1]));
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+    return sessionStorage.getItem(TOKEN_KEY) ?? '';
+  } catch {
+    return '';
+  }
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   let res: Response;
   try {
     res = await fetch(`${BASE_URL}${path}`, {
       ...options,
-      headers: { 'Content-Type': 'application/json', ...(options.headers ?? {}) },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(apiToken() ? { Authorization: `Bearer ${apiToken()}` } : {}),
+        ...(options.headers ?? {}),
+      },
     });
   } catch {
     throw new Error(
       'Backend se connection nahi ho raha. START_AGENT_X.cmd se project kholein; connection wapas aane par screen khud reconnect karegi.',
     );
+  }
+  if (res.status === 401) {
+    throw new Error('Access token missing. START_AGENT_X.cmd se app dobara kholein (token wala link use hota hai).');
   }
   if (!res.ok) {
     let detail = '';
@@ -106,18 +148,23 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
+  usage: () => request<UsageOut>('/usage'),
+
+  pause: (id: string) => request<TaskOut>(`/tasks/${id}/pause`, { method: 'POST' }),
+
+  rollback: (id: string) => request<TaskOut>(`/tasks/${id}/rollback`, { method: 'POST' }),
+
   replyTask: (id: string, message: string) => request<TaskOut>(`/tasks/${id}/reply`, { method: 'POST', body: JSON.stringify({ message }) }),
 
   health: () => request<HealthOut>('/health'),
   config: () => request<ConfigStatus>('/config/status'),
 
-  createTask: (command: string, idempotency_key?: string, auto_approve?: boolean) =>
+  createTask: (command: string, idempotency_key?: string) =>
     request<TaskOut>('/tasks', {
       method: 'POST',
       body: JSON.stringify({
         command,
         ...(idempotency_key ? { idempotency_key } : {}),
-        ...(auto_approve !== undefined ? { auto_approve } : {}),
       }),
     }),
 

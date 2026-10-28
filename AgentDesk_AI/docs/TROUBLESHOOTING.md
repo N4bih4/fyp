@@ -66,3 +66,10 @@ Open http://127.0.0.1:8000/browser-extension/setup.html while the backend runs. 
 Store API keys in the backend's local configuration only; never paste keys, passwords, .env contents or access tokens into chat or diagnostics. Configuration flags alone do not prove credentials work. No new service purchase or dependency installation is required for the proposed local Phase 1.
 
 Use WINDOWS_TEST_CHECKLIST.md for actual-PC acceptance checks. Record failures separately from mocked test results and update the audit after each approved phase.
+
+
+## Logs and restarts
+
+- Structured logs: `%LOCALAPPDATA%\AgentDesk\logs\agentdesk.log` (JSON, one event per line; search by `task_id` or the `X-Request-Id` response header). Launcher output is in `logs\launcher.log` and `logs\backend.log` next to the project.
+- A task that says "Server restart se task interrupt hua" was running when the app stopped. Its last action may have changed things already: check the real file/folder state before repeating the command. Interrupted actions have no verified undo.
+- Old finished tasks keep their history. To limit stored AI conversation and rollback backups, set `RETENTION_DAYS` in `backend\.env`; the default keeps everything.

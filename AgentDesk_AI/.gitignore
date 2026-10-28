@@ -26,3 +26,7 @@ Thumbs.db
 # Local server logs
 logs/
 *.log
+
+# Local per-phase virtualenvs
+.venv-*/
+dist-release/

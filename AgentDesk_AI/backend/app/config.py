@@ -62,6 +62,17 @@ class Settings(BaseSettings):
         default="./agentdesk_test", validation_alias=AliasChoices("AGENTDESK_TEST_DIR", "test_dir")
     )
     tool_timeout_seconds: int = 30
+    # Medium/high-risk approvals expire if the action is not run in time.
+    approval_ttl_seconds: int = 600
+
+    # --- Retention (0 = disabled; nothing is ever deleted unless the user sets this) ---
+    # After this many days, finished tasks lose their stored AI conversation
+    # (agent_state_json) and expired rollback backups are deleted. Task rows,
+    # actions and results are never deleted.
+    retention_days: int = 0
+
+    # --- Local entitlement plan: "unlimited" (default), "standard" or "free". See app/usage.py ---
+    entitlement_plan: str = Field(default="unlimited", validation_alias=AliasChoices("AGENTDESK_PLAN", "entitlement_plan"))
 
     def resolved_allowed_directories(self) -> list[Path]:
         raw = [p.strip() for p in self.allowed_directories.split(",") if p.strip()]

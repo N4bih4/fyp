@@ -4,7 +4,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import event, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from .database import Base
@@ -27,6 +27,7 @@ class TaskStatus:
     APPROVED = "approved"
     EXECUTING = "executing"
     WAITING_RETRY = "waiting_retry"
+    PAUSED = "paused"  # user-requested pause between actions
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
@@ -79,5 +80,39 @@ class Action(Base):
     error = Column(Text, nullable=True)
     # The model-provider's tool-call id, for matching approvals/resumes.
     call_id = Column(String(128), nullable=True)
+    # Approval binding (see security/approvals.py)
+    binding_hash = Column(String(64), nullable=True)
+    approved_at = Column(DateTime, nullable=True)
+    approval_expires_at = Column(DateTime, nullable=True)
+    # Checkpoint / rollback (see orchestration/rollback.py)
+    rollback_json = Column(Text, nullable=True)
+    rollback_status = Column(String(16), nullable=True)  # available | unsupported | done | failed
+    rollback_detail = Column(Text, nullable=True)
 
     task = relationship("Task", back_populates="actions")
+
+
+class UsageEvent(Base):
+    """One metered unit (a task, an action run, or a cloud-AI call). Never holds command text or data."""
+
+    __tablename__ = "usage_events"
+
+    id = Column(String(36), primary_key=True, default=_uuid)
+    ts = Column(DateTime, default=utcnow, nullable=False, index=True)
+    kind = Column(String(16), nullable=False)
+    task_id = Column(String(36), nullable=True)  # no foreign key: usage history outlives task cleanup
+    units = Column(Integer, nullable=False, default=1)
+
+
+@event.listens_for(Action, "before_insert")
+def _bind_action(mapper, connection, target: Action) -> None:
+    """Fix the action's identity at creation so later edits are detectable."""
+    from .security.approvals import binding_for
+
+    if target.id is None:
+        target.id = _uuid()
+    if target.status is None:
+        target.status = ActionStatus.PENDING
+    target.binding_hash = binding_for(target)
+    if target.status == ActionStatus.APPROVED and target.approved_at is None:
+        target.approved_at = utcnow()

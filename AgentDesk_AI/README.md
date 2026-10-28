@@ -65,7 +65,7 @@ Example commands:
 │ Vite +       │◀─────│  ┌─────────┐  ┌───────────┐  │
 │ Tailwind     │      │  │ AI plan │  │   Tool    │  │
 └──────────────┘      │  │(Groq/   │─▶│ registry  │──┼─▶ Windows
-│  │ OpenAI) │  │(25 tools) │  │
+│  │ OpenAI) │  │(29 tools) │  │
                       │  └─────────┘  └───────────┘  │
                       │  ┌────────────────────────┐  │
                       │  │ Permission engine +    │  │

@@ -60,7 +60,9 @@ def connect_token(x_agentx_bridge: str | None = Header(default=None)):
 @router.websocket("/ws")
 async def browser_socket(socket: WebSocket):
     origin = socket.headers.get("origin", "")
-    if not origin.startswith("chrome-extension://"):
+    raw_host = socket.headers.get("host", "")
+    host = raw_host.rsplit(":", 1)[0] if not raw_host.startswith("[") else "[::1]"
+    if not origin.startswith("chrome-extension://") or host.lower() not in {"127.0.0.1", "localhost", "[::1]", "testserver"}:
         await socket.close(code=1008)
         return
     await socket.accept()

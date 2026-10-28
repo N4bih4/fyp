@@ -4,10 +4,14 @@ Conversational Windows desktop assistant with a FastAPI backend, React frontend,
 
 Project source: [AgentDesk_AI](AgentDesk_AI). Start script: `START_AGENT_X.cmd`.
 
-## Setup
+## Install a release (recommended)
 
-1. Install Python 3.11+ and Node.js.
-2. In `AgentDesk_AI/backend`, create `.venv` with `python -m venv .venv`, then run `.\.venv\Scripts\python.exe -m pip install -r requirements.txt`.
+Extract the release zip, run `INSTALL.cmd` (needs Python 3.12), then `START_AGENT_X.cmd`. See [AgentDesk_AI/docs/INSTALL.md](AgentDesk_AI/docs/INSTALL.md).
+
+## Setup from source
+
+1. Install Python 3.12 and Node.js.
+2. In `AgentDesk_AI/backend`, create `.venv` with `py -3.12 -m venv .venv`, then run `.\.venv\Scripts\python.exe -m pip install -r requirements.lock.txt` (pinned and tested).
 3. Configure the backend local environment following [Windows setup](AgentDesk_AI/docs/SETUP_WINDOWS.md). Keep real keys out of Git.
 4. In `AgentDesk_AI/frontend`, run `npm.cmd ci` and `npm.cmd run build`.
 5. Run `START_AGENT_X.cmd` from the repository root. Open http://127.0.0.1:8000/.

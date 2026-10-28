@@ -325,10 +325,15 @@ class GroqProvider(AIProvider):
 
     @staticmethod
     def _normalize(response: Any) -> dict[str, Any]:
-        message = response.choices[0].message
+        choice = response.choices[0]
+        message = choice.message
+        if getattr(choice, "finish_reason", None) == "length" and message.tool_calls:
+            # A truncated tool call may carry partial arguments: never run it.
+            raise AIError("Model response was cut short; no incomplete action was executed.")
         tool_calls = []
         for index, tc in enumerate(message.tool_calls or []):
             raw = tc.function.arguments or "{}"
+            invalid = False
             if isinstance(raw, dict):
                 arguments = raw
                 raw = json.dumps(raw)
@@ -336,17 +341,16 @@ class GroqProvider(AIProvider):
                 try:
                     arguments = json.loads(raw)
                 except json.JSONDecodeError:
-                    arguments = {}
-                    raw = "{}"
+                    arguments, raw, invalid = {}, "{}", True
             if not isinstance(arguments, dict):
-                arguments = {}
-                raw = "{}"
+                arguments, raw, invalid = {}, "{}", True
             tool_calls.append(
                 {
                     "id": getattr(tc, "id", None) or f"call_{index + 1}",
                     "name": tc.function.name,
                     "arguments": arguments,
                     "raw_arguments": raw if isinstance(raw, str) else json.dumps(arguments),
+                    "invalid_arguments": invalid,
                     **({"extra_content": tc.extra_content} if getattr(tc, "extra_content", None) else {}),
                 }
             )

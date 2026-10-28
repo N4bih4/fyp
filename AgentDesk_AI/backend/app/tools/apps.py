@@ -451,9 +451,11 @@ def _reuse_youtube_window(url: str) -> str | None:
         import pyautogui
     except ImportError:
         return None
+    from .desktop import is_shell_target
+
     windows = [
         window for window in pyautogui.getAllWindows()
-        if window.title and "youtube" in window.title.casefold()
+        if window.title and "youtube" in window.title.casefold() and not is_shell_target(window.title)
     ]
     if not windows:
         return None

@@ -3,15 +3,23 @@ from __future__ import annotations
 
 import platform
 import json
+import secrets
+import time
+import uuid
 from pathlib import Path
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from .config import get_settings
+from .runtime import resource_root
+from . import usage
+from .logging_setup import log_event, setup_logging
+from .security.token import get_api_token
 from .database import get_db, init_db, SessionLocal
 from .models import Task, TaskStatus, ActionStatus, utcnow
 from .orchestration import executor
@@ -27,13 +35,17 @@ from .schemas import (
 from .tools.base import ToolContext
 from .tools.registry import ToolRegistry
 from .browser_bridge import router as browser_router, bridge
+from . import state  # noqa: F401  (registers state-machine guards)
 
 settings = get_settings()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    setup_logging()
+    usage.get_plan(settings)  # an unknown plan name stops startup instead of silently meaning "unlimited"
     init_db()
+    log_event("server_start")
     # The launcher runs one server. Never leave a crashed task showing as active
     # or replay its possibly completed device/file operation after restart.
     with SessionLocal() as db:
@@ -45,10 +57,18 @@ async def lifespan(app: FastAPI):
                 if action.status == ActionStatus.RUNNING:
                     action.status = ActionStatus.FAILED
                     action.error = task.error
+                    # The change may or may not have happened; no checkpoint was finalized.
+                    action.rollback_status = "unsupported"
+                    action.rollback_detail = "Interrupted by a restart: the outcome is unknown, so no verified rollback exists."
                 elif action.status == ActionStatus.APPROVED:
                     action.status = ActionStatus.SKIPPED
+            log_event("task_recovered_after_restart", level=30, task_id=task.id)
         db.commit()
+        from .retention import prune
+
+        prune(db, settings)
     yield
+    log_event("server_stop")
 
 
 app = FastAPI(title=settings.app_name, version=settings.app_version, lifespan=lifespan)
@@ -62,11 +82,59 @@ app.add_middleware(
 )
 
 
+_LOCAL_HOSTS = {"127.0.0.1", "localhost", "[::1]", "testserver"}
+_SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
+_PROTECTED_PREFIXES = ("/tasks", "/config", "/tools", "/usage", "/browser/connect-token")
+
+
+@app.middleware("http")
+async def local_request_guard(request: Request, call_next):
+    """Block DNS rebinding (unexpected Host) and cross-site state changes (foreign Origin)."""
+    started = time.monotonic()
+    request_id = uuid.uuid4().hex[:12]
+    response = await _guarded(request, call_next)
+    response.headers["X-Request-Id"] = request_id
+    if request.url.path != "/health" and not request.url.path.startswith(("/assets", "/browser-extension")):
+        log_event("http_request", request_id=request_id, method=request.method, path=request.url.path,
+                  http_status=response.status_code, duration_ms=int((time.monotonic() - started) * 1000))
+    return response
+
+
+async def _guarded(request: Request, call_next):
+    raw_host = request.headers.get("host", "")
+    host = "[::1]" if raw_host.startswith("[") else raw_host.rsplit(":", 1)[0]
+    if host.lower() not in _LOCAL_HOSTS:
+        return JSONResponse({"detail": "Unexpected Host header"}, status_code=403)
+    origin = request.headers.get("origin")
+    if origin and request.method not in _SAFE_METHODS:
+        # Same-origin (the UI served by this very server, whatever its port) plus the dev server.
+        allowed = {settings.frontend_origin, "http://localhost:5173", "http://127.0.0.1:5173", "http://127.0.0.1:8000", "http://localhost:8000", "http://" + raw_host}
+        if origin not in allowed:
+            return JSONResponse({"detail": "Cross-origin request rejected"}, status_code=403)
+    token = get_api_token()
+    if token and request.method != "OPTIONS" and request.url.path.startswith(_PROTECTED_PREFIXES):
+        supplied = request.headers.get("authorization", "")
+        if not (supplied.startswith("Bearer ") and secrets.compare_digest(supplied[7:], token)):
+            return JSONResponse({"detail": "Missing or invalid API token"}, status_code=401)
+    return await call_next(request)
+
+
 def _registry() -> ToolRegistry:
     return ToolRegistry(ToolContext.from_settings())
 
 
 # ------------------------------------------------------------------ health
+@app.exception_handler(usage.QuotaExceeded)
+async def quota_exceeded_handler(request: Request, exc: usage.QuotaExceeded):
+    return JSONResponse({"detail": exc.message, "usage": exc.snapshot}, status_code=429)
+
+
+@app.get("/usage")
+def get_usage(db: Session = Depends(get_db)) -> dict:
+    """Plan, limits and local usage counters. Contains no command text."""
+    return usage.snapshot(db, get_settings())
+
+
 @app.get("/health", response_model=HealthOut)
 def health() -> HealthOut:
     return HealthOut(status="ok", version=settings.app_version)
@@ -98,6 +166,7 @@ def config_status() -> ConfigStatusOut:
         allowed_directories=[str(p) for p in s.resolved_allowed_directories()],
         approved_applications=s.resolved_approved_applications(),
         platform=platform.system(),
+        plan=usage.get_plan(s)[0],
     )
 
 
@@ -113,14 +182,14 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db)) -> TaskOut:
     # the agentic tool-calling loop for Groq.
     task = executor.start_task(
         db, payload.command, payload.idempotency_key, _registry(), get_settings(),
-        auto_approve=payload.auto_approve,
     )
     return executor.task_out(task)
 
 
 @app.get("/tasks", response_model=list[TaskOut])
 def list_tasks(limit: int = Query(default=20, le=100), db: Session = Depends(get_db)) -> list[TaskOut]:
-    tasks = db.query(Task).order_by(Task.created_at.desc()).limit(limit).all()
+    # selectinload fetches every task's actions in one extra query instead of one per task.
+    tasks = db.query(Task).options(selectinload(Task.actions)).order_by(Task.created_at.desc()).limit(limit).all()
     return [executor.task_out(t) for t in tasks]
 
 
@@ -172,6 +241,26 @@ def run_task(task_id: str, db: Session = Depends(get_db)) -> TaskOut:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
+@app.post("/tasks/{task_id}/pause", response_model=TaskOut)
+def pause_task(task_id: str, db: Session = Depends(get_db)) -> TaskOut:
+    try:
+        return executor.task_out(executor.pause_task(db, task_id))
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.post("/tasks/{task_id}/rollback", response_model=TaskOut)
+def rollback_task(task_id: str, db: Session = Depends(get_db)) -> TaskOut:
+    try:
+        return executor.task_out(executor.rollback_task(db, task_id, _registry()))
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
 @app.post("/tasks/{task_id}/cancel", response_model=TaskOut)
 def cancel_task(task_id: str, db: Session = Depends(get_db)) -> TaskOut:
     try:
@@ -195,7 +284,20 @@ def reply_task(task_id: str, payload: TaskReply, db: Session = Depends(get_db)) 
         yes = {"yes", "yes do it", "yes please", "confirm", "approve", "do it", "okay", "ok", "haan", "han", "haan kar do", "ji haan", "हाँ", "हां", "हाँ कर दो", "हां कर दो", "जी हाँ कर दो", "ہاں", "جی ہاں", "ہاں کر دو", "جی ہاں کر دو"}
         no = {"no", "cancel", "cancel it", "stop", "don't", "do not", "nahi", "nahin", "nahi karo", "नहीं", "नहीं करो", "रहने दो", "نہیں", "نہیں کرو", "رہنے دو"}
         if message in yes and task.status == "awaiting_approval":
-            executor.approve_task(db, task_id)
+            pending = [a for a in task.actions if a.status == ActionStatus.PENDING]
+            # A bare "yes" confirms exactly the one proposal on screen. With several
+            # pending actions, high-risk ones must be approved individually.
+            if len(pending) == 1:
+                ids = [pending[0].id]
+            elif any(a.risk == "high" for a in pending):
+                task.plan_note = "Kai actions pending hain aur kam az kam ek high-risk hai. Har action ko alag Approve karein."
+                db.commit()
+                return executor.task_out(task)
+            else:
+                ids = None
+            approved = executor.approve_task(db, task_id, ids)
+            if approved.status != TaskStatus.APPROVED:
+                return executor.task_out(approved)
             return run_task(task_id, db)
         if message in no:
             return executor.task_out(executor.cancel_task(db, task_id))
@@ -238,8 +340,8 @@ def reply_task(task_id: str, payload: TaskReply, db: Session = Depends(get_db)) 
 
 
 # Register LAST so API routes retain priority over the frontend file server.
-frontend_dist = Path(__file__).resolve().parents[2] / "frontend" / "dist"
-browser_extension = Path(__file__).resolve().parents[2] / "browser-extension"
+frontend_dist = resource_root() / "frontend" / "dist"
+browser_extension = resource_root() / "browser-extension"
 if browser_extension.is_dir():
     app.mount("/browser-extension", StaticFiles(directory=str(browser_extension), html=True), name="browser-extension")
 if (frontend_dist / "index.html").is_file():
