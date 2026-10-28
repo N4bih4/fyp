@@ -4,6 +4,21 @@ let connecting = false;
 let heartbeat = null;
 const seen = new Map();
 
+// The bridge may only be used by an extension the user paired with this app's
+// local API token (handed over once from the setup page; never typed or logged).
+async function pairedToken() {
+  const stored = await chrome.storage.local.get('apiToken');
+  return typeof stored.apiToken === 'string' && stored.apiToken.length >= 32 ? stored.apiToken : null;
+}
+
+function acceptPairing(message, sender) {
+  return Boolean(
+    message && message.type === 'agentx-pair' && typeof message.token === 'string' && message.token.length >= 32 &&
+    sender && sender.id === chrome.runtime.id && typeof sender.url === 'string' &&
+    sender.url.startsWith(API + '/browser-extension/setup.html'),
+  );
+}
+
 async function command(message) {
   if (message.action === 'open') {
     const url = new URL(message.url);
@@ -59,8 +74,10 @@ async function connect() {
   if (connecting || socket?.readyState === WebSocket.OPEN || socket?.readyState === WebSocket.CONNECTING) return;
   connecting = true;
   try {
-    const response = await fetch(`${API}/browser/connect-token`, { headers: { 'X-AgentX-Bridge': '1' } });
-    if (!response.ok) throw new Error('Local backend unavailable');
+    const apiToken = await pairedToken();
+    if (!apiToken) { chrome.action.setBadgeText({ text: 'PAIR' }); return; }
+    const response = await fetch(`${API}/browser/connect-token`, { headers: { 'X-AgentX-Bridge': '1', Authorization: `Bearer ${apiToken}` } });
+    if (!response.ok) throw new Error('Local backend unavailable or pairing no longer valid');
     const { token } = await response.json();
     const ws = new WebSocket('ws://127.0.0.1:8000/browser/ws');
     socket = ws;
@@ -100,4 +117,9 @@ chrome.runtime.onInstalled.addListener(() => { chrome.alarms.create('reconnect',
 chrome.runtime.onStartup.addListener(connect);
 chrome.alarms.onAlarm.addListener(alarm => { if (alarm.name === 'reconnect') connect(); });
 chrome.action.onClicked.addListener(connect);
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (!acceptPairing(message, sender)) return false;
+  chrome.storage.local.set({ apiToken: message.token }).then(() => { sendResponse({ ok: true }); connect(); });
+  return true;
+});
 connect();

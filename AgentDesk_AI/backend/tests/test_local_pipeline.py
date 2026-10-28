@@ -63,7 +63,7 @@ def test_local_discovery_preview_and_delete_without_api(db, tmp_path, monkeypatc
     assert confirmed.status == TaskStatus.AWAITING_APPROVAL
     assert confirmed.actions[0].tool_name == "delete_file"
     assert len(list(tmp_path.rglob("lecture"))) == 2
-    executor.approve_task(db, confirmed.id)
+    executor.approve_task(db, confirmed.id, [a.id for a in confirmed.actions])
     finished = executor.run_task(db, confirmed.id, registry, Settings(ai_provider="groq", groq_api_key=None))
     assert finished.status == TaskStatus.COMPLETED
     assert len(list(tmp_path.rglob("lecture"))) == 1

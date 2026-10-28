@@ -23,9 +23,10 @@ import json
 import time
 
 from pydantic import ValidationError
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from ..ai.base import AIError, AIRateLimitError, Plan
+from ..ai.base import AIConfigError, AIError, AIRateLimitError, Plan
 from ..ai.planner import get_provider, plan_command
 from ..ai.tool_selection import tool_metadata
 from ..config import Settings
@@ -35,6 +36,9 @@ from ..security.permissions import needs_approval
 from ..tools.base import RiskLevel, ToolResult, Verification
 from ..tools.desktop import DesktopControlTool
 from ..tools.registry import ToolRegistry, UnknownToolError
+from . import rollback
+from ..logging_setup import log_event
+from .. import usage
 
 
 # ---------------------------------------------------------------- serialization
@@ -49,10 +53,13 @@ def _action_out(a: Action) -> ActionOut:
         result=json.loads(a.result_json) if a.result_json else None,
         verification=json.loads(a.verification_json) if a.verification_json else None,
         error=a.error,
+        rollback_status=a.rollback_status,
+        rollback_detail=a.rollback_detail,
     )
 
 
 def task_out(task: Task) -> TaskOut:
+    state = _agent_state(task)  # parsed once; it can be large
     return TaskOut(
         id=task.id,
         command=task.command,
@@ -61,10 +68,27 @@ def task_out(task: Task) -> TaskOut:
         error=task.error,
         created_at=task.created_at,
         updated_at=task.updated_at,
-        retry_at=_agent_state(task).get("retry_at"),
-        provider_note=_agent_state(task).get("provider_note"),
+        retry_at=state.get("retry_at"),
+        provider_note=state.get("provider_note"),
+        partial=_partial_summary(task),
         actions=[_action_out(a) for a in sorted(task.actions, key=lambda x: x.seq)],
     )
+
+
+def _partial_summary(task: Task) -> dict | None:
+    """Honest record of what already happened when a task did not fully complete."""
+    if task.status not in (TaskStatus.FAILED, TaskStatus.CANCELLED, TaskStatus.REJECTED, TaskStatus.PAUSED):
+        return None
+    done = [a for a in task.actions if a.status == ActionStatus.SUCCEEDED]
+    if not done:
+        return None
+    return {
+        "succeeded": len(done),
+        "not_run": len([a for a in task.actions if a.status in (ActionStatus.SKIPPED, ActionStatus.CANCELLED, ActionStatus.PENDING, ActionStatus.APPROVED)]),
+        "failed": len([a for a in task.actions if a.status == ActionStatus.FAILED]),
+        "changes_remain": [a.tool_name for a in done if a.tool_name in rollback.SUPPORTED_TOOLS or a.risk != "low"],
+        "rollback_available": [a.id for a in done if a.rollback_status == "available"],
+    }
 
 
 def _get_task(db: Session, task_id: str) -> Task:
@@ -81,17 +105,35 @@ def _risk_for_task_action(tool, parsed_args, command: str) -> RiskLevel:
 
 
 # ------------------------------------------------------------------ lifecycle
-def create_task(db: Session, command: str, idempotency_key: str | None = None) -> Task:
-    """Create a task; an existing idempotency key returns the original task."""
+def create_or_get_task(db: Session, command: str, idempotency_key: str | None = None) -> tuple[Task, bool]:
+    """Create a task, or return the existing one for this idempotency key.
+
+    Returns (task, created). `created` is True only for the one request that actually inserted
+    the row: when two requests race with the same key, the database's unique constraint lets
+    exactly one insert win and the other receives the winner's task with created=False, so only
+    the winner plans or runs it.
+    """
     if idempotency_key:
         existing = db.query(Task).filter(Task.idempotency_key == idempotency_key).first()
         if existing:
-            return existing
+            return existing, False
     task = Task(command=command, idempotency_key=idempotency_key, status=TaskStatus.CREATED)
     db.add(task)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        winner = db.query(Task).filter(Task.idempotency_key == idempotency_key).first() if idempotency_key else None
+        if winner is None:
+            raise
+        return winner, False
     db.refresh(task)
-    return task
+    return task, True
+
+
+def create_task(db: Session, command: str, idempotency_key: str | None = None) -> Task:
+    """Create a task; an existing idempotency key returns the original task."""
+    return create_or_get_task(db, command, idempotency_key)[0]
 
 
 def plan_task(db: Session, task: Task, registry: ToolRegistry, settings: Settings, auto_approve: bool = False, preplanned: Plan | None = None) -> Task:
@@ -171,6 +213,15 @@ def plan_task(db: Session, task: Task, registry: ToolRegistry, settings: Setting
 
 
 def approve_task(db: Session, task_id: str, action_ids: list[str] | None = None) -> Task:
+    """Approve pending actions.
+
+    Approving "all" (action_ids is None) never covers HIGH-risk actions: those
+    must be named explicitly so the user confirms each one individually.
+    Approval is bound to the action's stored hash and expires for medium/high risk.
+    """
+    from ..config import get_settings
+    from ..security.approvals import binding_for, expiry_for
+
     task = _get_task(db, task_id)
     if task.status not in (TaskStatus.AWAITING_APPROVAL, TaskStatus.APPROVED, TaskStatus.PLANNED):
         raise ValueError(f"Task '{task_id}' is '{task.status}' and cannot be approved now")
@@ -178,15 +229,29 @@ def approve_task(db: Session, task_id: str, action_ids: list[str] | None = None)
     if action_ids is not None:
         wanted = set(action_ids)
         targets = [a for a in targets if a.id in wanted]
+    else:
+        targets = [a for a in targets if a.risk != RiskLevel.HIGH.value]
+    now = utcnow()
+    ttl = get_settings().approval_ttl_seconds
     for a in targets:
+        if binding_for(a) != a.binding_hash:
+            a.status = ActionStatus.REJECTED
+            a.error = "Action was altered after it was planned; approval refused."
+            continue
         a.status = ActionStatus.APPROVED
-    remaining = [a for a in task.actions if a.status == ActionStatus.PENDING]
-    task.status = TaskStatus.APPROVED if not remaining else TaskStatus.AWAITING_APPROVAL
+        a.approved_at = now
+        a.approval_expires_at = expiry_for(a.risk, ttl, now)
+    if any(a.status == ActionStatus.REJECTED and a.error and "altered" in a.error for a in targets):
+        task.status = TaskStatus.REJECTED
+        task.error = "An action changed after planning; nothing was run."
+    else:
+        remaining = [a for a in task.actions if a.status == ActionStatus.PENDING]
+        task.status = TaskStatus.APPROVED if not remaining else TaskStatus.AWAITING_APPROVAL
     task.updated_at = utcnow()
     db.commit()
     db.refresh(task)
+    log_event("task_approved", task_id=task.id, status=task.status, count=len(targets))
     return task
-
 
 
 def reject_task(db: Session, task_id: str, action_ids: list[str] | None = None) -> Task:
@@ -222,12 +287,22 @@ def cancel_task(db: Session, task_id: str) -> Task:
 
 # ------------------------------------------------------------------ execution
 def _run_with_timeout(tool, parsed_args, timeout_seconds: int) -> ToolResult:
-    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-        future = pool.submit(tool.execute, parsed_args)
-        try:
-            return future.result(timeout=max(timeout_seconds, 250) if tool.name == "application_package" else timeout_seconds)
-        except concurrent.futures.TimeoutError:
-            return ToolResult(success=False, error=f"Tool timed out after {timeout_seconds}s")
+    limit = max(timeout_seconds, 250) if tool.name == "application_package" else timeout_seconds
+    # No `with` block: its exit would wait for the worker and defeat the timeout.
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+    future = pool.submit(tool.execute, parsed_args)
+    try:
+        return future.result(timeout=limit)
+    except concurrent.futures.TimeoutError:
+        # A Python thread cannot be killed, so the tool may still finish its side
+        # effect. Say so instead of claiming it was stopped.
+        return ToolResult(
+            success=False,
+            output={"timed_out": True},
+            error=f"Tool timed out after {limit}s and may still be running; verify the actual state before retrying.",
+        )
+    finally:
+        pool.shutdown(wait=False)
 
 
 def run_task(db: Session, task_id: str, registry: ToolRegistry, settings: Settings) -> Task:
@@ -249,6 +324,8 @@ def run_task(db: Session, task_id: str, registry: ToolRegistry, settings: Settin
         raise ValueError(f"Task '{task_id}' has no approved actions to run")
 
     task.status = TaskStatus.EXECUTING
+    if task.plan_note and task.plan_note.startswith("Task pause hai"):
+        task.plan_note = None
     task.updated_at = utcnow()
     db.commit()
 
@@ -260,12 +337,27 @@ def run_task(db: Session, task_id: str, registry: ToolRegistry, settings: Settin
             action.status = ActionStatus.CANCELLED
             db.commit()
             break
+        if _agent_state(task).get("pause_requested"):
+            state = _agent_state(task)
+            state.pop("pause_requested", None)
+            task.agent_state_json = json.dumps(state)
+            task.status = TaskStatus.PAUSED
+            task.plan_note = "Task pause hai. Baqi approved actions nahi chali; Resume dabayein."
+            task.updated_at = utcnow()
+            db.commit()
+            db.refresh(task)
+            return task
         tool = registry.get(action.tool_name)
         parsed = tool.validate_args(json.loads(action.args_json or "{}"))
         _execute_single_action(db, action, tool, parsed, settings)
         if action.status == ActionStatus.FAILED:
             failed = True
             break  # never continue blindly after a failure
+
+    if any(a.status == ActionStatus.RUNNING for a in runnable):
+        # Another request owns a still-running action; do not report a result yet.
+        db.refresh(task)
+        return task
 
     if failed:
         for a in runnable:
@@ -316,9 +408,39 @@ def run_task(db: Session, task_id: str, registry: ToolRegistry, settings: Settin
 
 # ------------------------------------------------------------------ shared
 def _execute_single_action(db: Session, action: Action, tool, parsed, settings: Settings) -> None:
-    """Run one approved action with timeout, then verify it. Commits."""
-    action.status = ActionStatus.RUNNING
+    """Run one approved action with timeout, then verify it. Commits.
+
+    The action is claimed with an atomic approved->running update, so two
+    concurrent requests can never both execute it.
+    """
+    from ..security.approvals import ApprovalError, check_before_execution
+
+    try:
+        check_before_execution(action)
+    except ApprovalError as exc:
+        action.status = ActionStatus.FAILED
+        action.error = str(exc)
+        db.commit()
+        log_event("action_refused", level=30, task_id=action.task_id, action_id=action.id, tool=action.tool_name, detail=str(exc))
+        return
+    claimed = (
+        db.query(Action)
+        .filter(Action.id == action.id, Action.status == ActionStatus.APPROVED)
+        .update({Action.status: ActionStatus.RUNNING}, synchronize_session=False)
+    )
     db.commit()
+    db.refresh(action)
+    if claimed != 1:
+        return  # another request already owns (or finished) this action
+    log_event("action_start", task_id=action.task_id, action_id=action.id, tool=action.tool_name, risk=action.risk)
+    usage.record(db, "action", action.task_id)
+    try:
+        pre = rollback.capture(tool.name, parsed, tool.ctx) if tool.name in rollback.SUPPORTED_TOOLS else {}
+    except rollback.CheckpointError as exc:
+        action.status = ActionStatus.FAILED
+        action.error = f"Not run: {exc}"
+        db.commit()
+        return
     result = _run_with_timeout(tool, parsed, settings.tool_timeout_seconds)
     action.result_json = result.model_dump_json()
     verification = (
@@ -329,10 +451,19 @@ def _execute_single_action(db: Session, action: Action, tool, parsed, settings: 
     action.verification_json = verification.model_dump_json()
     if result.success and verification.passed:
         action.status = ActionStatus.SUCCEEDED
+        if tool.name in rollback.SUPPORTED_TOOLS:
+            plan = rollback.finalize(tool.name, parsed, result.output, pre, tool.ctx)
+            action.rollback_json = json.dumps(plan) if plan else None
+            action.rollback_status = "available" if plan else "unsupported"
+        elif tool.risk_level != RiskLevel.LOW:
+            action.rollback_status = "unsupported"  # e.g. system settings, desktop input, launches
     else:
         action.status = ActionStatus.FAILED
         action.error = result.error or f"Verification failed: {'; '.join(verification.checks)}"
     db.commit()
+    log_event("action_end", level=20 if action.status == ActionStatus.SUCCEEDED else 30, task_id=action.task_id,
+              action_id=action.id, tool=action.tool_name, status=action.status,
+              detail=action.error if action.status != ActionStatus.SUCCEEDED else None)
 
 
 # ------------------------------------------------------------------ agentic loop (Groq)
@@ -393,9 +524,13 @@ def start_task(
     auto_approve: bool = False,
 ) -> Task:
     """Create a task and start the right flow for the configured provider."""
-    task = create_task(db, command, idempotency_key)
-    if task.status != TaskStatus.CREATED:
-        return task  # idempotency key matched an existing task
+    is_duplicate = bool(idempotency_key) and db.query(Task).filter(Task.idempotency_key == idempotency_key).first() is not None
+    if not is_duplicate:
+        usage.check_task(db, settings)  # raises QuotaExceeded before anything is created
+    task, created = create_or_get_task(db, command, idempotency_key)
+    if not created:
+        return task  # idempotency key matched a task made by an earlier or concurrent request
+    usage.record(db, "task", task.id)
     if settings.ai_provider.strip().lower() != "mock":
         from .local_agent import prepare_local_request
         local = prepare_local_request(db, task, registry)
@@ -425,6 +560,26 @@ def start_task(
     return plan_task(db, task, registry, settings, auto_approve=auto_approve)
 
 
+_CONTENT_KEYS = {"content", "text", "body", "stdout", "stderr", "details", "html", "data", "message"}
+
+
+def _compact_observation(value, key: str = ""):
+    """Minimise what earlier tool output is re-sent to a cloud model.
+
+    Keeps paths, ids and short facts needed to resolve "yes, that one", but
+    never re-sends file contents or long text, and bounds list and string size.
+    """
+    if isinstance(value, dict):
+        return {k: _compact_observation(v, k) for k, v in list(value.items())[:20]}
+    if isinstance(value, list):
+        return [_compact_observation(v, key) for v in value[:10]]
+    if isinstance(value, str):
+        if key in _CONTENT_KEYS and len(value) > 80:
+            return f"[omitted {len(value)} chars]"
+        return value if len(value) <= 300 else value[:300] + "..."
+    return value
+
+
 def _session_user_message(db: Session, task: Task) -> str:
     """Keep a short conversation memory so confirmations continue the work."""
     previous = (
@@ -444,9 +599,9 @@ def _session_user_message(db: Session, task: Task) -> str:
         observations = []
         for action in sorted(prior.actions, key=lambda a: a.seq)[-6:]:
             observations.append({"tool": action.tool_name, "args": json.loads(action.args_json or "{}"),
-                                 "status": action.status, "result": json.loads(action.result_json or "{}")})
+                                 "status": action.status, "result": _compact_observation(json.loads(action.result_json or "{}"))})
         blocks.append(f"User: {prior.command}\nAssistant: {reply[:2000] or prior.status}\nObserved tools: "
-                      + json.dumps(observations, ensure_ascii=False)[:4000])
+                      + json.dumps(observations, ensure_ascii=False)[:2000])
     return (
         "Recent conversation (if the user is confirming a suggested app, file, "
         "folder, window, or next step, perform that original work now):\n"
@@ -484,7 +639,7 @@ def start_agent_task(
         if isinstance(exc, AIRateLimitError):
             task.status = TaskStatus.WAITING_RETRY
             state["retry_at"] = time.time() + exc.retry_after
-            task.plan_note = "AI quota ki wajah se task pause hai. Reset time ke baad Resume dabayein; simple volume/brightness commands abhi bhi chalengi."
+            task.plan_note = getattr(exc, "user_note", None) or "AI quota ki wajah se task pause hai. Reset time ke baad Resume dabayein; simple volume/brightness commands abhi bhi chalengi."
             task.error = None
         else:
             task.status = TaskStatus.FAILED
@@ -502,7 +657,15 @@ def _agent_loop(db, task, registry, provider, settings, specs, state) -> Task:
             _save_agent_state(db, task, state)
             return task
         # May raise AIError -> caught by the caller, task fails loudly.
-        resp = provider.complete(state["messages"], tools=specs)
+        usage.check_ai(db, settings)  # AIQuotaExceeded -> task waits (waiting_retry) until the period resets
+        try:
+            resp = provider.complete(state["messages"], tools=specs)
+        except AIConfigError:
+            raise  # nothing was sent to a provider
+        except Exception:
+            usage.record(db, "ai_call", task.id)  # a failed request still consumed provider quota
+            raise
+        usage.record(db, "ai_call", task.id)
         state.pop("retry_at", None)
         if getattr(provider, "notice", None):
             state["provider_note"] = provider.notice
@@ -535,6 +698,12 @@ def _agent_loop(db, task, registry, provider, settings, specs, state) -> Task:
         paused = False
         for tc in tool_calls:
             # Validate independently of the model - never trust it blindly.
+            if tc.get("invalid_arguments"):
+                # Unparseable arguments must not silently become {} (defaults could run).
+                state["messages"].append(
+                    _tool_result_message(tc["id"], False, "Tool arguments were not valid JSON; call rejected. Retry with valid arguments or ask the user.")
+                )
+                continue
             try:
                 tool = registry.get(tc["name"])
             except UnknownToolError as exc:
@@ -658,7 +827,7 @@ def continue_agent_task(db: Session, task_id: str, registry: ToolRegistry, provi
         if isinstance(exc, AIRateLimitError):
             task.status = TaskStatus.WAITING_RETRY
             state["retry_at"] = time.time() + exc.retry_after
-            task.plan_note = "AI quota ki wajah se task pause hai. Reset time ke baad Resume dabayein; simple volume/brightness commands abhi bhi chalengi."
+            task.plan_note = getattr(exc, "user_note", None) or "AI quota ki wajah se task pause hai. Reset time ke baad Resume dabayein; simple volume/brightness commands abhi bhi chalengi."
             task.error = None
         else:
             task.status = TaskStatus.FAILED
@@ -666,3 +835,42 @@ def continue_agent_task(db: Session, task_id: str, registry: ToolRegistry, provi
         _save_agent_state(db, task, state)
         db.refresh(task)
         return task
+
+
+# ------------------------------------------------------------------ pause / rollback
+def pause_task(db: Session, task_id: str) -> Task:
+    """Request a pause. It takes effect before the next action; an action already
+    running cannot be interrupted safely and finishes first."""
+    task = _get_task(db, task_id)
+    if task.status != TaskStatus.EXECUTING:
+        raise ValueError(f"Task '{task_id}' is '{task.status}'; only a running task can be paused")
+    state = _agent_state(task)
+    state["pause_requested"] = True
+    task.agent_state_json = json.dumps(state)
+    task.updated_at = utcnow()
+    db.commit()
+    db.refresh(task)
+    return task
+
+
+def rollback_task(db: Session, task_id: str, registry: ToolRegistry) -> Task:
+    """Undo supported, still-untouched changes in reverse order. Each result is
+    verified before it is reported; unsupported actions are reported as such."""
+    task = _get_task(db, task_id)
+    if task.status in (TaskStatus.EXECUTING, TaskStatus.AWAITING_APPROVAL, TaskStatus.APPROVED, TaskStatus.PAUSED):
+        raise ValueError(f"Task '{task_id}' is '{task.status}'; finish or cancel it before rolling back")
+    candidates = [a for a in sorted(task.actions, key=lambda x: -x.seq) if a.status == ActionStatus.SUCCEEDED and a.rollback_status in ("available", "failed")]
+    if not candidates:
+        raise ValueError("Nothing to roll back: no completed action has an available checkpoint")
+    for action in candidates:
+        tool = registry.get(action.tool_name)
+        ok, detail = rollback.perform(json.loads(action.rollback_json or "{}"), tool.ctx)
+        action.rollback_status = "done" if ok else "failed"
+        action.rollback_detail = detail
+        db.commit()
+        if not ok:
+            break  # earlier undos may depend on this one; stop and report
+    task.updated_at = utcnow()
+    db.commit()
+    db.refresh(task)
+    return task

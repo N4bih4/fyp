@@ -12,6 +12,7 @@ from typing import Literal
 from pydantic import BaseModel, Field, model_validator
 
 from ..security.paths import resolve_within_allowed
+from ..runtime import data_root, system_worker_command
 from .base import BaseTool, RiskLevel, ToolContext, ToolResult, Verification
 
 
@@ -217,10 +218,10 @@ class ManageSystemSettingTool(BaseTool):
             # threads. Native library faults must not crash the API process.
             try:
                 child = subprocess.run(
-                    [sys.executable, "-m", "app.tools.system_worker"],
+                    system_worker_command(),
                     input=parsed.model_dump_json(), text=True, capture_output=True,
                     encoding="utf-8", errors="replace", timeout=20, shell=False,
-                    cwd=str(Path(__file__).resolve().parents[2]),
+                    cwd=str(data_root()),
                     creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
                 )
                 for line in reversed(child.stdout.splitlines()):

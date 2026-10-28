@@ -8,15 +8,18 @@ The MVP is designed to run on the user's own Windows machine:
 2. Keep the backend on `127.0.0.1:8000` and the frontend on `localhost:5173`.
 3. Demo with `AI_PROVIDER=mock` for reliability, then show the OpenAI mode.
 
-## Packaging (optional)
+## Packaging
 
-To distribute a desktop-style package later:
+Two artifacts are built; the first is the supported one. Details: [INSTALL.md](INSTALL.md).
 
-- Backend: [PyInstaller](https://pyinstaller.org/) can bundle the FastAPI app
-  (`pyinstaller --onefile` with uvicorn). Not done in this MVP — verify the
-  app on Windows first.
-- Frontend: `npm run build` produces static files in `frontend/dist/` that any
-  static server can host, or that an Electron/Tauri shell can wrap.
+1. **Release zip** (source + prebuilt UI + pinned requirements + `INSTALL.cmd`): build the UI (`npm run build` in `frontend/`),
+   then `python packaging/build_release.py --out <dir>`. The builder refuses to produce a zip containing `.env` files,
+   databases, logs, tokens, virtual environments, tests or secret-shaped strings, writes a SHA-256 per file
+   (`MANIFEST.sha256`) and a `.sha256` next to the zip. Validate an installed copy with
+   `python packaging/validate_install.py <installed AgentDesk-AI folder>`.
+2. **Single-folder exe** (`backend/build_windows.ps1`, PyInstaller). Unsigned. Keeps its database and `.env` next to the exe.
+
+The frontend is not wrapped in Electron/Tauri; the app is a local web UI served by the backend on `127.0.0.1:8000`.
 
 ## Cost breakdown
 

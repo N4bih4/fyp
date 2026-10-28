@@ -67,7 +67,11 @@ def test_high_risk_delete_requires_explicit_approval(client):
     assert task["status"] == "awaiting_approval"
     assert task["actions"][0]["risk"] == "high"
 
-    client.post(f"/tasks/{task['id']}/approve", json={}).json()
+    # "approve all" never covers a high-risk action...
+    still = client.post(f"/tasks/{task['id']}/approve", json={}).json()
+    assert still["status"] == "awaiting_approval" and target.exists()
+    # ...it must be named explicitly.
+    client.post(f"/tasks/{task['id']}/approve", json={"action_ids": [task["actions"][0]["id"]]}).json()
     finished = client.post(f"/tasks/{task['id']}/run").json()
     assert finished["status"] == "completed"
     assert not target.exists()

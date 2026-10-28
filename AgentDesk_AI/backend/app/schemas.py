@@ -4,13 +4,16 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class TaskCreate(BaseModel):
+    # Unknown fields (e.g. a legacy "auto_approve") are rejected with 422:
+    # approval is decided server-side and can never be requested by a client.
+    model_config = ConfigDict(extra="forbid")
+
     command: str = Field(min_length=1, max_length=2000)
     idempotency_key: str | None = Field(default=None, max_length=128)
-    auto_approve: bool = Field(default=False)
 
 
 class TaskReply(BaseModel):
@@ -31,6 +34,8 @@ class ActionOut(BaseModel):
     result: dict[str, Any] | None = None
     verification: dict[str, Any] | None = None
     error: str | None = None
+    rollback_status: str | None = None
+    rollback_detail: str | None = None
 
 
 class TaskOut(BaseModel):
@@ -43,6 +48,8 @@ class TaskOut(BaseModel):
     updated_at: datetime
     retry_at: float | None = None
     provider_note: str | None = None
+    # Present when a task stopped after some actions had already changed things.
+    partial: dict[str, Any] | None = None
     actions: list[ActionOut] = []
 
 
@@ -62,6 +69,7 @@ class ConfigStatusOut(BaseModel):
     allowed_directories: list[str]
     approved_applications: list[str]
     platform: str
+    plan: str = "unlimited"
 
 
 class HealthOut(BaseModel):

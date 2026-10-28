@@ -18,7 +18,7 @@ from typing import Any
 from difflib import SequenceMatcher
 from pydantic import BaseModel, Field
 
-from ..security.paths import is_allowed_root, resolve_within_allowed
+from ..security.paths import is_allowed_root, is_executable_path, resolve_within_allowed
 from . import platform as _platform
 from .base import BaseTool, RiskLevel, ToolContext, ToolResult, Verification
 
@@ -422,6 +422,8 @@ class MoveFileTool(BaseTool):
             return ToolResult(success=False, error=str(exc))
         if not src.exists():
             return ToolResult(success=False, error=f"Source does not exist: {src}")
+        if is_allowed_root(src, self.ctx.allowed_directories):
+            return ToolResult(success=False, error=f"Refused: {src} is an allowed root folder and cannot be moved")
         if dst.is_dir():
             dst = dst / src.name
         if dst.exists():
@@ -455,7 +457,7 @@ class RenameFileTool(BaseTool):
 
     def execute(self, args: BaseModel) -> ToolResult:
         a = RenameFileArgs.model_validate(args.model_dump())
-        if Path(a.new_name).name != a.new_name or "/" in a.new_name or "\\" in a.new_name:
+        if Path(a.new_name).name != a.new_name or "/" in a.new_name or "\\" in a.new_name or ":" in a.new_name:
             return ToolResult(success=False, error="new_name must be a plain file name, not a path")
         try:
             src = resolve_within_allowed(a.path, self.ctx.allowed_directories)
@@ -463,6 +465,8 @@ class RenameFileTool(BaseTool):
             return ToolResult(success=False, error=str(exc))
         if not src.exists():
             return ToolResult(success=False, error=f"Path does not exist: {src}")
+        if is_allowed_root(src, self.ctx.allowed_directories):
+            return ToolResult(success=False, error=f"Refused: {src} is an allowed root folder and cannot be renamed")
         dst = src.parent / a.new_name
         if dst.exists():
             return ToolResult(success=False, error=f"Destination already exists: {dst} (not overwritten)")
@@ -527,6 +531,10 @@ class CompressFolderTool(BaseTool):
 
 
 # ---------------------------------------------------------------- extract_file
+MAX_EXTRACT_ENTRIES = 5000
+MAX_EXTRACT_BYTES = 1024 ** 3  # 1 GiB declared uncompressed size
+
+
 class ExtractFileArgs(BaseModel):
     zip_path: str = Field(description="Absolute path of the .zip archive to extract")
     destination: str | None = Field(default=None, description="Absolute destination folder (default: alongside archive)")
@@ -543,7 +551,7 @@ class ExtractFileTool(BaseTool):
         try:
             zp = resolve_within_allowed(a.zip_path, self.ctx.allowed_directories)
             dest = resolve_within_allowed(
-                a.destination or str(Path(a.zip_path).with_suffix("")),
+                a.destination or str(Path(a.zip_path).with_suffix("")) + "_extracted",
                 self.ctx.allowed_directories,
             )
         except ValueError as exc:
@@ -555,10 +563,15 @@ class ExtractFileTool(BaseTool):
             dest_resolved = dest.resolve()
             extracted: list[str] = []
             with zipfile.ZipFile(zp) as zf:
-                for member in zf.infolist():
+                members = zf.infolist()
+                if len(members) > MAX_EXTRACT_ENTRIES or sum(m.file_size for m in members) > MAX_EXTRACT_BYTES:
+                    return ToolResult(success=False, error="Archive is too large to extract safely (entry or size limit exceeded)")
+                for member in members:
                     member_path = (dest_resolved / member.filename).resolve()
                     if dest_resolved != member_path and dest_resolved not in member_path.parents:
                         return ToolResult(success=False, error=f"Blocked unsafe archive entry: {member.filename}")
+                    if not member.is_dir() and member_path.exists():
+                        return ToolResult(success=False, error=f"Refused: {member_path} already exists (nothing was overwritten)")
                 zf.extractall(dest_resolved)
                 extracted = zf.namelist()
         except (OSError, zipfile.BadZipFile) as exc:
@@ -808,6 +821,8 @@ class WriteTextFileTool(BaseTool):
             return ToolResult(success=False, error=str(exc))
         if _is_in_internal_trash(target, self.ctx.allowed_directories):
             return ToolResult(success=False, error="Cannot write inside AgentDesk Trash")
+        if is_executable_path(target):
+            return ToolResult(success=False, error=f"Refused: cannot author executable or script files ({target.suffix}).")
         if target.exists() and not a.overwrite:
             return ToolResult(success=False, error=f"File already exists; set overwrite=true only if replacement is intended: {target}")
         if target.exists() and not target.is_file():
@@ -1031,6 +1046,8 @@ class OpenFileTool(BaseTool):
                     success=False,
                     error=f"File does not exist and no matching file found: {a.path}",
                 )
+        if is_executable_path(target):
+            return ToolResult(success=False, error=f"Refused: {target.name} is an executable or script type; opening it would run code.")
         try:
             _platform.open_path_with_os(str(target))
         except (OSError, ValueError) as exc:

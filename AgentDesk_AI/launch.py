@@ -9,7 +9,7 @@ import subprocess
 import sys
 import time
 from urllib.error import URLError
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 import webbrowser
 
 ROOT = Path(__file__).resolve().parent
@@ -18,12 +18,25 @@ LOGS = ROOT / "logs"
 URL = "http://127.0.0.1:8000"
 
 
+def api_token() -> str:
+    """Per-user local API token (same file the backend reads)."""
+    sys.path.insert(0, str(BACKEND))
+    from app.security.token import load_or_create_token
+    return load_or_create_token()
+
+
+def ui_url() -> str:
+    # The token travels in the URL fragment, which browsers never send to the server.
+    return URL + "/#token=" + api_token()
+
+
 def ready() -> bool:
     try:
         with urlopen(URL + "/health", timeout=2) as response:
             if json.load(response).get("status") != "ok":
                 return False
-        with urlopen(URL + "/config/status", timeout=2) as response:
+        request = Request(URL + "/config/status", headers={"Authorization": "Bearer " + api_token()})
+        with urlopen(request, timeout=2) as response:
             data = json.load(response)
             if "ai_provider" not in data:
                 return False
@@ -88,7 +101,7 @@ def main() -> int:
     if ready():
         print("Agent X AI ready: " + URL)
         if not args.no_browser:
-            webbrowser.open(URL)
+            webbrowser.open(ui_url())
         return 0
     if port_busy():
         print("Port 8000 par koi purana ya doosra server chal raha hai. Use band karke dobara launcher kholein.")
@@ -105,7 +118,7 @@ def main() -> int:
         if ready():
             print("Agent X AI ready: " + URL)
             if not args.no_browser:
-                webbrowser.open(URL)
+                webbrowser.open(ui_url())
             return 0
         time.sleep(1)
     print("Backend start nahi ho saka. logs/backend.log aur logs/launcher.log check karein.")

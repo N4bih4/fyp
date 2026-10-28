@@ -11,4 +11,3 @@ pyautogui>=0.9.54
 pycaw>=20230407
 screen-brightness-control>=0.24.2
 winsdk>=1.0.0b10
-pytest>=8.0

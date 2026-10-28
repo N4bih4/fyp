@@ -25,6 +25,31 @@ _SC_CLOSE = 0xF060
 _SW_RESTORE = 9
 
 
+# Typed input into a shell is arbitrary command execution, which this product
+# never allows an LLM to perform, even with user approval. Closing, minimising
+# and inspecting these windows remains supported.
+_INPUT_ACTIONS = {"click", "type_text", "press_key", "hotkey", "scroll"}
+_SHELL_PROCESSES = {
+    "powershell.exe", "pwsh.exe", "cmd.exe", "windowsterminal.exe", "wt.exe", "conhost.exe",
+    "openconsole.exe", "wsl.exe", "wslhost.exe", "bash.exe", "mintty.exe", "regedit.exe",
+    "mmc.exe", "taskmgr.exe", "python.exe", "pythonw.exe", "py.exe",
+}
+_SHELL_TITLE_WORDS = {"powershell", "pwsh", "cmd", "terminal", "bash", "wsl", "ubuntu", "mingw", "regedit", "mintty", "conhost"}
+_SHELL_TITLE_PHRASES = ("command prompt", "registry editor", "task manager", "windows terminal", "git bash", "computer management", "user account control")
+
+
+def is_shell_target(title: str | None, process: str | None = None) -> bool:
+    """True when a window is a shell/console/admin tool that must not receive typed input."""
+    if process and process.casefold() in _SHELL_PROCESSES:
+        return True
+    text = (title or "").casefold()
+    if text.strip() == "run":
+        return True
+    return any(phrase in text for phrase in _SHELL_TITLE_PHRASES) or bool(
+        _SHELL_TITLE_WORDS & set(re.split(r"[^a-z0-9]+", text))
+    )
+
+
 def _valid_key(key: str) -> bool:
     return key in _NAMED_KEYS or bool(re.fullmatch(r"[a-z0-9]", key))
 
@@ -188,6 +213,8 @@ class DesktopControlTool(BaseTool):
             return RiskLevel.LOW
         if not parsed.target_window:
             return RiskLevel.HIGH
+        if is_shell_target(parsed.target_window) and any(step.action in _INPUT_ACTIONS for step in parsed.steps):
+            return RiskLevel.HIGH  # never auto-approve input aimed at a shell
 
         normalized_command = user_command.casefold()
         for spoken_name in ("google charmin honor", "charmin honor"):
@@ -562,6 +589,13 @@ class DesktopControlTool(BaseTool):
                         raise ValueError(
                             f"Foreground window {active.title if active else None!r} does not match "
                             f"target {target.title!r}; no input was sent."
+                        )
+                    if step.action in _INPUT_ACTIONS and is_shell_target(
+                        target.title, self._window_metadata(target).get("process")
+                    ):
+                        raise ValueError(
+                            f"Refused: typed input into the shell/system window {target.title!r} is not "
+                            "allowed. Open the app yourself or use a dedicated tool."
                         )
                 if step.action == "inspect":
                     window = pyautogui.getActiveWindow()

@@ -43,3 +43,16 @@ def is_allowed_root(path: Path, allowed: list[Path]) -> bool:
     """True if path IS one of the allowed roots (never delete these)."""
     resolved = path.resolve()
     return any(resolved == base.expanduser().resolve() for base in allowed)
+
+
+# File types the OS runs (or hands to an interpreter) when "opened". The
+# assistant must never open or author these: write + open would be arbitrary
+# code execution by the LLM.
+EXECUTABLE_EXTENSIONS = frozenset({
+    ".exe", ".com", ".scr", ".bat", ".cmd", ".ps1", ".psm1", ".vbs", ".vbe", ".js", ".jse", ".wsf", ".wsh",
+    ".msi", ".msp", ".lnk", ".url", ".reg", ".hta", ".cpl", ".jar", ".py", ".pyw", ".pif", ".gadget", ".appx", ".msix",
+})
+
+
+def is_executable_path(path: str | Path) -> bool:
+    return Path(str(path)).suffix.lower() in EXECUTABLE_EXTENSIONS

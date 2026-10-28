@@ -24,6 +24,22 @@ Never exposes the API key — only whether one is configured.
 }
 ```
 
+### `GET /usage`
+Local plan, limits and counters (requires the API token). Contains no command text.
+```json
+{"plan": "free",
+ "limits": {"tasks_day": 20, "ai_calls_day": 20, "ai_calls_month": 200},
+ "used": {"tasks_day": 3, "actions_day": 5, "ai_calls_day": 1, "ai_calls_month": 12},
+ "remaining": {"tasks_day": 17, "ai_calls_day": 19, "ai_calls_month": 188},
+ "resets_at_utc": "2026-10-28T19:00:00Z"}
+```
+Plans come from `AGENTDESK_PLAN` (`unlimited` default, `standard`, `free`; an unknown name stops startup).
+Limits cover only new tasks and cloud-AI calls. When the daily task limit is reached `POST /tasks` returns
+`429` with the message and the usage snapshot; when an AI limit is reached the running task becomes
+`waiting_retry` until the period resets. Local PC commands, approvals, rollback and logging are never limited.
+Counters reset at **local** midnight (daily) and the first of the local month. This is a local budget guard,
+not tamper-proof licensing.
+
 ### `GET /tools`
 Lists the registered tools with descriptions, risk levels, and JSON schemas.
 `control_desktop` can inspect the foreground window or execute up to eight
@@ -104,33 +120,93 @@ page, only inside an allowed directory:
 For HTML pages set `save_as_webpage` to `true`. The response is capped at 20 MB
 and existing destination files are never overwritten.
 
+## Authentication and request guard
+
+`/tasks*`, `/config*` and `/tools` require `Authorization: Bearer <token>` (`401` otherwise).
+`/health`, CORS preflight, the static UI and `/browser/*` do not. The token is a random
+per-user secret stored in `%LOCALAPPDATA%\AgentDesk\api_token` (override: `AGENTDESK_TOKEN_FILE`).
+The launcher opens the UI as `http://127.0.0.1:8000/#token=...`; the fragment is never sent to the
+server, the UI keeps the token in `sessionStorage` for that tab and clears it from the address bar.
+Set `AGENTDESK_REQUIRE_API_TOKEN=0` to disable (tests only).
+
+All routes also reject a `Host` header other than `127.0.0.1`, `localhost` or `[::1]` (DNS rebinding)
+and reject state-changing requests carrying a foreign `Origin` (`403`). The API must stay bound to loopback.
+
 ## Tasks
 
-### `POST /tasks` — plan a command
+### `POST /tasks`
+Plan a command.
 ```json
-// request
+// request. Unknown fields are rejected with 422 (approval cannot be requested by the client)
 {"command": "Create a folder called FYP in Documents", "idempotency_key": "optional-unique-key"}
-// response: TaskOut (status: awaiting_approval | approved | completed | failed)
+// response: TaskOut (status: awaiting_approval | approved | completed | failed | awaiting_input | waiting_retry)
 ```
-If `idempotency_key` matches an existing task, that task is returned unchanged —
-no duplicate planning or execution.
+`command` is 1-2000 characters. If `idempotency_key` matches an existing task,
+that task is returned unchanged: no duplicate planning or execution.
 
-### `GET /tasks?limit=20` — history (newest first)
-### `GET /tasks/{id}` — one task with its actions
+### `GET /tasks`
+History, newest first. Query: `limit` (default 20, max 100).
 
-### `POST /tasks/{id}/approve` — approve pending actions
+### `GET /tasks/{task_id}`
+One task with its actions. `404` if unknown.
+
+### `POST /tasks/{task_id}/approve`
+Approve pending actions.
 ```json
-{"action_ids": ["<id>", "..."]}   // or {} to approve all pending
+{"action_ids": ["<id>", "..."]}   // named actions, any risk
+{}                                // all pending MEDIUM/LOW actions; HIGH-risk actions stay pending
 ```
+**High-risk actions are approved only when named in `action_ids`.** Each approval is bound to a
+SHA-256 over (task, action, tool, canonical args, risk) fixed when the action was planned. If the stored
+action changed since planning, approval is refused and the task is `rejected`. MEDIUM/HIGH approvals
+expire after `APPROVAL_TTL_SECONDS` (default 600); an altered or expired approval makes the action
+`failed` at `/run` and nothing executes. Ids belonging to another task are ignored.
+`404` unknown task; `409` if the task state does not allow approval.
 
-### `POST /tasks/{id}/reject` — reject (nothing runs)
+### `POST /tasks/{task_id}/reject`
+Reject (nothing runs). `404` / `409` as above.
 
-### `POST /tasks/{id}/run` — execute approved actions
-Runs approved actions in order with per-tool timeouts and verification.
-Returns the finished task. Safe to call twice: finished tasks are never
-re-executed. Returns `409` if actions are still awaiting approval.
+### `POST /tasks/{task_id}/run`
+Execute approved actions in order with per-tool timeouts and verification.
+Each action is claimed atomically, so concurrent calls execute it once. Finished
+tasks are never re-executed. `409` if actions are still awaiting approval.
+A timed-out tool is reported as failed with `output.timed_out = true`; it may
+still be running, so verify the real state before retrying.
 
-### `POST /tasks/{id}/cancel` — cancel a pending task
+### `POST /tasks/{task_id}/cancel`
+Cancel a task that is not yet finished. Finished tasks are returned unchanged.
+
+### `POST /tasks/{task_id}/pause`
+Ask a running task to pause. It stops before the **next** action (status `paused`); an action already
+running cannot be interrupted safely and finishes first. Resume with `POST /tasks/{task_id}/run`
+(approvals that expired while paused will refuse to run). `409` unless the task is `executing`.
+
+### `POST /tasks/{task_id}/rollback`
+Undo completed actions that have a checkpoint (`actions[].rollback_status = "available"`), newest first.
+Supported: create_folder, move_file, rename_file, copy_file, compress_folder, extract_file,
+write_text_file, edit_text_file (restores the previous content), delete_file (restores from AgentDesk
+Trash) and download_web_content. Everything else reports `unsupported`. Each undo is refused if the
+result was changed after the action (content hash differs) and is only reported `done` after the
+filesystem is re-checked; the first failure stops the run and is reported in `rollback_detail`.
+`409` if the task is still running/awaiting approval or nothing has a checkpoint.
+
+### `POST /tasks/{task_id}/reply`
+Conversational answer to a task in `awaiting_approval` or `awaiting_input`.
+```json
+{"message": "yes"}
+```
+`409` if the task is not waiting for a reply. A plain "yes" approves exactly the one pending action on
+screen. With several pending actions it approves them only if none is high-risk; otherwise the task
+stays `awaiting_approval` and each high-risk action must be approved individually.
+
+## Browser bridge
+
+### `GET /browser/status`
+`{"connected": bool, "profiles": int}`.
+
+### `GET /browser/connect-token`
+Returns the extension connection token. Requires the API bearer token (`401` otherwise) **and** header
+`X-AgentX-Bridge: 1` (`403` otherwise). The extension obtains the bearer token through one-time pairing. The WebSocket `/browser/ws` accepts only `chrome-extension://` origins on a local `Host`, then requires the bridge token.
 
 ## TaskOut shape
 
@@ -140,10 +216,11 @@ re-executed. Returns `409` if actions are still awaiting approval.
   "plan_note": "[mock AI]",
   "error": null,
   "created_at": "...", "updated_at": "...",
+  "retry_at": null, "provider_note": null,
   "actions": [
     {
       "id": "...", "seq": 0, "tool_name": "create_folder",
-      "args": {"path": "C:\\...\\FYP"},
+      "args": {"path": "C:\...\FYP"},
       "risk": "medium", "status": "succeeded",
       "result": {"success": true, "output": {"path": "..."}},
       "verification": {"passed": true, "checks": ["folder exists: True"]},
@@ -153,7 +230,13 @@ re-executed. Returns `409` if actions are still awaiting approval.
 }
 ```
 
-Task statuses: `created`, `awaiting_approval`, `approved`, `executing`,
-`completed`, `failed`, `cancelled`, `rejected`.
+## State machines
+
+Enforced in `backend/app/state.py`; an illegal transition raises `InvalidTransition`.
+See [docs/audit/ARCHITECTURE.md](audit/ARCHITECTURE.md) for the diagram.
+
+Task statuses: `created`, `planned`, `awaiting_approval`, `awaiting_input`,
+`approved`, `executing`, `waiting_retry`, `completed`, `failed`, `cancelled`, `rejected`
+(last four are terminal).
 Action statuses: `pending`, `approved`, `rejected`, `running`, `succeeded`,
 `failed`, `skipped`, `cancelled`.

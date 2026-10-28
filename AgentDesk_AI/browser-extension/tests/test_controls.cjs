@@ -26,7 +26,8 @@ const context = vm.createContext({
     windows: { update: async () => {} },
     scripting: { executeScript: async options => [{ result: await options.func(...options.args) }] },
     action: { setBadgeText() {}, setBadgeBackgroundColor() {}, onClicked: event },
-    runtime: { onInstalled: event, onStartup: event },
+    runtime: { id: "ext-id", onInstalled: event, onStartup: event, onMessage: event },
+    storage: { local: { get: async () => ({}), set: async () => {} } },
     alarms: { create() {}, onAlarm: event },
   },
 });
