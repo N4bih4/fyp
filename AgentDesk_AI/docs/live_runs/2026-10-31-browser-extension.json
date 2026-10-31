@@ -1,0 +1,127 @@
+{
+  "tool": "control_browser + open_url (Agent X Browser Bridge)",
+  "started": "2026-10-31T08:13:01.671Z",
+  "steps": [
+    {
+      "step": "pair + handshake",
+      "status": {
+        "connected": true,
+        "profiles": 1,
+        "version": "1.1.0",
+        "expected_version": "1.1.0",
+        "outdated": false
+      }
+    },
+    {
+      "command": "list tabs",
+      "status": "completed",
+      "error": null,
+      "actions": [
+        {
+          "tool": "control_browser",
+          "args": {
+            "action": "inspect"
+          },
+          "status": "succeeded",
+          "verification": {
+            "passed": true,
+            "checks": [
+              "extension returned the tab list: True"
+            ],
+            "details": null,
+            "evidence": {
+              "tabs": 2
+            }
+          }
+        }
+      ]
+    },
+    {
+      "command": "gmail chrome mein kholo",
+      "status": "completed",
+      "error": null,
+      "actions": [
+        {
+          "tool": "open_url",
+          "args": {
+            "url": "https://mail.google.com",
+            "browser": "chrome"
+          },
+          "status": "succeeded",
+          "verification": {
+            "passed": true,
+            "checks": [
+              "extension reports the tab open: True"
+            ],
+            "details": null,
+            "evidence": {
+              "tab_id": 167677364,
+              "tabs_seen": 3
+            }
+          }
+        }
+      ]
+    },
+    {
+      "step": "tabs after open",
+      "tabs": [
+        {
+          "id": 167677362,
+          "title": "about:blank",
+          "url": "",
+          "active": false,
+          "audible": false
+        },
+        {
+          "id": 167677363,
+          "title": "Agent X Browser Setup",
+          "url": "http://127.0.0.1:8000/browser-extension/setup.html",
+          "active": false,
+          "audible": false
+        },
+        {
+          "id": 167677364,
+          "title": "",
+          "url": "https://mail.google.com/",
+          "active": true,
+          "audible": false
+        }
+      ]
+    },
+    {
+      "command": "close tab 167677364",
+      "status": "completed",
+      "error": null,
+      "actions": [
+        {
+          "tool": "control_browser",
+          "args": {
+            "action": "close",
+            "target": "167677364",
+            "tab_id": 167677364
+          },
+          "status": "succeeded",
+          "verification": {
+            "passed": true,
+            "checks": [
+              "extension confirmed close: True",
+              "tab is gone: True"
+            ],
+            "details": null,
+            "evidence": {
+              "tab_id": 167677364,
+              "tabs_now": 2,
+              "extension_reply": {
+                "closed": true,
+                "paused": null
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "browser": "Chromium 153.0.8010.12 (headless, real extension)",
+  "finished": "2026-10-31T08:13:03.162Z",
+  "result": "pass"
+}

@@ -13,12 +13,12 @@ const { chromium } = require('playwright');
 const HERE = dirname(fileURLToPath(import.meta.url));
 const BACKEND = resolve(HERE, '..', '..', 'backend');
 
-export async function startBackend() {
+export async function startBackend({ port: fixedPort } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'agentdesk-e2e-'));
   const home = join(root, 'home');
   mkdirSync(join(home, 'Documents'), { recursive: true });
   mkdirSync(join(home, 'Desktop'), { recursive: true });
-  const port = 18700 + Math.floor(Math.random() * 200);
+  const port = fixedPort ?? 18700 + Math.floor(Math.random() * 200);
   const tokenFile = join(root, 'api_token');
   const python = process.env.AGENTDESK_PYTHON ?? (process.platform === 'win32' ? join(BACKEND, '.venv', 'Scripts', 'python.exe') : 'python3');
   const env = {

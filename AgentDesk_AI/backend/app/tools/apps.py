@@ -5,6 +5,7 @@ import platform
 import json
 import os
 import re
+import time
 import shutil
 import webbrowser
 from difflib import SequenceMatcher
@@ -581,14 +582,15 @@ class OpenUrlTool(BaseTool):
             return ToolResult(success=False, error=str(exc))
         if a.browser == "chrome":
             from ..browser_bridge import bridge
-            if bridge.clients:
+            if bridge.clients and bridge.supports("open"):
                 result = bridge.request("open", url=a.url, browser="chrome")
                 if result.get("success") and isinstance(result.get("tab_id"), int):
                     return ToolResult(success=True, output=result)
-                error = result.get("error", "Browser did not confirm the requested tab.")
-                if "Unsupported browser command" in error:
-                    error = "Browser extension update load karni hai: chrome://extensions par Agent X Browser Bridge ka Reload dabayein. Phir command dobara dein."
-                return ToolResult(success=False, error=error)
+                return ToolResult(success=False, error=result.get("error", "Browser did not confirm the requested tab."))
+            if bridge.clients:
+                # Extension older than 1.1 cannot open tabs: launch Chrome, then confirm through the
+                # extension's inspect that the tab really appeared in the connected profile.
+                return self._open_and_find_tab(a.url)
             try:
                 executable = OpenApplicationTool(self.ctx)._find_executable("chrome")
                 if not executable:
@@ -616,6 +618,28 @@ class OpenUrlTool(BaseTool):
             return ToolResult(success=False, error="The system reported that no browser could handle the URL")
         return ToolResult(success=True, output={"url": a.url, "launched": True})
 
+    def _open_and_find_tab(self, url: str, wait_seconds: float = 6.0) -> ToolResult:
+        from ..browser_bridge import bridge
+
+        executable = OpenApplicationTool(self.ctx)._find_executable("chrome")
+        if not executable:
+            return ToolResult(success=False, error="Chrome is not installed or its executable was not found.")
+        try:
+            _platform.launch_program(str(executable), [url])
+        except OSError as exc:
+            return ToolResult(success=False, error=f"Could not open Chrome: {exc}")
+        deadline = time.monotonic() + wait_seconds
+        while time.monotonic() < deadline:
+            observed = bridge.request("inspect")
+            tabs = [t for t in observed.get("tabs", []) if isinstance(t, dict) and _same_url(str(t.get("url", "")), url)]
+            if tabs:
+                return ToolResult(success=True, output={"url": url, "browser": "chrome", "tab_id": tabs[0].get("id"),
+                                                        "launched": True, "via": "chrome+inspect (extension < 1.1)"})
+            time.sleep(0.4)
+        return ToolResult(success=False, error=(
+            "Chrome opened, but the connected browser profile did not show the tab. Reload Agent X Browser Bridge "
+            "once at chrome://extensions (version 1.1+ then updates itself)."))
+
     def verify(self, args: BaseModel, result: ToolResult) -> Verification:
         if not result.success:
             return failed_result(result)
@@ -631,6 +655,17 @@ class OpenUrlTool(BaseTool):
         url = out.get("url") or OpenUrlArgs.model_validate(args.model_dump()).url
         seen, windows = window_check(title_contains=_site_title_hints(url), processes=BROWSER_PROCESSES)
         return verdict([("browser window shows the site", seen)], {"url": url, **windows})
+
+
+
+def _same_url(a: str, b: str) -> bool:
+    def norm(u: str) -> str:
+        parts = urlsplit(u)
+        return f"{parts.scheme.lower()}://{(parts.hostname or '').lower()}{parts.path or '/'}{'?' + parts.query if parts.query else ''}"
+    try:
+        return norm(a) == norm(b)
+    except ValueError:
+        return False
 
 
 class WebSearchArgs(BaseModel):

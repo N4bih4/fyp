@@ -1,20 +1,58 @@
 """Authenticated local connection to the user-installed browser extension."""
 import asyncio
 import concurrent.futures
+import json
 import secrets
 import threading
 import uuid
+from functools import lru_cache
 from fastapi import APIRouter, Header, HTTPException, WebSocket, WebSocketDisconnect
 
+from .logging_setup import log_event
+
 router = APIRouter(prefix="/browser")
+
+
+@lru_cache(maxsize=1)
+def expected_version() -> str:
+    """Version of the extension files shipped with this backend (browser-extension/manifest.json)."""
+    from .runtime import resource_root
+
+    try:
+        return json.loads((resource_root() / "browser-extension" / "manifest.json").read_text(encoding="utf-8"))["version"]
+    except (OSError, ValueError, KeyError):
+        return "0"
+
+
+def _version_tuple(value: str) -> tuple[int, ...]:
+    try:
+        return tuple(int(part) for part in str(value).split("."))
+    except ValueError:
+        return (0,)
 
 
 class BrowserBridge:
     def __init__(self):
         self.token = secrets.token_urlsafe(32)
         self.clients = {}
+        self.info = {}  # client_id -> {"version", "capabilities"} sent by the extension when it connects
         self.pending = {}
         self.lock = threading.RLock()
+
+    def client_info(self) -> dict:
+        """Version/capabilities of the single connected extension ({} if none or ambiguous).
+        Extensions older than 1.1 send neither: they support inspect/close/pause/resume only."""
+        with self.lock:
+            if len(self.clients) != 1:
+                return {}
+            return dict(self.info.get(next(iter(self.clients)), {}))
+
+    def supports(self, capability: str) -> bool:
+        return capability in self.client_info().get("capabilities", ())
+
+    def outdated(self) -> bool:
+        info = self.client_info()
+        return bool(info) and _version_tuple(info.get("version", "0")) < _version_tuple(expected_version())
 
     def request(self, action, **args):
         with self.lock:
@@ -45,7 +83,9 @@ bridge = BrowserBridge()
 
 @router.get("/status")
 def status():
-    return {"connected": len(bridge.clients) == 1, "profiles": len(bridge.clients)}
+    info = bridge.client_info()
+    return {"connected": len(bridge.clients) == 1, "profiles": len(bridge.clients),
+            "version": info.get("version"), "expected_version": expected_version(), "outdated": bridge.outdated()}
 
 
 @router.get("/connect-token")
@@ -72,9 +112,16 @@ async def browser_socket(socket: WebSocket):
         if not secrets.compare_digest(str(auth.get("token", "")), bridge.token):
             await socket.close(code=1008)
             return
+        capabilities = auth.get("capabilities") if isinstance(auth.get("capabilities"), list) else ["inspect", "close", "pause", "resume"]
+        info = {"version": str(auth.get("version") or "1.0.0")[:20], "capabilities": [str(c)[:20] for c in capabilities[:20]]}
         with bridge.lock:
             bridge.clients[client_id] = (socket, asyncio.get_running_loop())
+            bridge.info[client_id] = info
         await socket.send_json({"ready": True})
+        if _version_tuple(info["version"]) < _version_tuple(expected_version()) and "reload" in info["capabilities"]:
+            # Updated extension files are on disk: ask the extension to load them (no manual Reload click).
+            log_event("browser_extension_reload_requested", detail=f"{info['version']} -> {expected_version()}")
+            await socket.send_json({"id": uuid.uuid4().hex, "action": "reload"})
         while True:
             message = await socket.receive_json()
             if message.get("heartbeat"):
@@ -90,6 +137,7 @@ async def browser_socket(socket: WebSocket):
     finally:
         with bridge.lock:
             bridge.clients.pop(client_id, None)
+            bridge.info.pop(client_id, None)
             for owner, future in list(bridge.pending.values()):
                 if owner == client_id and not future.done():
                     future.set_result({"success": False, "error": "Browser disconnected; action state verify karein."})
