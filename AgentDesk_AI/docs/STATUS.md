@@ -6,6 +6,33 @@ Older evidence: `FEATURE_AUDIT.md`, `audit/FEATURE_TRACEABILITY_MATRIX.md`,
 
 ## Session log
 
+### 2026-10-31 — Session 5: Phase 17 DESKTOP EXPERIENCE
+
+**Done**
+- **Backend (preferences + memory).** Tables `preferences` and `memory_items` (schema v6). `GET/PUT /preferences`: persona (name, language, style, speak replies, orb colour), listen mode (`push_to_talk` / `hands_free` / `off`), provider mode (`auto` / `local_only` — local-only never builds a cloud provider), approval policy (`standard` / `strict` — strict makes every action, even low risk, wait for approval; there is no looser option), memory on/off, onboarded flag. `GET/POST/PUT/DELETE /memory` + `POST /memory/forget-conversation`; text that looks like a password/PIN/API key is refused (422). All new routes require the token (the route-matrix security test caught them missing at first) and are documented in `docs/API.md`.
+- **Rule 3 enforced.** A spoken/typed "yes" now approves only low/medium risk; with a high-risk action pending it is refused with "High risk needs a click on Approve" (was: a bare yes could approve a single delete). This was open decision 2; the brief makes it non-negotiable. One older test rewritten accordingly.
+- **Desktop UI (React).** Orb with one animation per voice state (idle, listening, transcribing, thinking, awaiting approval, awaiting answer, executing, verifying, speaking, error; respects reduced-motion) and the state as text; live transcript (interim words, command, assistant reply); action-preview dialog (risk colour + plain-language risk text, exact targets, approve all / approve one / reject, typed reply, voice answer; focus trap, Esc rejects, Approve focused for low/medium but **Reject focused for high risk** so Enter cannot approve a delete; page behind it `inert`); Settings page (persona, listen mode, provider, approval policy, usage, autostart toggle when running in the desktop shell, allowed folders); Memory page (view/add/edit/delete, recent conversation, forget conversation, memory on/off); 3-step first-run onboarding that ends by starting the microphone on a guided command; push-to-talk (microphone off after one command) and listen-mode Off (mic hidden); speak-replies toggle; mini-orb route `?view=orb`. Keyboard: Ctrl+Space mic, Alt+1/2/3 pages, `/` command box; visible focus everywhere; every control has an accessible name.
+- **Bugs found by driving the UI and fixed:** a `speechSynthesis` error blanked the whole app (now caught); Tailwind `grid` overrode `hidden` so the assistant panel showed under Settings; the orb said "approval" while waiting for an answer; background controls were reachable behind the modal; Settings radios lagged the server round-trip (now optimistic, reverted on failure).
+- **Desktop shell** `desktop/shell.py` (pywebview): panel window (closing hides to tray) + 132 px frameless transparent always-on-top orb window bottom-right that expands the panel; pystray tray menu (Open, Show/hide orb, Start with Windows, Quit); `desktop/autostart.py` writes/deletes only `HKCU\...\Run\AgentDesk` (no admin). The JS bridge exposes only expand/collapse/get_autostart/set_autostart — no commands, files or approvals. `launch.ensure_backend()` shared by the browser launcher and the shell. `START_AGENT_X_DESKTOP.cmd`, `requirements-desktop.txt` (pywebview, pystray; not yet in the verified lock). Release zip includes them.
+
+**Tested how (Linux container)**
+- Backend: `python -m pytest tests -q` -> **657 passed, 3 skipped, 0 failed**. New: `test_phase17_preferences.py` (8: defaults/partial update, looser/unknown values and API keys rejected, no secrets returned, memory CRUD + secret guard, forget conversation, strict policy incl. internal auto-approve, local-only never calls cloud), `test_phase17_desktop.py` (8: two windows and orb geometry, bridge surface, expand/collapse/close-to-tray, minimized start, autostart writes one value and removes it, refused off Windows, tray menu actions, run starts webview + tray).
+- Frontend: `npm run build` (tsc + vite) pass; `node --test voice.test.mjs` 4/4.
+- **E2E (Playwright, real backend + Chromium, fake microphone): `npm run test:e2e` -> 8/8 pass.** `new_user.test.mjs`: fresh install -> onboarding -> spoken "create a folder called Demo in Documents" -> live transcript -> preview card (medium, exact path, Approve focused) -> Approve -> task `completed` with verified folder on disk, **3.0 s automated** (gate: < 3 min).
+- `scripts/eval_nlu.py` still Gate G3 PASS (unchanged).
+
+**What is left**
+- **The human gate is not measured yet**: run `docs/USABILITY_TEST.md` with 5 new users on the Windows PC (real microphone, real speech recognition, real WebView2). The automated 3 s proves the path, not human discoverability.
+- Desktop shell is unit-tested with fakes only: run `START_AGENT_X_DESKTOP.cmd` on Windows, check the orb stays on top, tray menu, autostart after sign-out/in; then pin pywebview/pystray in the lock.
+- The packaged exe does not include the desktop shell yet (autostart refuses in the exe rather than registering a broken command).
+- Memory items are stored and editable, but the planner does not read them yet (wiring the Phase 15 NLU planner into `start_task` is still pending — open decision 1).
+- Global hotkey / wake word for the orb (Phase 19 voice loop); the mini orb shows the latest task state by polling, not live listening state.
+
+**Known issues**
+- Speech recognition is still the browser's Web Speech API (needs internet); Whisper is Phase 19.
+- E2E tests need Playwright installed locally (`npm i --no-save playwright`); not added to package.json to keep `npm ci` unchanged.
+- Push to GitHub still fails with 403; commits are local.
+
 ### 2026-10-31 — Session 4: Phase 16 REAL VERIFICATION AND CONTROL
 
 **Done**
