@@ -202,6 +202,15 @@ Conversational answer to a task in `awaiting_approval` or `awaiting_input`.
 screen. With several pending actions it approves them only if none is high-risk; otherwise the task
 stays `awaiting_approval` and each high-risk action must be approved individually.
 
+## Pilot metrics
+
+### `GET /metrics/tasks.csv`
+Optional `days` (1-365). CSV, one row per finished task: `task_id, created_at, finished_at, duration_s, status, language,
+command_chars, source, actions, tools, max_risk, approvals_required, approval_wait_s, verified_actions, failed_actions,
+stopped, error_kind`. Never contains command text, paths, arguments, results, phone numbers or e-mail addresses.
+With `PILOT_METRICS=1` the same row is also appended automatically to `%LOCALAPPDATA%\AgentDesk\pilot\task_metrics.csv`
+when a task finishes.
+
 ## Preferences and memory (Phase 17)
 
 All require the bearer token. Preferences never contain API keys; unknown fields are rejected with 422.

@@ -23,6 +23,7 @@ from .security.token import get_api_token
 from .database import get_db, init_db, SessionLocal
 from .models import MemoryItem, Task, TaskStatus, ActionStatus, utcnow
 from . import preferences as prefs
+from . import metrics  # registers the automatic pilot export
 from .orchestration import executor
 from .schemas import (
     ActionOut,
@@ -95,7 +96,7 @@ app.add_middleware(
 
 _LOCAL_HOSTS = {"127.0.0.1", "localhost", "[::1]", "testserver"}
 _SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
-_PROTECTED_PREFIXES = ("/tasks", "/config", "/tools", "/usage", "/browser/connect-token", "/preferences", "/memory")
+_PROTECTED_PREFIXES = ("/tasks", "/config", "/tools", "/usage", "/browser/connect-token", "/preferences", "/memory", "/metrics")
 
 
 @app.middleware("http")
@@ -144,6 +145,18 @@ async def quota_exceeded_handler(request: Request, exc: usage.QuotaExceeded):
 def get_usage(db: Session = Depends(get_db)) -> dict:
     """Plan, limits and local usage counters. Contains no command text."""
     return usage.snapshot(db, get_settings())
+
+
+# ------------------------------------------------------------------ pilot metrics
+@app.get("/metrics/tasks.csv")
+def task_metrics_csv(days: int | None = None, db: Session = Depends(get_db)):
+    """One row per finished task: timings, tools, risk, approvals, verification. No command text or paths."""
+    from fastapi.responses import PlainTextResponse
+
+    if days is not None and not 1 <= days <= 365:
+        raise HTTPException(status_code=422, detail="days must be 1-365")
+    return PlainTextResponse(metrics.export_csv(db, days), media_type="text/csv",
+                             headers={"Content-Disposition": "attachment; filename=agentdesk_task_metrics.csv"})
 
 
 # ------------------------------------------------------------------ preferences & memory

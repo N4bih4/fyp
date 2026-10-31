@@ -70,6 +70,8 @@ class Settings(BaseSettings):
     # "process" (default): tools run in a worker process that is killed on timeout/pause/cancel.
     # "thread": in-process (tests only; a timed-out thread cannot be stopped).
     tool_isolation: str = "process"
+    # Pilot: append one privacy-safe CSV row per finished task (app/metrics.py). Off by default.
+    pilot_metrics: bool = False
     # Medium/high-risk approvals expire if the action is not run in time.
     approval_ttl_seconds: int = 600
 
