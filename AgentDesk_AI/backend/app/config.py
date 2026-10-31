@@ -40,6 +40,11 @@ class Settings(BaseSettings):
     ai_cloud_mode: str = "explicit"
     discovery_directories: str = Field(default="", validation_alias=AliasChoices("AGENTDESK_DISCOVERY_DIRECTORIES", "discovery_directories"))
     ai_timeout_seconds: int = 30
+    # Speech models on Groq (used by ai/groq_client.py). STT falls back in order.
+    groq_stt_model: str = "whisper-large-v3-turbo"
+    groq_stt_fallback_model: str = "whisper-large-v3"
+    groq_tts_model: str = "canopylabs/orpheus-v1-english"
+    groq_tts_voice: str = "autumn"
     ai_max_retries: int = 2
     # Bound on agentic-loop tool steps per task (cost + runaway protection).
     agent_max_steps: int = 10
