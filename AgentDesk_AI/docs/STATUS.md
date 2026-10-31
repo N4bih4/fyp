@@ -86,7 +86,6 @@ media keys, WhatsApp Desktop and winget need the Windows PC — run the four com
 - WhatsApp Desktop's text box may not be readable through UI Automation; then the open window is the only evidence.
 - SMTC only sees players that report to Windows (most do; some old players do not) — those runs fail honestly.
 - winget may trigger a UAC prompt; if declined, the install fails (reported with WinGet's output).
-- Push to GitHub still 403.
 
 ### 2026-10-31 — Session 5: Phase 17 DESKTOP EXPERIENCE
 
@@ -113,7 +112,6 @@ media keys, WhatsApp Desktop and winget need the Windows PC — run the four com
 **Known issues**
 - Speech recognition is still the browser's Web Speech API (needs internet); Whisper is Phase 19.
 - E2E tests need Playwright installed locally (`npm i --no-save playwright`); not added to package.json to keep `npm ci` unchanged.
-- Push to GitHub still fails with 403; commits are local.
 
 ### 2026-10-31 — Session 4: Phase 16 REAL VERIFICATION AND CONTROL
 
@@ -151,7 +149,6 @@ media keys, WhatsApp Desktop and winget need the Windows PC — run the four com
 - Free input (click/type/keys) cannot be read back in general; evidence is that the target window existed and had focus.
 - A window title that never contains the app/site name (some apps) will fail verification -> task fails honestly instead of claiming success.
 - Non-interruptible steps (file moves, settings) are not killed on pause/cancel, to avoid half-applied changes; they finish first.
-- Push to GitHub still fails with 403; commits are local (bundle available on request).
 
 ### 2026-10-31 — Session 3: Phase 15 NATURAL-LANGUAGE COMMAND MODEL
 
@@ -180,7 +177,6 @@ Phase 14 was skipped as a separate step; its planner pieces (PlannerProvider, Gr
 **Known issues**
 - Same author for data and matcher: in-set numbers are optimistic; the probe shows ~50% local coverage of unseen phrasing.
 - Groq strict-schema compatibility (anyOf of 29 variants, `type: [x, "null"]`) is unverified live.
-- Push to GitHub still fails with 403; all commits are local.
 
 ### 2026-10-31 — Session 2: Phase 13 STABILISE
 
@@ -206,7 +202,6 @@ Phase 14 was skipped as a separate step; its planner pieces (PlannerProvider, Gr
 **Known issues**
 - GUI probes verify "launch requested / PID alive", not the visible window (Phase 17 verifiers).
 - Probe timeout uses a thread that cannot be killed (same limit as R-08; Phase 17 worker process).
-- Push to GitHub is failing with 403 (Claude GitHub App access to `N4bih4/fyp`); commits are local until access is fixed.
 
 ### 2026-10-31 — Session 1: baseline and plan (no code changed)
 
