@@ -330,10 +330,11 @@ def r_browser(ctx: _Ctx):
     m = re.match(r"^search youtube for (.+)$", text, re.I)
     if m:
         return _plan(ctx, "web_search", [step("web_search", query=m.group(1).strip(), site="youtube.com")], BASE, "search.site")
-    for pattern in (r"^(?:search for|search|google|look-up) (?:the )?(.+)$",
-                    r"^(?:google (?:pe|par) )?(.+?) (?:search|google) (?:karo|kar do|kro|kijiye)$",
+    # Roman Urdu/Urdu/Hindi forms first: "google pe X search karo" must not read as English "google X".
+    for pattern in (r"^(?:google (?:pe|par) )?(.+?) (?:search|google) (?:karo|kar do|kro|kijiye)$",
                     r"^(?:گوگل (?:پر|پہ) )?(.+?) سرچ (?:کرو|کر دو|کریں)$",
-                    r"^(?:गूगल (?:पर|पे) )?(.+?) सर्च (?:करो|कर दो|कीजिए)$"):
+                    r"^(?:गूगल (?:पर|पे) )?(.+?) सर्च (?:करो|कर दो|कीजिए)$",
+                    r"^(?:search for|search|google|look-up) (?:the )?(.+)$"):
         m = re.match(pattern, text, re.I)
         if m and m.group(1).strip():
             return _plan(ctx, "web_search", [step("web_search", query=m.group(1).strip())], BASE, "search")

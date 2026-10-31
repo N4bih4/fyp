@@ -6,6 +6,35 @@ Older evidence: `FEATURE_AUDIT.md`, `audit/FEATURE_TRACEABILITY_MATRIX.md`,
 
 ## Session log
 
+### 2026-10-31 — Session 3: Phase 15 NATURAL-LANGUAGE COMMAND MODEL
+
+Phase 14 was skipped as a separate step; its planner pieces (PlannerProvider, Groq structured outputs, fallback chain) are delivered here.
+
+**Done** (package lives in `backend/app/nlu/`, next to `app/ai/`, so it imports like the rest of the app)
+- `schema.py`: plan schema v2 (`NLUPlan`: intent enum, language, confidence, needs_clarification, clarifying_question, steps[tool,args,depends_on,expected_outcome], reply). `plan_json_schema(registry)` builds the strict JSON schema: one step variant per registered tool (tool enum generated from the registry), every property required, `additionalProperties:false` everywhere, optional values nullable, unsupported keywords stripped. `validate_plan()` = the single server-side gate for every provider: unknown tool, unknown/invalid argument (incl. `auto_approve`), bad `depends_on`, bad `$N` step reference, path outside allowed roots -> rejected with a reason; risk from `tool.risk_for_args`.
+- `normalizer.py`: language detection (script + Roman Urdu markers), number words in en/roman_ur/ur/hi -> digits, shared multilingual lexicon -> canonical tokens, rapidfuzz typo correction (ASCII only, cutoff 86, never on paths/URLs/e-mails), nukta/NFKC handling.
+- `local_matcher.py`: ordered rules over canonical tokens (unsupported, chat, e-mail, settings pages, device settings, follow-ups, browser/media/search, websites, screenshot/trash/packages, explicit paths, file ops with find_paths + `$0`, apps, clarification). Confidence 0.95 minus penalties for typos and unexplained words; unknown -> 0. Negated commands are never matched.
+- `memory.py`: last 10 turns, last results, `last_target` only from the immediately preceding successful turn, ordinals into the last result list, JSON prompt view.
+- `planner.py`: `PlannerProvider.plan(context) -> PlanResult`; `GroqPlanner` (one call, `response_format` json_schema strict, no tools/streaming, gpt-oss-120b -> gpt-oss-20b, via `GroqClient`), `OpenAICompatiblePlanner` (OpenAI; Gemini via its OpenAI endpoint) with the same schema and validator, `FallbackPlanner`, `LocalFirstPlanner` (Groq only below 0.85), usage per plan, `planner_from_settings()`.
+- `prompts/system.md` (role, rules 1-8, conventions, tool catalogue) + `prompts/examples.jsonl` (11 few-shot plans: en, roman_ur, ur, hi, multi-step, follow-up, ordinal, ambiguous -> question, unsupported, adversarial "don't ask"). None of them is in the eval set (test enforces it).
+- `tests/nlu_eval/commands.jsonl` (300: en 92, roman_ur 88, ur 60, hi 60; dev 201 / holdout 99), committed before the matcher. `tests/nlu_eval/paraphrases.jsonl` (40 independent probes).
+- `scripts/eval_nlu.py`: modes local / pipeline / llm; accuracy per language and split, invented tools, approval bypasses (approval tier of the predicted plan lower than expected for the same intent, or approval-like argument), language detection, paraphrase probe; writes `docs/eval/nlu_<mode>_<split>.md/.json`.
+- `rapidfuzz` added to `requirements.txt` and `requirements.lock.txt` (3.14.6; not yet installed/verified on the Windows PC).
+
+**Tested how (Linux container, Python 3.13)**
+- `python -m pytest tests -q` -> **595 passed, 3 skipped, 0 failed** (skips = Groq live tests, no key). New `tests/test_nlu.py`: 43 tests (strict-schema rules on every object, validator rejections, path check, normaliser, matcher, adversarial delete stays HIGH risk, memory, planners with fake Groq/Gemini clients incl. 120b->20b fallback and backup provider, prompt contents, dataset validity, **Gate G3 as a regression test**).
+- `python scripts/eval_nlu.py` -> **Gate G3 PASS**: intent+tool 99.3%, exact args 99.3%, 0 invented tools, 0 approval bypasses (holdout first run 100.0% / 99.0%). Paraphrase probe 20/40 correct, 20 deferred, **0 confidently wrong**. Report: `docs/eval/nlu_local_all.md`, caveats in `docs/eval/README.md`.
+
+**What is left**
+- Run `python scripts/eval_nlu.py --mode pipeline` with `GROQ_API_KEY` (verifies Groq accepts the strict schema, measures LLM accuracy and latency).
+- **Not wired into the executor yet.** `start_task` still uses the existing local agent + Groq tool-calling loop. Wiring `LocalFirstPlanner` in (resolving `$0` via find_paths, feeding memory from task history) changes the live command path — needs your go-ahead (see open decision 1).
+- Real-user transcripts as a third eval split.
+
+**Known issues**
+- Same author for data and matcher: in-set numbers are optimistic; the probe shows ~50% local coverage of unseen phrasing.
+- Groq strict-schema compatibility (anyOf of 29 variants, `type: [x, "null"]`) is unverified live.
+- Push to GitHub still fails with 403; all commits are local.
+
 ### 2026-10-31 — Session 2: Phase 13 STABILISE
 
 **Done**

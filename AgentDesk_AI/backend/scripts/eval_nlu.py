@@ -168,6 +168,31 @@ def make_llm_predictor(mode: str):
     return predict
 
 
+PROBE = BACKEND_DIR / "tests" / "nlu_eval" / "paraphrases.jsonl"
+
+
+def run_probe(predict, registry) -> dict[str, Any]:
+    """Independent paraphrases (never used for tuning): is the model ever confidently wrong?"""
+    out = {"n": 0, "correct": 0, "deferred": 0, "confidently_wrong": 0, "wrong_items": []}
+    if not PROBE.is_file():
+        return out
+    for line in PROBE.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        item = json.loads(line)
+        plan, meta = predict({"command": item["command"], "context": None}, registry)
+        out["n"] += 1
+        if plan is None:
+            out["deferred"] += 1
+        elif plan.intent == item["intent"] and [s.tool for s in plan.steps] == item["tools"]:
+            out["correct"] += 1
+        else:
+            out["confidently_wrong"] += 1
+            out["wrong_items"].append({"command": item["command"], "got": plan.intent,
+                                       "tools": [s.tool for s in plan.steps]})
+    return out
+
+
 def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
     def block(sub):
         n = len(sub) or 1
@@ -201,7 +226,7 @@ def table(summary: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def write_report(mode: str, split: str, summary, verdict, rows, elapsed: float) -> Path:
+def write_report(mode: str, split: str, summary, verdict, rows, elapsed: float, probe=None) -> Path:
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     base = REPORT_DIR / f"nlu_{mode}_{split}"
@@ -217,6 +242,14 @@ def write_report(mode: str, split: str, summary, verdict, rows, elapsed: float) 
     if mode == "local":
         md += ["In `local` mode an item the matcher is not confident about (< "
                f"{THRESHOLD}) is counted as wrong, so these numbers are a lower bound for the Groq pipeline.", ""]
+    if probe and probe["n"]:
+        md += ["## Independent paraphrase probe", "",
+               f"`tests/nlu_eval/paraphrases.jsonl`: {probe['n']} new phrasings written after the matcher and never "
+               "used for tuning (intent + tools only).", "",
+               f"- correct: {probe['correct']}", f"- deferred (sent to the LLM in the pipeline): {probe['deferred']}",
+               f"- **confidently wrong: {probe['confidently_wrong']}**", ""]
+        md += [f"  - `{w['command']}` -> {w['got']} {w['tools']}" for w in probe["wrong_items"]]
+        md.append("")
     md += [f"## Items not exactly right ({len(failures)})", "",
            "| id | command | expected | predicted | note |", "|---|---|---|---|---|"]
     for r in failures:
@@ -255,15 +288,18 @@ def main(argv: list[str] | None = None) -> int:
     elapsed = time.perf_counter() - started
     summary = summarize(rows)
     verdict = gate(summary)
+    probe = run_probe(predict, registry)
     print(table(summary))
     print("\nGate G3:", "PASS" if all(verdict.values()) else "FAIL", verdict)
+    print(f"Paraphrase probe: {probe['correct']}/{probe['n']} correct, {probe['deferred']} deferred, "
+          f"{probe['confidently_wrong']} confidently wrong")
     if args.show_failures:
         for r in rows:
             if not r["exact_args"]:
                 print(f"  {r['id']:<13} {r['command'][:50]:<50} exp={r['expected_intent']}{r['expected_tools']} "
                       f"got={r['predicted_intent']}{r['predicted_tools']} conf={r.get('confidence')} rule={r.get('rule')}")
     if not args.no_report:
-        print("report:", write_report(args.mode, args.split, summary, verdict, rows, elapsed))
+        print("report:", write_report(args.mode, args.split, summary, verdict, rows, elapsed, probe))
     return 0 if all(verdict.values()) else 1
 
 
