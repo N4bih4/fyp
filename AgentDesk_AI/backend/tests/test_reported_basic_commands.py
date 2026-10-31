@@ -67,7 +67,10 @@ def test_clear_mute_command_supersedes_folder_clarification(client, db, tmp_path
     monkeypatch.setattr(tool, "_set_mute", muted.append)
     old = executor.start_task(db, "open folder missing_lab", None, registry, Settings(ai_provider="groq", groq_api_key=None))
     assert old.status == "awaiting_input"
-    response = client.post(f"/tasks/{old.id}/reply", json={"message": "میوٹ پی سی"})
+    from app.verification import use_probe
+    from tests.helpers.fake_probe import ScriptedProbe
+    with use_probe(ScriptedProbe(settings={"volume": {"value": 30, "muted": True}})):
+        response = client.post(f"/tasks/{old.id}/reply", json={"message": "میوٹ پی سی"})
     assert response.json()["status"] == "completed"
     assert response.json()["actions"][0]["tool_name"] == "manage_system_setting"
     assert muted == [True]

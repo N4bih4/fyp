@@ -108,3 +108,12 @@ def client(db):
 def pytest_sessionfinish(session, exitstatus):
     shutil.rmtree(SESSION_TMP, ignore_errors=True)
 
+
+@pytest.fixture(autouse=True)
+def _agreeable_probe():
+    """Verifiers need a desktop; tests get a permissive fake unless they install a strict one."""
+    from app.verification import use_probe
+    from tests.helpers.fake_probe import AgreeableProbe
+
+    with use_probe(AgreeableProbe()) as probe:
+        yield probe

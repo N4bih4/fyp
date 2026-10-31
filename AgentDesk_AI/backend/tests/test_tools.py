@@ -201,6 +201,8 @@ def test_desktop_control_close_window_requires_unique_target_and_verifies(ctx: T
         {
             "action": "close_window",
             "window": "Untitled - Notepad",
+            "hwnd": None,
+            "pid": None,
             "closed": True,
             "posted_close": False,
         }

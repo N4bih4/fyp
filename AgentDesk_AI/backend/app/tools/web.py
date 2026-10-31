@@ -12,6 +12,7 @@ import httpx
 from pydantic import BaseModel, Field, field_validator
 
 from ..security.paths import resolve_within_allowed
+from ..verification import failed_result, file_evidence, verdict
 from .base import BaseTool, RiskLevel, ToolContext, ToolResult, Verification
 
 MAX_DOWNLOAD_BYTES = 20 * 1024 * 1024
@@ -174,11 +175,13 @@ class DownloadWebContentTool(BaseTool):
 
     def verify(self, args: BaseModel, result: ToolResult) -> Verification:
         if not result.success:
-            return Verification(passed=False, checks=[], details="tool reported failure")
+            return failed_result(result)
         target = Path(result.output["path"])
-        valid = target.is_file() and target.stat().st_size == result.output["bytes_written"]
-        return Verification(passed=valid, checks=[f"download saved with expected size: {valid}"])
-
+        evidence = file_evidence(target)
+        return verdict([("download saved with expected size", evidence.get("size") == result.output["bytes_written"])],
+                       {**evidence, "url": result.output.get("url")})
 
 def web_tools(ctx: ToolContext | None = None) -> list[BaseTool]:
     return [DownloadWebContentTool(ctx)]
+
+

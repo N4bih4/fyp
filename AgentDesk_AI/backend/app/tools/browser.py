@@ -3,7 +3,8 @@ from typing import Literal
 from urllib.parse import urlsplit
 from pydantic import BaseModel, Field
 from ..browser_bridge import bridge
-from .base import BaseTool, RiskLevel, ToolResult
+from ..verification import failed_result, verdict
+from .base import BaseTool, RiskLevel, ToolResult, Verification
 
 SITES = {
     "youtube": {"youtube.com"}, "google drive": {"drive.google.com"}, "drive": {"drive.google.com"},
@@ -82,3 +83,24 @@ class BrowserControlTool(BaseTool):
         if not verified:
             return ToolResult(success=False, error="Browser ne requested tab/video state verify nahi ki.")
         return ToolResult(success=True, output={"action": a.action, "tab_id": tab["id"], "title": tab.get("title"), **{k: v for k, v in result.items() if k in {"success", "closed", "paused", "error"}}})
+
+    def verify(self, args, result: ToolResult) -> Verification:
+        """Evidence comes from the browser extension (a separate process that reads the real tabs)."""
+        if not result.success:
+            return failed_result(result)
+        a = BrowserControlArgs.model_validate(args.model_dump())
+        if a.action == "inspect":
+            tabs = result.output.get("tabs", [])
+            return verdict([("extension returned the tab list", isinstance(tabs, list))], {"tabs": len(tabs)})
+        observed = bridge.request("inspect")
+        if not observed.get("success"):
+            return Verification(passed=False, checks=["could not re-inspect tabs"], details=observed.get("error"))
+        ids = {t["id"] for t in _clean_tabs(observed.get("tabs"))}
+        tab_id = result.output.get("tab_id")
+        evidence = {"tab_id": tab_id, "tabs_now": len(ids), "extension_reply": {k: result.output.get(k) for k in ("closed", "paused")}}
+        if a.action == "close":
+            return verdict([("extension confirmed close", result.output.get("closed") is True), ("tab is gone", tab_id not in ids)], evidence)
+        return verdict([("extension confirmed video state", result.output.get("paused") is (a.action == "pause")),
+                        ("tab still open", tab_id in ids)], evidence)
+
+

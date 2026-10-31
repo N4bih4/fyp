@@ -448,6 +448,10 @@ def _execute_single_action(db: Session, action: Action, tool, parsed, settings: 
         if result.success
         else Verification(passed=False, checks=[], details=result.error)
     )
+    if result.success and verification.passed and not verification.evidence:
+        # A pass with nothing observed is not a verification.
+        verification = Verification(passed=False, checks=verification.checks + ["no evidence recorded"],
+                                    details="Verifier returned no evidence of the real outcome.")
     action.verification_json = verification.model_dump_json()
     if result.success and verification.passed:
         action.status = ActionStatus.SUCCEEDED

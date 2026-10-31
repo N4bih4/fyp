@@ -9,7 +9,8 @@ from pathlib import Path
 from typing import Literal
 from pydantic import BaseModel, Field
 from ..security.paths import resolve_within_allowed
-from .base import BaseTool, RiskLevel, ToolResult
+from ..verification import failed_result, file_evidence, verdict
+from .base import BaseTool, RiskLevel, ToolResult, Verification
 
 
 class PackageArgs(BaseModel):
@@ -71,3 +72,17 @@ class ApplicationPackageTool(BaseTool):
                 return ToolResult(success=False, output=output, error="WinGet reported success but no downloaded files were found.")
         return ToolResult(success=result.returncode == 0, output=output,
                           error=None if result.returncode == 0 else "WinGet failed. Review package details, agreements, Store sign-in, or App Installer version in the output.")
+
+    def verify(self, args, result: ToolResult) -> Verification:
+        if not result.success:
+            return failed_result(result)
+        out = result.output or {}
+        if out.get("directory"):
+            files = [Path(f) for f in out.get("files", [])]
+            return verdict([("downloaded files exist", bool(files) and all(f.is_file() for f in files))],
+                           {"directory": out["directory"], "files": [file_evidence(f) for f in files[:3]]})
+        details = str(out.get("details", ""))
+        return verdict([("WinGet exited 0 and printed results", bool(details.strip()))],
+                       {"winget_output_chars": len(details), "installed": out.get("installed")})
+
+

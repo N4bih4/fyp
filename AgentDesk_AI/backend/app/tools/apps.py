@@ -16,6 +16,7 @@ import httpx
 from pydantic import BaseModel, Field, field_validator
 
 from . import platform as _platform
+from ..verification import BROWSER_PROCESSES, MAIL_PROCESSES, current, failed_result, verdict, window_check
 from .base import BaseTool, RiskLevel, ToolContext, ToolResult, Verification
 
 # Known executables per platform. Windows entries rely on PATH/CreateProcess
@@ -128,6 +129,31 @@ _DARWIN_APP_PATHS = {
     "calc": ["/System/Applications/Calculator.app"],
 }
 
+
+
+# Process and title hints used by verify() to find the real window after a launch.
+_APP_PROCESSES: dict[str, set[str]] = {
+    "calc": {"calculatorapp.exe", "calculator.exe", "calc.exe"}, "notepad": {"notepad.exe"},
+    "chrome": {"chrome.exe"}, "explorer": {"explorer.exe"}, "word": {"winword.exe"}, "excel": {"excel.exe"},
+    "powerpoint": {"powerpnt.exe"}, "visual studio code": {"code.exe"}, "microsoft edge": {"msedge.exe"},
+    "powershell": {"powershell.exe", "pwsh.exe", "windowsterminal.exe"}, "antigravity": {"antigravity.exe", "agy.exe"},
+    "intellij": {"idea64.exe", "idea.exe"}, "cursor": {"cursor.exe"},
+}
+_APP_TITLES: dict[str, list[str]] = {
+    "calc": ["calculator"], "visual studio code": ["visual studio code"], "explorer": ["file explorer", "home", "this pc"],
+    "word": ["word"], "excel": ["excel"], "powerpoint": ["powerpoint"], "microsoft edge": ["edge"],
+    "powershell": ["powershell"], "chrome": ["google chrome"], "notepad": ["notepad"],
+}
+_SITE_TITLES = {"youtube.com": ["youtube"], "mail.google.com": ["gmail", "inbox"], "web.whatsapp.com": ["whatsapp"],
+                "chatgpt.com": ["chatgpt"], "drive.google.com": ["google drive", "my drive"]}
+
+
+def _site_title_hints(url: str) -> list[str]:
+    host = (urlsplit(url).hostname or "").casefold().removeprefix("www.")
+    if host in _SITE_TITLES:
+        return _SITE_TITLES[host]
+    label = host.split(".")[-2] if host.count(".") >= 1 else host
+    return [label] if label else []
 
 class OpenApplicationArgs(BaseModel):
     app_name: str = Field(description="Application to launch, e.g. 'chrome', 'notepad'")
@@ -422,13 +448,23 @@ class OpenApplicationTool(BaseTool):
         return ToolResult(success=True, output={"app": app, "pid": proc.pid, "launched": True})
 
     def verify(self, args: BaseModel, result: ToolResult) -> Verification:
-        # Process launch is best-effort to verify; we only know Popen succeeded.
-        launched = bool(result.success and result.output.get("launched"))
-        return Verification(
-            passed=launched,
-            checks=[f"process start reported: {launched}"],
-            details="Running state of GUI apps cannot be fully verified from here.",
-        )
+        if not result.success:
+            return failed_result(result)
+        out = result.output or {}
+        app = str(out.get("app") or OpenApplicationArgs.model_validate(args.model_dump()).app_name).casefold()
+        if out.get("url"):  # ChatGPT fallback opens a website
+            seen, windows = window_check(title_contains=["chatgpt"], processes=BROWSER_PROCESSES)
+            return verdict([("browser window shows ChatGPT", seen)], windows)
+        if app == "gmail":
+            seen, windows = window_check(title_contains=["gmail", "inbox"], processes={"chrome.exe"})
+            return verdict([("Chrome window shows Gmail", seen)], windows)
+        pid = out.get("pid")
+        alive = bool(pid) and current().process_alive(int(pid))
+        titles = _APP_TITLES.get(app, [app])
+        processes = _APP_PROCESSES.get(app, {f"{app.replace(' ', '')}.exe"})
+        seen, windows = window_check(title_contains=titles, processes=processes, match="any")
+        return verdict([("app window is open", seen)], {"pid": pid, "pid_alive": alive, **windows},
+                       details=None if seen else "The app did not show a window in time.")
 
 
 class OpenUrlArgs(BaseModel):
@@ -579,6 +615,22 @@ class OpenUrlTool(BaseTool):
             return ToolResult(success=False, error="The system reported that no browser could handle the URL")
         return ToolResult(success=True, output={"url": a.url, "launched": True})
 
+    def verify(self, args: BaseModel, result: ToolResult) -> Verification:
+        if not result.success:
+            return failed_result(result)
+        out = result.output or {}
+        if isinstance(out.get("tab_id"), int):
+            # The browser extension (a separate process) created/activated this tab and reported its URL.
+            from ..browser_bridge import bridge
+
+            tabs = bridge.request("inspect")
+            ids = {t.get("id") for t in tabs.get("tabs", [])} if tabs.get("success") else set()
+            return verdict([("extension reports the tab open", out["tab_id"] in ids)],
+                           {"tab_id": out["tab_id"], "tabs_seen": len(ids)})
+        url = out.get("url") or OpenUrlArgs.model_validate(args.model_dump()).url
+        seen, windows = window_check(title_contains=_site_title_hints(url), processes=BROWSER_PROCESSES)
+        return verdict([("browser window shows the site", seen)], {"url": url, **windows})
+
 
 class WebSearchArgs(BaseModel):
     query: str = Field(min_length=1, max_length=500, description="Search terms")
@@ -638,6 +690,14 @@ class WebSearchTool(BaseTool):
         if not launched:
             return ToolResult(success=False, error="The system reported that no browser could handle the search")
         return ToolResult(success=True, output={"query": query, "url": url, "launched": True})
+
+    def verify(self, args: BaseModel, result: ToolResult) -> Verification:
+        if not result.success:
+            return failed_result(result)
+        query = str(result.output.get("query") or "")
+        hints = [w for w in re.findall(r"\w+", query) if len(w) > 2][:3] + ["search"]
+        seen, windows = window_check(title_contains=hints, processes=BROWSER_PROCESSES)
+        return verdict([("browser window shows the search", seen)], {"url": result.output.get("url"), **windows})
 
 
 class PlayYouTubeVideoArgs(BaseModel):
@@ -730,6 +790,14 @@ class PlayYouTubeVideoTool(BaseTool):
             },
         )
 
+    def verify(self, args: BaseModel, result: ToolResult) -> Verification:
+        if not result.success:
+            return failed_result(result)
+        seen, windows = window_check(title_contains=["youtube"], processes=BROWSER_PROCESSES)
+        return verdict([("browser window shows YouTube", seen)],
+                       {"url": result.output.get("url"), **windows},
+                       details="Playback itself is confirmed only through the browser extension.")
+
 
 class ComposeEmailArgs(BaseModel):
     to: str = Field(min_length=3, max_length=254, description="Recipient email address")
@@ -782,6 +850,14 @@ class ComposeEmailTool(BaseTool):
                 "message": "Draft opened for review; it has not been sent.",
             },
         )
+
+    def verify(self, args: BaseModel, result: ToolResult) -> Verification:
+        if not result.success:
+            return failed_result(result)
+        a = ComposeEmailArgs.model_validate(args.model_dump())
+        hints = [h for h in (a.subject[:40], "new message", "compose", "untitled - message") if h]
+        seen, windows = window_check(title_contains=hints, processes=MAIL_PROCESSES | BROWSER_PROCESSES)
+        return verdict([("a draft window is open (not sent)", seen)], {"to": a.to, **windows})
 
 
 def app_tools(ctx: ToolContext | None = None) -> list[BaseTool]:

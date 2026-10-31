@@ -29,6 +29,8 @@ CONVENTIONS
   If there is nothing to refer to, ask.
 - Closing an app = control_desktop {"target_window": "<app name>", "steps": [{"action": "close_window"}]}.
   Closing a website = control_browser {"action": "close", "target": "<site>"}.
+  Minimize / maximize / restore / bring to front = intent "window_control", control_desktop with one step
+  {"action": "minimize_window" | "maximize_window" | "restore_window" | "focus_window"}.
 - Sites: youtube -> https://www.youtube.com, gmail -> https://mail.google.com,
   whatsapp -> https://web.whatsapp.com, chatgpt -> https://chatgpt.com. "in chrome" -> "browser": "chrome".
 - application_package queries must be the English/ASCII product name (e.g. "vlc").

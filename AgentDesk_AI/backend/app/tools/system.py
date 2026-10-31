@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field, model_validator
 
 from ..security.paths import resolve_within_allowed
 from ..runtime import data_root, system_worker_command
+from ..verification import ProbeUnavailable, current, failed_result, file_evidence, verdict
 from .base import BaseTool, RiskLevel, ToolContext, ToolResult, Verification
 
 
@@ -260,7 +261,8 @@ class ManageSystemSettingTool(BaseTool):
                 return ToolResult(success=True, output={"setting": "brightness", "value": actual})
             if parsed.setting == "volume":
                 if parsed.action == "get":
-                    return ToolResult(success=True, output={"setting": "volume", "value": self._volume()})
+                    muted = bool(self._volume_endpoint().GetMute())
+                    return ToolResult(success=True, output={"setting": "volume", "value": self._volume(), "muted": muted})
                 if parsed.action == "mute":
                     self._set_mute(True)
                     return ToolResult(success=True, output={"setting": "volume", "muted": True})
@@ -296,6 +298,34 @@ class ManageSystemSettingTool(BaseTool):
             return ToolResult(success=False, error="Windows radio operation timed out; state was not confirmed.")
         except Exception as exc:
             return ToolResult(success=False, error=f"Could not manage system setting: {exc}")
+
+    def verify(self, args: BaseModel, result: ToolResult) -> Verification:
+        """Re-read the setting in a separate process and compare with what was asked."""
+        if not result.success:
+            return failed_result(result)
+        parsed = ManageSystemSettingArgs.model_validate(args.model_dump())
+        reported = result.output or {}
+        try:
+            observed = current().read_setting(parsed.setting)
+        except ProbeUnavailable as exc:
+            return Verification(passed=False, checks=["independent read-back unavailable"], details=str(exc))
+        except Exception as exc:  # noqa: BLE001 - a failed read is not a pass
+            return Verification(passed=False, checks=["independent read-back failed"], details=str(exc)[:200])
+        evidence = {"reported": reported, "observed": observed}
+        if parsed.setting == "theme":
+            want = parsed.action if parsed.action in {"dark", "light"} else reported.get("system")
+            return verdict([("registry theme matches", observed.get("system") == want and observed.get("apps") == want)], evidence)
+        if parsed.setting in {"bluetooth", "wifi"}:
+            want = {"on": True, "off": False}.get(parsed.action, reported.get("enabled"))
+            return verdict([(f"{parsed.setting} state read back", observed.get("enabled") is want)], evidence)
+        if parsed.action in {"mute", "unmute"}:
+            return verdict([("mute state read back", observed.get("muted") is (parsed.action == "mute"))], evidence)
+        tolerance = 1 if parsed.setting == "volume" else 2
+        value = observed.get("value")
+        checks = [("value read back matches report", isinstance(value, int) and abs(value - int(reported.get("value", -99))) <= tolerance)]
+        if parsed.action == "set":
+            checks.append(("value equals requested", isinstance(value, int) and abs(value - parsed.value) <= tolerance))
+        return verdict(checks, evidence)
 
 
 class TakeScreenshotArgs(BaseModel):
@@ -347,13 +377,15 @@ class TakeScreenshotTool(BaseTool):
 
     def verify(self, args: BaseModel, result: ToolResult) -> Verification:
         if not result.success:
-            return Verification(passed=False, checks=[], details="tool reported failure")
+            return failed_result(result)
         p = Path(result.output["path"])
-        ok = p.is_file() and p.stat().st_size > 0
-        return Verification(passed=ok, checks=[f"screenshot file exists and is non-empty: {ok}"])
-
+        header = p.read_bytes()[:8] if p.is_file() else b""
+        return verdict([("PNG file exists and is non-empty", p.is_file() and p.stat().st_size > 0),
+                        ("file has a PNG header", header == b"\x89PNG\r\n\x1a\n")], file_evidence(p))
 
 def system_tools(ctx: ToolContext | None = None) -> list[BaseTool]:
     ctx = ctx or ToolContext.from_settings()
     from .settings_pages import OpenWindowsSettingsTool
     return [ManageSystemSettingTool(ctx), TakeScreenshotTool(ctx), OpenWindowsSettingsTool(ctx)]
+
+

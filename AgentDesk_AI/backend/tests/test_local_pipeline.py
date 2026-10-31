@@ -112,9 +112,13 @@ def test_local_multistep_request_does_not_need_provider(db, tmp_path, monkeypatc
         return ToolResult(success=True, output={"setting": args.setting, "value": 40})
     monkeypatch.setattr(registry.get("manage_system_setting"), "execute", execute)
     monkeypatch.setattr(executor, "get_provider", lambda *_: pytest.fail("cloud used"))
-    task = start(db, registry, "volume down aur brightness up")
-    assert task.status == TaskStatus.COMPLETED
-    assert calls == ["volume", "brightness"]
-    followup = start(db, registry, "aur kam karo")
+    from app.verification import use_probe
+    from tests.helpers.fake_probe import ScriptedProbe
+    probe = ScriptedProbe(settings={"volume": {"value": 40}, "brightness": {"value": 40}})
+    with use_probe(probe):
+        task = start(db, registry, "volume down aur brightness up")
+        assert task.status == TaskStatus.COMPLETED
+        assert calls == ["volume", "brightness"]
+        followup = start(db, registry, "aur kam karo")
     assert followup.status == TaskStatus.COMPLETED
     assert json.loads(followup.actions[0].args_json)["setting"] == "brightness"

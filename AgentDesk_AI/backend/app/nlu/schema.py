@@ -23,7 +23,7 @@ from pydantic import BaseModel, Field, ValidationError
 from ..tools.base import RiskLevel
 
 INTENTS: tuple[str, ...] = (
-    "system_setting", "settings_page", "open_app", "close_window", "open_website", "web_search",
+    "system_setting", "settings_page", "open_app", "close_window", "window_control", "open_website", "web_search",
     "play_youtube", "browser_tab", "open_folder", "open_file", "list_folder", "find_files",
     "create_folder", "copy", "move", "rename", "delete", "restore", "list_trash", "read_file",
     "write_file", "edit_file", "compress", "extract", "screenshot", "email_draft", "package_search",

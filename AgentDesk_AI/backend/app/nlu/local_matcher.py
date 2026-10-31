@@ -508,6 +508,21 @@ def r_apps(ctx: _Ctx):
                  0.88, "app.close_named")
 
 
+def r_window(ctx: _Ctx):
+    """minimize / maximize / bring to front a named app window."""
+    action = {"MINIMIZE": "minimize_window", "MAXIMIZE": "maximize_window", "FOCUS": "focus_window"}
+    verb = ctx.first(*action)
+    if verb is None:
+        return None
+    apps = ctx.prefixed("APP:")
+    target = APP_DISPLAY.get(apps[0], apps[0]) if len(apps) == 1 else ctx.name(STRUCT | set(action) | {"WINDOW"})
+    if not target:
+        return _special(ctx, "clarify", "clarify_target", "window.no_target")
+    conf = BASE if apps else 0.88
+    return _plan(ctx, "window_control", [step("control_desktop", target_window=target, steps=[{"action": action[verb]}])],
+                 conf - _penalty(ctx, set(action) | {"WINDOW", "APP:*"}), "window." + action[verb])
+
+
 def r_clarify(ctx: _Ctx):
     verbs = ctx.set & {"OPEN", "CLOSE", "DELETE", "RUN", "SEND"}
     rest = ctx.set - verbs - {"FILE", "FOLDER", "IT", "EMAIL"} - {c for c in ctx.set if c.lower() in SOFT_WORDS}
@@ -517,7 +532,7 @@ def r_clarify(ctx: _Ctx):
 
 
 RULES = (r_unsupported, r_chat, r_email, r_settings_page, r_device, r_followup, r_browser, r_website,
-         r_simple, r_paths, r_files, r_apps, r_clarify)
+         r_simple, r_paths, r_files, r_window, r_apps, r_clarify)
 
 
 def _match_ctx(ctx: _Ctx) -> MatchResult:

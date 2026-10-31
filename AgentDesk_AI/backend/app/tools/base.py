@@ -36,6 +36,9 @@ class Verification(BaseModel):
     passed: bool
     checks: list[str] = []
     details: str | None = None
+    # What was observed on the real system (sizes, hashes, PIDs, window titles,
+    # read-back values). A pass without evidence is treated as a failure.
+    evidence: dict[str, Any] = {}
 
 
 @dataclass
@@ -67,6 +70,8 @@ class BaseTool(ABC):
     description: str = ""
     risk_level: RiskLevel = RiskLevel.LOW
     args_schema: Type[BaseModel] = BaseModel
+    # Seconds before the worker running this tool is killed; None = settings default.
+    timeout_seconds: int | None = None
 
     def __init__(self, ctx: ToolContext | None = None) -> None:
         self.ctx = ctx or ToolContext.from_settings()
@@ -87,9 +92,10 @@ class BaseTool(ABC):
         """Perform the action. Must be honest: report real outcomes only."""
 
     def verify(self, args: BaseModel, result: ToolResult) -> Verification:
-        if not result.success:
-            return Verification(passed=False, checks=[], details="tool reported failure")
-        return Verification(passed=True, checks=["tool reported success"])
+        """Check the real system state after execute(). Every tool must override this:
+        the tool's own report is never evidence."""
+        return Verification(passed=False, checks=["no verifier"],
+                            details=f"{self.name} has no verifier; success cannot be confirmed.")
 
     def describe(self) -> dict[str, Any]:
         return {
