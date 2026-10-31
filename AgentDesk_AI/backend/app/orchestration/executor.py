@@ -98,6 +98,12 @@ def _get_task(db: Session, task_id: str) -> Task:
     return task
 
 
+def _strict_policy(db: Session) -> bool:
+    from ..preferences import get_preferences
+
+    return get_preferences(db).risk_policy == "strict"
+
+
 def _risk_for_task_action(tool, parsed_args, command: str) -> RiskLevel:
     if isinstance(tool, DesktopControlTool):
         return tool.risk_for_user_command(parsed_args, command)
@@ -192,7 +198,10 @@ def plan_task(db: Session, task: Task, registry: ToolRegistry, settings: Setting
         tool = registry.get(action.tool)
         parsed = tool.validate_args(action.args)
         risk = _risk_for_task_action(tool, parsed, task.command)
-        status = ActionStatus.APPROVED if auto_approve else (ActionStatus.PENDING if needs_approval(risk) else ActionStatus.APPROVED)
+        strict = _strict_policy(db)  # user setting: approve every action (never looser than the server)
+        status = ActionStatus.PENDING if needs_approval(risk) or strict else ActionStatus.APPROVED
+        if auto_approve and not strict:
+            status = ActionStatus.APPROVED
         any_pending = any_pending or status == ActionStatus.PENDING
         db.add(
             Action(
@@ -612,6 +621,10 @@ def start_task(
             if task.status == TaskStatus.APPROVED:
                 return run_task(db, task.id, registry, settings)
             return task
+        from ..preferences import get_preferences
+
+        if get_preferences(db).provider_mode == "local_only":
+            return plan_task(db, task, registry, settings, preplanned=Plan(note="Local-only mode is on (Settings): cloud AI is not used. Say the app/file name and the action, or switch Provider to Auto."))
         if settings.ai_cloud_mode != "automatic" and not command.strip().casefold().startswith(("ai:", "research ", "explain ")):
             return plan_task(db, task, registry, settings, preplanned=Plan(note="Local agent ko yeh command clear nahi hui. App/file ka naam aur operation batayein. Detailed AI reasoning ke liye 'AI:' ya 'research' se request shuru karein."))
     try:
@@ -797,8 +810,9 @@ def _agent_loop(db, task, registry, provider, settings, specs, state) -> Task:
                 continue
             risk = _risk_for_task_action(tool, parsed, task.command)
             seq = len(task.actions)
-            auto_approved = state.get("auto_approve", False)
-            if needs_approval(risk) and not auto_approved:
+            strict = _strict_policy(db)
+            auto_approved = state.get("auto_approve", False) and not strict
+            if (needs_approval(risk) or strict) and not auto_approved:
                 db.add(
                     Action(
                         task_id=task.id,

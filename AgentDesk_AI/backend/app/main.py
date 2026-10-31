@@ -21,7 +21,8 @@ from . import usage
 from .logging_setup import log_event, setup_logging
 from .security.token import get_api_token
 from .database import get_db, init_db, SessionLocal
-from .models import Task, TaskStatus, ActionStatus, utcnow
+from .models import MemoryItem, Task, TaskStatus, ActionStatus, utcnow
+from . import preferences as prefs
 from .orchestration import executor
 from .schemas import (
     ActionOut,
@@ -94,7 +95,7 @@ app.add_middleware(
 
 _LOCAL_HOSTS = {"127.0.0.1", "localhost", "[::1]", "testserver"}
 _SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
-_PROTECTED_PREFIXES = ("/tasks", "/config", "/tools", "/usage", "/browser/connect-token")
+_PROTECTED_PREFIXES = ("/tasks", "/config", "/tools", "/usage", "/browser/connect-token", "/preferences", "/memory")
 
 
 @app.middleware("http")
@@ -143,6 +144,61 @@ async def quota_exceeded_handler(request: Request, exc: usage.QuotaExceeded):
 def get_usage(db: Session = Depends(get_db)) -> dict:
     """Plan, limits and local usage counters. Contains no command text."""
     return usage.snapshot(db, get_settings())
+
+
+# ------------------------------------------------------------------ preferences & memory
+@app.get("/preferences")
+def get_preferences_route(db: Session = Depends(get_db)) -> dict:
+    return prefs.get_preferences(db).model_dump()
+
+
+@app.put("/preferences")
+def put_preferences(payload: prefs.PreferencesUpdate, db: Session = Depends(get_db)) -> dict:
+    updated = prefs.update_preferences(db, payload)
+    log_event("preferences_updated", detail=",".join(sorted(payload.model_dump(exclude_none=True))))
+    return updated.model_dump()
+
+
+@app.get("/memory")
+def list_memory(db: Session = Depends(get_db)) -> dict:
+    current = prefs.get_preferences(db)
+    items = db.query(MemoryItem).order_by(MemoryItem.updated_at.desc()).all()
+    return {"enabled": current.memory_enabled, "items": [prefs.memory_out(i) for i in items],
+            "recent_turns": prefs.recent_turns(db, current), "conversation_cutoff": current.conversation_cutoff}
+
+
+@app.post("/memory", status_code=201)
+def add_memory(payload: prefs.MemoryIn, db: Session = Depends(get_db)) -> dict:
+    item = MemoryItem(kind=payload.kind, text=payload.text)
+    db.add(item)
+    db.commit()
+    return prefs.memory_out(item)
+
+
+@app.put("/memory/{item_id}")
+def edit_memory(item_id: str, payload: prefs.MemoryIn, db: Session = Depends(get_db)) -> dict:
+    item = db.get(MemoryItem, item_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Memory item not found")
+    item.kind, item.text = payload.kind, payload.text
+    db.commit()
+    return prefs.memory_out(item)
+
+
+@app.delete("/memory/{item_id}")
+def delete_memory(item_id: str, db: Session = Depends(get_db)) -> dict:
+    item = db.get(MemoryItem, item_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Memory item not found")
+    db.delete(item)
+    db.commit()
+    return {"deleted": item_id}
+
+
+@app.post("/memory/forget-conversation")
+def forget_conversation(db: Session = Depends(get_db)) -> dict:
+    """Earlier commands stay in task history but are no longer used as conversation memory."""
+    return prefs.forget_conversation(db).model_dump()
 
 
 @app.get("/health", response_model=HealthOut)

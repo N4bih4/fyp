@@ -44,7 +44,7 @@ def get_db():
 
 # Bump when the schema changes and add a step to _migrate(). Stored in SQLite's
 # PRAGMA user_version so an older database is never silently treated as current.
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6  # v6: preferences, memory_items
 
 
 def init_db() -> None:

@@ -118,3 +118,27 @@ def _bind_action(mapper, connection, target: Action) -> None:
     target.binding_hash = binding_for(target)
     if target.status == ActionStatus.APPROVED and target.approved_at is None:
         target.approved_at = utcnow()
+
+
+class Preference(Base):
+    """One user preference (persona, listen mode, provider mode, risk policy). Never secrets."""
+
+    __tablename__ = "preferences"
+
+    key = Column(String(64), primary_key=True)
+    value_json = Column(Text, nullable=False)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
+
+
+class MemoryItem(Base):
+    """Something the user asked AgentDesk to remember. Shown and editable on the Memory page.
+    Planner context treats it as data, never as instructions."""
+
+    __tablename__ = "memory_items"
+
+    id = Column(String(36), primary_key=True, default=_uuid)
+    kind = Column(String(16), nullable=False, default="fact")
+    text = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
+
