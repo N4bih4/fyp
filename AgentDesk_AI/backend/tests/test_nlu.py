@@ -344,3 +344,22 @@ def test_window_control_routing(registry, text, target, action):
     step_ = result.plan.steps[0]
     assert step_.args == {"target_window": target, "steps": [{"action": action}]}
     assert validate_plan(result.plan, registry, check_paths=False).max_risk == RiskLevel.LOW
+
+
+@pytest.mark.parametrize("text,tool,args", [
+    ("next song", "media_control", {"action": "next"}), ("agla gaana chalao", "media_control", {"action": "next"}),
+    ("gaana rok do", "media_control", {"action": "pause"}), ("अगला गाना", "media_control", {"action": "next"}),
+    ("ahmed ko whatsapp pe message bhejo ke main late hoon", "whatsapp_open_chat", {"contact": "ahmed", "text": "main late hoon"}),
+    ("send a whatsapp message to +92 300 1234567 saying hi", "whatsapp_open_chat", {"phone": "+923001234567", "text": "hi"}),
+    ("install package VideoLAN.VLC", "winget_install", {"package_id": "VideoLAN.VLC"}),
+])
+def test_phase18_routes(registry, text, tool, args):
+    result = match(text)
+    assert result.confident and result.plan.steps[0].tool == tool and result.plan.steps[0].args == args
+    assert validate_plan(result.plan, registry, check_paths=False).ok
+
+
+def test_install_needs_exact_id_and_stays_high_risk(registry):
+    assert match("install zoom").plan.steps[0].tool == "application_package"
+    plan = match("install package VideoLAN.VLC").plan
+    assert validate_plan(plan, registry, check_paths=False).max_risk == RiskLevel.HIGH

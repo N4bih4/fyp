@@ -2247,10 +2247,14 @@
    "lang": "en",
    "split": "dev",
    "command": "send a whatsapp message to Ahmed saying I'm late",
-   "expected_intent": "unsupported",
-   "predicted_intent": "unsupported",
-   "expected_tools": [],
-   "predicted_tools": [],
+   "expected_intent": "whatsapp_draft",
+   "predicted_intent": "whatsapp_draft",
+   "expected_tools": [
+    "whatsapp_open_chat"
+   ],
+   "predicted_tools": [
+    "whatsapp_open_chat"
+   ],
    "intent_tool": true,
    "exact_args": true,
    "invented": 0,
@@ -2260,7 +2264,7 @@
    "errors": [],
    "source": "local",
    "confidence": 0.95,
-   "rule": "unsupported",
+   "rule": "whatsapp",
    "deferred": false
   },
   {
@@ -4453,10 +4457,14 @@
    "lang": "roman_ur",
    "split": "dev",
    "command": "ahmed ko whatsapp pe message bhejo ke main late hoon",
-   "expected_intent": "unsupported",
-   "predicted_intent": "unsupported",
-   "expected_tools": [],
-   "predicted_tools": [],
+   "expected_intent": "whatsapp_draft",
+   "predicted_intent": "whatsapp_draft",
+   "expected_tools": [
+    "whatsapp_open_chat"
+   ],
+   "predicted_tools": [
+    "whatsapp_open_chat"
+   ],
    "intent_tool": true,
    "exact_args": true,
    "invented": 0,
@@ -4466,7 +4474,7 @@
    "errors": [],
    "source": "local",
    "confidence": 0.95,
-   "rule": "unsupported",
+   "rule": "whatsapp",
    "deferred": false
   },
   {
@@ -5887,10 +5895,14 @@
    "lang": "ur",
    "split": "dev",
    "command": "احمد کو واٹس ایپ پر پیغام بھیجو",
-   "expected_intent": "unsupported",
-   "predicted_intent": "unsupported",
-   "expected_tools": [],
-   "predicted_tools": [],
+   "expected_intent": "whatsapp_draft",
+   "predicted_intent": "whatsapp_draft",
+   "expected_tools": [
+    "whatsapp_open_chat"
+   ],
+   "predicted_tools": [
+    "whatsapp_open_chat"
+   ],
    "intent_tool": true,
    "exact_args": true,
    "invented": 0,
@@ -5900,7 +5912,7 @@
    "errors": [],
    "source": "local",
    "confidence": 0.95,
-   "rule": "unsupported",
+   "rule": "whatsapp",
    "deferred": false
   },
   {
@@ -7365,10 +7377,14 @@
    "lang": "hi",
    "split": "dev",
    "command": "अहमद को व्हाट्सएप पर मैसेज भेजो",
-   "expected_intent": "unsupported",
-   "predicted_intent": "unsupported",
-   "expected_tools": [],
-   "predicted_tools": [],
+   "expected_intent": "whatsapp_draft",
+   "predicted_intent": "whatsapp_draft",
+   "expected_tools": [
+    "whatsapp_open_chat"
+   ],
+   "predicted_tools": [
+    "whatsapp_open_chat"
+   ],
    "intent_tool": true,
    "exact_args": true,
    "invented": 0,
@@ -7378,7 +7394,7 @@
    "errors": [],
    "source": "local",
    "confidence": 0.95,
-   "rule": "unsupported",
+   "rule": "whatsapp",
    "deferred": false
   },
   {

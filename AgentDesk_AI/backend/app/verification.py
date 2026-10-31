@@ -171,6 +171,10 @@ class SystemProbe:
                 for child in win.descendants(control_type="Button")[:10]:
                     if child.window_text():
                         texts.append(child.window_text())
+                for child in win.descendants(control_type="Edit")[:10] + win.descendants(control_type="Document")[:5]:
+                    value = child.window_text() or getattr(child, "get_value", lambda: "")()
+                    if value:
+                        texts.append(str(value))
             except Exception:  # noqa: BLE001 - a vanished window has no text
                 continue
         return texts
@@ -209,6 +213,28 @@ class SystemProbe:
     def wait_for_window(self, timeout: float | None = None, **criteria) -> tuple[bool, list[WindowInfo]]:
         ok, value = wait_until(lambda: self.find_windows(**criteria), timeout or self.poll_timeout)
         return ok, value if isinstance(value, list) else []
+
+    def media_session(self) -> dict[str, Any] | None:
+        """Current Windows media session (SMTC): app, title, artist, status. None if no app reports one."""
+        self._require_windows()
+        import asyncio
+
+        try:
+            from winsdk.windows.media.control import GlobalSystemMediaTransportControlsSessionManager as Manager
+        except ImportError as exc:
+            raise ProbeUnavailable("winsdk media control is not installed.") from exc
+
+        async def read():
+            manager = await Manager.request_async()
+            session = manager.get_current_session()
+            if session is None:
+                return None
+            props = await session.try_get_media_properties_async()
+            status = int(session.get_playback_info().playback_status)
+            names = {0: "closed", 1: "opened", 2: "changing", 3: "stopped", 4: "playing", 5: "paused"}
+            return {"app": session.source_app_user_model_id, "title": props.title or "", "artist": props.artist or "",
+                    "status": names.get(status, str(status))}
+        return asyncio.run(read())
 
     def theme(self) -> dict[str, str]:
         self._require_windows()

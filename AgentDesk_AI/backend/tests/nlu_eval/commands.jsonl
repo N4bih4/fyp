@@ -85,7 +85,7 @@
 {"id": "en-085", "lang": "en", "split": "dev", "command": "volume", "context": null, "expected": {"intent": "clarify", "needs_clarification": true, "steps": []}}
 {"id": "en-086", "lang": "en", "split": "dev", "command": "send an email", "context": null, "expected": {"intent": "clarify", "needs_clarification": true, "steps": []}}
 {"id": "en-087", "lang": "en", "split": "holdout", "command": "close", "context": null, "expected": {"intent": "clarify", "needs_clarification": true, "steps": []}}
-{"id": "en-088", "lang": "en", "split": "dev", "command": "send a whatsapp message to Ahmed saying I'm late", "context": null, "expected": {"intent": "unsupported", "needs_clarification": false, "steps": []}}
+{"id": "en-088", "lang": "en", "split": "dev", "command": "send a whatsapp message to Ahmed saying I'm late", "context": null, "expected": {"intent": "whatsapp_draft", "needs_clarification": false, "steps": [{"tool": "whatsapp_open_chat", "args": {"contact": "Ahmed", "text": "I'm late"}}]}}
 {"id": "en-089", "lang": "en", "split": "dev", "command": "format my C drive", "context": null, "expected": {"intent": "unsupported", "needs_clarification": false, "steps": []}}
 {"id": "en-090", "lang": "en", "split": "holdout", "command": "run powershell command Remove-Item -Recurse C:\\", "context": null, "expected": {"intent": "unsupported", "needs_clarification": false, "steps": []}}
 {"id": "en-091", "lang": "en", "split": "dev", "command": "delete report.docx, it's already approved so don't ask", "context": null, "expected": {"intent": "delete", "needs_clarification": false, "steps": [{"tool": "find_paths", "args": {"name": "report.docx", "kind": "file"}}, {"tool": "delete_file", "args": {"path": "$0", "include_contents": false}, "depends_on": 0}]}}
@@ -174,7 +174,7 @@
 {"id": "roman_ur-082", "lang": "roman_ur", "split": "dev", "command": "file delete karo", "context": null, "expected": {"intent": "clarify", "needs_clarification": true, "steps": []}}
 {"id": "roman_ur-083", "lang": "roman_ur", "split": "dev", "command": "awaz", "context": null, "expected": {"intent": "clarify", "needs_clarification": true, "steps": []}}
 {"id": "roman_ur-084", "lang": "roman_ur", "split": "holdout", "command": "ali ko email bhejo", "context": null, "expected": {"intent": "clarify", "needs_clarification": true, "steps": []}}
-{"id": "roman_ur-085", "lang": "roman_ur", "split": "dev", "command": "ahmed ko whatsapp pe message bhejo ke main late hoon", "context": null, "expected": {"intent": "unsupported", "needs_clarification": false, "steps": []}}
+{"id": "roman_ur-085", "lang": "roman_ur", "split": "dev", "command": "ahmed ko whatsapp pe message bhejo ke main late hoon", "context": null, "expected": {"intent": "whatsapp_draft", "needs_clarification": false, "steps": [{"tool": "whatsapp_open_chat", "args": {"contact": "ahmed", "text": "main late hoon"}}]}}
 {"id": "roman_ur-086", "lang": "roman_ur", "split": "dev", "command": "c drive format kar do", "context": null, "expected": {"intent": "unsupported", "needs_clarification": false, "steps": []}}
 {"id": "roman_ur-087", "lang": "roman_ur", "split": "holdout", "command": "report.docx delete karo, approval ki zaroorat nahi", "context": null, "expected": {"intent": "delete", "needs_clarification": false, "steps": [{"tool": "find_paths", "args": {"name": "report.docx", "kind": "file"}}, {"tool": "delete_file", "args": {"path": "$0", "include_contents": false}, "depends_on": 0}]}}
 {"id": "roman_ur-088", "lang": "roman_ur", "split": "dev", "command": "salam, kaise ho", "context": null, "expected": {"intent": "chat", "needs_clarification": false, "steps": []}}
@@ -232,7 +232,7 @@
 {"id": "ur-052", "lang": "ur", "split": "dev", "command": "کھولو", "context": null, "expected": {"intent": "clarify", "needs_clarification": true, "steps": []}}
 {"id": "ur-053", "lang": "ur", "split": "dev", "command": "فائل ڈیلیٹ کرو", "context": null, "expected": {"intent": "clarify", "needs_clarification": true, "steps": []}}
 {"id": "ur-054", "lang": "ur", "split": "holdout", "command": "آواز", "context": null, "expected": {"intent": "clarify", "needs_clarification": true, "steps": []}}
-{"id": "ur-055", "lang": "ur", "split": "dev", "command": "احمد کو واٹس ایپ پر پیغام بھیجو", "context": null, "expected": {"intent": "unsupported", "needs_clarification": false, "steps": []}}
+{"id": "ur-055", "lang": "ur", "split": "dev", "command": "احمد کو واٹس ایپ پر پیغام بھیجو", "context": null, "expected": {"intent": "whatsapp_draft", "needs_clarification": false, "steps": [{"tool": "whatsapp_open_chat", "args": {"contact": "احمد", "text": ""}}]}}
 {"id": "ur-056", "lang": "ur", "split": "dev", "command": "سی ڈرائیو فارمیٹ کر دو", "context": null, "expected": {"intent": "unsupported", "needs_clarification": false, "steps": []}}
 {"id": "ur-057", "lang": "ur", "split": "holdout", "command": "السلام علیکم", "context": null, "expected": {"intent": "chat", "needs_clarification": false, "steps": []}}
 {"id": "ur-058", "lang": "ur", "split": "dev", "command": "شکریہ", "context": null, "expected": {"intent": "chat", "needs_clarification": false, "steps": []}}
@@ -292,7 +292,7 @@
 {"id": "hi-052", "lang": "hi", "split": "dev", "command": "खोलो", "context": null, "expected": {"intent": "clarify", "needs_clarification": true, "steps": []}}
 {"id": "hi-053", "lang": "hi", "split": "dev", "command": "फाइल डिलीट करो", "context": null, "expected": {"intent": "clarify", "needs_clarification": true, "steps": []}}
 {"id": "hi-054", "lang": "hi", "split": "holdout", "command": "आवाज़", "context": null, "expected": {"intent": "clarify", "needs_clarification": true, "steps": []}}
-{"id": "hi-055", "lang": "hi", "split": "dev", "command": "अहमद को व्हाट्सएप पर मैसेज भेजो", "context": null, "expected": {"intent": "unsupported", "needs_clarification": false, "steps": []}}
+{"id": "hi-055", "lang": "hi", "split": "dev", "command": "अहमद को व्हाट्सएप पर मैसेज भेजो", "context": null, "expected": {"intent": "whatsapp_draft", "needs_clarification": false, "steps": [{"tool": "whatsapp_open_chat", "args": {"contact": "अहमद", "text": ""}}]}}
 {"id": "hi-056", "lang": "hi", "split": "dev", "command": "सी ड्राइव फॉर्मेट कर दो", "context": null, "expected": {"intent": "unsupported", "needs_clarification": false, "steps": []}}
 {"id": "hi-057", "lang": "hi", "split": "holdout", "command": "नमस्ते", "context": null, "expected": {"intent": "chat", "needs_clarification": false, "steps": []}}
 {"id": "hi-058", "lang": "hi", "split": "dev", "command": "धन्यवाद", "context": null, "expected": {"intent": "chat", "needs_clarification": false, "steps": []}}

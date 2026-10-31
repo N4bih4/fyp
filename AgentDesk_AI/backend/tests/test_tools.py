@@ -60,6 +60,7 @@ def test_registry_lists_all_tools(ctx: ToolContext):
         "list_folder",
         "list_trash",
         "manage_system_setting",
+        "media_control",
         "move_file",
         "open_application",
         "open_file",
@@ -72,6 +73,8 @@ def test_registry_lists_all_tools(ctx: ToolContext):
         "restore_file",
         "take_screenshot",
         "web_search",
+        "whatsapp_open_chat",
+        "winget_install",
         "write_text_file",
     ]
 

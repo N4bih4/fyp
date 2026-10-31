@@ -145,10 +145,51 @@ def _penalty(ctx: _Ctx, explained: set[str]) -> float:
 
 
 # ------------------------------------------------------------------ rules
+_WHATSAPP = (
+    r"^send (?:a |an )?whatsapp (?:message|msg) to (?P<who>[^,]+?)(?: (?:saying|that|with the text|:) (?P<text>.+))?$",
+    r"^(?P<who>.+?) ko whatsapp (?:pe|par|per) (?:message|msg|ye message) (?:bhejo|bhej do|karo|kar do|likho)(?: (?:ke|keh|ki|kay) (?P<text>.+))?$",
+    r"^(?P<who>.+?) کو واٹس ایپ (?:پر|پہ) (?:پیغام|میسج) (?:بھیجو|بھیج دو|کرو)(?: (?:کہ|کے) (?P<text>.+))?$",
+    r"^(?P<who>.+?) को व्हाट्सएप (?:पर|पे) (?:मैसेज|संदेश) (?:भेजो|भेज दो|करो)(?: (?:कि|के) (?P<text>.+))?$",
+)
+
+
+def r_whatsapp(ctx: _Ctx):
+    """WhatsApp messages are pre-filled in WhatsApp Desktop; the user presses Send (rule 8)."""
+    if "whatsapp" not in ctx.prefixed("SITE:") or not ctx.has("SEND", "MESSAGE"):
+        return None
+    text = ctx.norm.text.strip()
+    for pattern in _WHATSAPP:
+        m = re.match(pattern, text, re.I)
+        if m:
+            who = m.group("who").strip()
+            message = (m.group("text") or "").strip()
+            target = {"phone": who.replace(" ", "")} if re.fullmatch(r"\+?[\d\s-]{8,20}", who) else {"contact": who}
+            return _plan(ctx, "whatsapp_draft", [step("whatsapp_open_chat", text=message, **target)], BASE, "whatsapp")
+    return _special(ctx, "clarify", "clarify_target", "whatsapp.no_contact")
+
+
+def r_media(ctx: _Ctx):
+    """Music/media keys: next/previous track, play/pause music. YouTube and videos stay with the browser rules."""
+    if ctx.prefixed("SITE:") or ctx.has("VIDEO", "TAB"):
+        return None
+    if not ctx.has("MUSIC", "NEXT", "PREVIOUS"):
+        return None
+    if ctx.has("NEXT"):
+        action = "next"
+    elif ctx.has("PREVIOUS"):
+        action = "previous"
+    elif ctx.has("PAUSE", "CLOSE", "OFF"):
+        action = "pause"
+    elif ctx.has("RESUME", "PLAY", "RUN", "ON", "OPEN"):
+        action = "play"
+    else:
+        return _special(ctx, "clarify", "clarify_value", "media.no_action", x="music")
+    explained = {"MUSIC", "NEXT", "PREVIOUS", "PAUSE", "CLOSE", "OFF", "RESUME", "PLAY", "RUN", "ON", "OPEN", "WALA"}
+    return _plan(ctx, "media_control", [step("media_control", action=action)], BASE - _penalty(ctx, explained), "media")
+
+
 def r_unsupported(ctx: _Ctx):
-    whatsapp_msg = (ctx.has("MESSAGE") or "whatsapp" in ctx.prefixed("SITE:")) and ctx.has("SEND", "MESSAGE") \
-        and ctx.has("SEND")
-    if whatsapp_msg or (ctx.has("FORMAT") and ctx.has("DRIVE")) or \
+    if (ctx.has("FORMAT") and ctx.has("DRIVE")) or \
             (ctx.has("COMMAND") and ("powershell" in ctx.prefixed("APP:") or "run" in ctx.set)):
         return _special(ctx, "unsupported", "unsupported", "unsupported")
     return None
@@ -362,6 +403,9 @@ def r_simple(ctx: _Ctx):
         return _plan(ctx, "screenshot", [step("take_screenshot")], BASE - _penalty(ctx, {"SCREENSHOT", "SCREEN"}), "screenshot")
     if ctx.has("TRASH") and not ctx.has("DELETE", "MOVE", "COPY"):
         return _plan(ctx, "list_trash", [step("list_trash")], BASE - _penalty(ctx, {"TRASH", "SHOW", "WHAT", "GET", "IN"}), "trash")
+    m = re.match(r"^install (?:package|app) ([A-Za-z0-9][A-Za-z0-9._+-]+\.[A-Za-z0-9._+-]+)$", ctx.norm.text.strip(), re.I)
+    if m:  # exact WinGet ID only; anything vaguer is searched first
+        return _plan(ctx, "app_install", [step("winget_install", package_id=m.group(1))], BASE, "install.exact")
     if ctx.has("DOWNLOAD", "INSTALL"):
         url = ctx.url()
         if url and url.startswith(("http://", "https://")):
@@ -531,7 +575,7 @@ def r_clarify(ctx: _Ctx):
     return None
 
 
-RULES = (r_unsupported, r_chat, r_email, r_settings_page, r_device, r_followup, r_browser, r_website,
+RULES = (r_whatsapp, r_unsupported, r_chat, r_email, r_settings_page, r_device, r_followup, r_media, r_browser, r_website,
          r_simple, r_paths, r_files, r_window, r_apps, r_clarify)
 
 
@@ -593,7 +637,7 @@ def match(text: str, memory: ConversationMemory | None = None) -> MatchResult:
     memory = memory or ConversationMemory()
     norm = normalize(text)
     whole = _Ctx(norm, norm.tokens, memory)
-    for rule in (r_unsupported, r_chat, r_email):
+    for rule in (r_whatsapp, r_unsupported, r_chat, r_email):
         result = rule(whole)
         if result is not None:
             return result

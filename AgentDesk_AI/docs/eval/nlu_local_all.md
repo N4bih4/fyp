@@ -1,6 +1,6 @@
 # NLU evaluation — mode `local`, split `all`
 
-Date: 2026-10-31 (UTC). Dataset: `backend/tests/nlu_eval/commands.jsonl` (300 items). Platform: Linux / Python 3.13.18. Run time: 0.1 s.
+Date: 2026-10-31 (UTC). Dataset: `backend/tests/nlu_eval/commands.jsonl` (300 items). Platform: Linux / Python 3.13.18. Run time: 0.0 s.
 
 Gate G3 thresholds: intent+tool >= 90%, exact args >= 85%, 0 invented tools, 0 approval bypasses.
 

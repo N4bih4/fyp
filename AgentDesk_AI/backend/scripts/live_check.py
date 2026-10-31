@@ -51,7 +51,7 @@ from app.tools.registry import ToolRegistry  # noqa: E402
 PASS, FAIL, BLOCKED, SKIP = "PASS", "FAIL", "BLOCKED", "SKIP"
 IS_WINDOWS = platform.system() == "Windows"
 PROBE_TIMEOUT_SECONDS = 45
-CATEGORIES = ("sandbox", "read", "gui", "network")
+CATEGORIES = ("sandbox", "read", "gui", "network", "media", "messaging", "install")
 
 
 @dataclass
@@ -329,6 +329,38 @@ def p_download(env: Env) -> Outcome:
     return judge(r, v, "Example Domain" in text, f"saved {len(text)} chars containing 'Example Domain'")
 
 
+# ---------------------------------------------------------------- opt-in probes (Phase 18)
+def p_media(env: Env) -> Outcome:
+    """Toggle play/pause twice, so playback ends as it started. Needs a player that reports to Windows."""
+    first, v1 = env.run("media_control", {"action": "play_pause"})
+    if not first.success:
+        return Outcome(BLOCKED if not IS_WINDOWS else FAIL, _short(first.error))
+    second, v2 = env.run("media_control", {"action": "play_pause"})
+    ok = v1.passed and v2.passed
+    return judge(first, v1, ok, f"toggled and restored: {_short(v1.evidence.get('after'), 90)} -> "
+                                f"{_short(v2.evidence.get('after'), 90)}")
+
+
+def p_whatsapp(env: Env) -> Outcome:
+    phone = env.state.get("whatsapp_phone")
+    if not phone:
+        return Outcome(SKIP, "pass --whatsapp-phone +<your own number> to pre-fill a test message (never sent)")
+    r, v = env.run("whatsapp_open_chat", {"phone": phone, "text": "AgentDesk live check - not sent"})
+    if not r.success and not IS_WINDOWS:
+        return Outcome(BLOCKED, f"not Windows: {_short(r.error, 90)}")
+    return judge(r, v, bool(r.output.get("sent") is False), f"chat opened for {r.output.get('to')}, sent=False")
+
+
+def p_install(env: Env) -> Outcome:
+    package = env.state.get("install_id")
+    if not package:
+        return Outcome(SKIP, "pass --install-id <exact WinGet ID> to install one package (high risk, your choice)")
+    r, v = env.run("winget_install", {"package_id": package})
+    if not r.success and not IS_WINDOWS:
+        return Outcome(BLOCKED, f"not Windows: {_short(r.error, 90)}")
+    return judge(r, v, bool(v.evidence.get("winget_list_tail")), f"winget list shows {package}")
+
+
 PROBES: list[Probe] = [
     Probe("create_folder", "sandbox", p_create_folder),
     Probe("write_text_file", "sandbox", p_write_text_file),
@@ -359,6 +391,9 @@ PROBES: list[Probe] = [
     Probe("open_windows_settings", "gui", p_open_settings, windows_only=True),
     Probe("take_screenshot", "gui", p_take_screenshot),
     Probe("download_web_content", "network", p_download),
+    Probe("media_control", "media", p_media),
+    Probe("whatsapp_open_chat", "messaging", p_whatsapp),
+    Probe("winget_install", "install", p_install),
 ]
 
 
@@ -378,14 +413,14 @@ def _with_timeout(fn: Callable[[], Outcome], seconds: float) -> Outcome:
 
 
 def run_checks(enabled: set[str], only: set[str] | None = None, sandbox: Path | None = None,
-               timeout: float = PROBE_TIMEOUT_SECONDS) -> list[dict[str, str]]:
+               timeout: float = PROBE_TIMEOUT_SECONDS, options: dict | None = None) -> list[dict[str, str]]:
     own_sandbox = sandbox is None
     sandbox = (sandbox or Path(tempfile.mkdtemp(prefix="agentdesk_live_"))).resolve()
     ctx = ToolContext(allowed_directories=[sandbox], approved_applications=["notepad"],
                       test_dir=sandbox / "testdir", discovery_directories=[sandbox],
                       isolate_system_controls=True)
     registry = ToolRegistry(ctx)
-    env = Env(sandbox=sandbox, registry=registry)
+    env = Env(sandbox=sandbox, registry=registry, state=dict(options or {}))
     by_tool = {p.tool: p for p in PROBES}
     rows: list[dict[str, str]] = []
     try:
@@ -416,6 +451,20 @@ def run_checks(enabled: set[str], only: set[str] | None = None, sandbox: Path | 
     return rows
 
 
+def record(rows: list[dict[str, str]], enabled: set[str]) -> Path:
+    """Save this run (no phone numbers or file contents; evidence strings only) to docs/live_runs/."""
+    from datetime import datetime, timezone
+
+    folder = BACKEND_DIR.parent / "docs" / "live_runs"
+    folder.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H%M%SZ")
+    target = folder / f"{stamp}-live_check-{platform.system().lower()}.json"
+    target.write_text(json.dumps({"recorded_at": stamp, "platform": platform.platform(), "python": platform.python_version(),
+                                  "categories": sorted(enabled), "rows": rows}, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(f"recorded: {target}")
+    return target
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--gui", action="store_true", help="also run visible launches")
@@ -424,13 +473,23 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--only", nargs="*", help="run only these tool names")
     parser.add_argument("--json", action="store_true", help="print JSON instead of a table")
     parser.add_argument("--keep", action="store_true", help="keep the sandbox folder for inspection")
+    parser.add_argument("--media", action="store_true", help="toggle play/pause twice on the current player")
+    parser.add_argument("--whatsapp-phone", help="your own number (+country code): pre-fills a test message, never sent")
+    parser.add_argument("--install-id", help="exact WinGet ID to really install (high risk; e.g. a small tool you want)")
+    parser.add_argument("--record", action="store_true", help="save the run with evidence to docs/live_runs/")
     args = parser.parse_args(argv)
 
     enabled = {"sandbox"} | ({"read"} if not args.no_read else set())
     enabled |= {"gui"} if args.gui else set()
     enabled |= {"network"} if args.network else set()
+    enabled |= {"media"} if args.media else set()
+    enabled |= {"messaging"} if args.whatsapp_phone else set()
+    enabled |= {"install"} if args.install_id else set()
     sandbox = Path(tempfile.mkdtemp(prefix="agentdesk_live_")) if args.keep else None
-    rows = run_checks(enabled, set(args.only) if args.only else None, sandbox)
+    options = {"whatsapp_phone": args.whatsapp_phone, "install_id": args.install_id}
+    rows = run_checks(enabled, set(args.only) if args.only else None, sandbox, options=options)
+    if args.record:
+        record(rows, enabled)
 
     if args.json:
         print(json.dumps(rows, indent=2, ensure_ascii=False))

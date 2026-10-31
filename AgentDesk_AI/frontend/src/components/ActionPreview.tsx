@@ -12,7 +12,15 @@ const TARGET_KEYS: [string, string][] = [
   ['path', 'Location'], ['source', 'From'], ['destination', 'To'], ['folder_path', 'Folder'], ['zip_path', 'Archive'],
   ['url', 'Website'], ['app_name', 'App'], ['target_window', 'Window'], ['query', 'Search'], ['to', 'Email to'],
   ['new_name', 'New name'], ['setting', 'Setting'], ['action', 'Action'], ['value', 'Value'], ['page', 'Settings page'],
+  ['package_id', 'Package'], ['source', 'Package source'], ['contact', 'WhatsApp contact'], ['phone', 'WhatsApp number'],
+  ['text', 'Message'], ['subject', 'Subject'],
 ];
+
+const TOOL_NOTES: Record<string, string> = {
+  winget_install: 'Installs this exact package and accepts its license agreement. Windows may ask for administrator permission.',
+  whatsapp_open_chat: 'Opens WhatsApp with the message typed in. It is not sent — you press Send.',
+  compose_email: 'Opens an email draft. It is not sent — you press Send.',
+};
 
 /** Human-readable targets of an action: what exactly will be touched. */
 export function actionTargets(action: ActionOut): { label: string; value: string }[] {
@@ -27,6 +35,7 @@ export function actionTargets(action: ActionOut): { label: string; value: string
     out.push({ label: 'Steps', value: (args.steps as { action?: string }[]).map((s) => s.action ?? '?').join(', ') });
   }
   if (args.include_contents === true) out.push({ label: 'Includes', value: 'everything inside the folder' });
+  if (TOOL_NOTES[action.tool_name]) out.push({ label: 'Note', value: TOOL_NOTES[action.tool_name] });
   return out;
 }
 

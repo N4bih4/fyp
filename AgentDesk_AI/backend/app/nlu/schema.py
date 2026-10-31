@@ -25,7 +25,8 @@ from ..tools.base import RiskLevel
 INTENTS: tuple[str, ...] = (
     "system_setting", "settings_page", "open_app", "close_window", "window_control", "open_website", "web_search",
     "play_youtube", "browser_tab", "open_folder", "open_file", "list_folder", "find_files",
-    "create_folder", "copy", "move", "rename", "delete", "restore", "list_trash", "read_file",
+    "create_folder", "copy", "move", "rename", "delete", "restore", "list_trash", "read_file", "media_control",
+    "whatsapp_draft", "app_install",
     "write_file", "edit_file", "compress", "extract", "screenshot", "email_draft", "package_search",
     "download", "multi", "clarify", "unsupported", "chat",
 )

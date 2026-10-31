@@ -17,7 +17,7 @@ import httpx
 from pydantic import BaseModel, Field, field_validator
 
 from . import platform as _platform
-from ..verification import BROWSER_PROCESSES, MAIL_PROCESSES, current, failed_result, verdict, window_check
+from ..verification import BROWSER_PROCESSES, MAIL_PROCESSES, ProbeUnavailable, current, failed_result, verdict, wait_until, window_check
 from .base import BaseTool, RiskLevel, ToolContext, ToolResult, Verification
 
 # Known executables per platform. Windows entries rely on PATH/CreateProcess
@@ -736,6 +736,23 @@ class WebSearchTool(BaseTool):
         return verdict([("browser window shows the search", seen)], {"url": result.output.get("url"), **windows})
 
 
+def _nudge_youtube_playback(video_id: str, wait_seconds: float = 4.0) -> bool:
+    """If the browser extension is connected, press play on the new tab (autoplay is often blocked)."""
+    from ..browser_bridge import bridge
+
+    if not (bridge.clients and bridge.supports("resume")):
+        return False
+    deadline = time.monotonic() + wait_seconds
+    while time.monotonic() < deadline:
+        tabs = bridge.request("inspect").get("tabs", [])
+        match = [t for t in tabs if isinstance(t, dict) and f"v={video_id}" in str(t.get("url", ""))]
+        if match:
+            reply = bridge.request("resume", tab_id=match[0]["id"], expected_url=match[0]["url"])
+            return bool(reply.get("success"))
+        time.sleep(0.5)
+    return False
+
+
 class PlayYouTubeVideoArgs(BaseModel):
     query: str = Field(min_length=2, max_length=300, description="Specific song/video title and useful details")
 
@@ -813,6 +830,7 @@ class PlayYouTubeVideoTool(BaseTool):
             return ToolResult(success=False, error=f"Could not open the selected YouTube video: {exc}")
         if not opened:
             return ToolResult(success=False, error="No browser could open the selected YouTube video")
+        nudged = _nudge_youtube_playback(video_id)
         return ToolResult(
             success=True,
             output={
@@ -822,17 +840,36 @@ class PlayYouTubeVideoTool(BaseTool):
                 "video_selected": True,
                 "opened_window": reused_title,
                 "playback_confirmed": False,
-                "message": "Opened the closest matching video; playback depends on YouTube and browser autoplay settings.",
+                "play_requested_via_extension": nudged,
+                "message": "Opened the closest matching video; playback is checked next.",
             },
         )
 
     def verify(self, args: BaseModel, result: ToolResult) -> Verification:
+        """Search results: the YouTube window is enough. A chosen video: Windows must report it playing."""
         if not result.success:
             return failed_result(result)
-        seen, windows = window_check(title_contains=["youtube"], processes=BROWSER_PROCESSES)
-        return verdict([("browser window shows YouTube", seen)],
-                       {"url": result.output.get("url"), **windows},
-                       details="Playback itself is confirmed only through the browser extension.")
+        if not result.output.get("video_selected"):
+            seen, windows = window_check(title_contains=["youtube"], processes=BROWSER_PROCESSES)
+            return verdict([("browser window shows YouTube results", seen)], {"url": result.output.get("results_url"), **windows})
+        title = str(result.output.get("title") or "")
+        words = [w.casefold() for w in re.findall(r"\w{4,}", title)][:4]
+
+        def playing():
+            state = current().media_session()
+            if state and state["status"] == "playing" and (not words or any(w in state["title"].casefold() for w in words)
+                                                            or "youtube" in state["title"].casefold()):
+                return state
+            return None
+        try:
+            ok, state = wait_until(playing, timeout=2 * current().poll_timeout, interval=0.5)
+        except ProbeUnavailable as exc:
+            seen, windows = window_check(title_contains=["youtube"], processes=BROWSER_PROCESSES)
+            return Verification(passed=False, checks=[f"YouTube window open: {seen}", "playback not readable"],
+                                evidence=windows, details=str(exc))
+        return verdict([("Windows reports the video playing", bool(ok))],
+                       {"url": result.output.get("url"), "media_session": state if ok else None},
+                       details=None if ok else "The video opened but did not start (autoplay may be blocked). Press Play once.")
 
 
 class ComposeEmailArgs(BaseModel):

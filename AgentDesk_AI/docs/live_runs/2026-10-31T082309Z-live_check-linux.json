@@ -1,0 +1,208 @@
+{
+  "recorded_at": "2026-10-31T082309Z",
+  "platform": "Linux-6.18.44-fc-v185-x86_64-with-glibc2.39",
+  "python": "3.13.18",
+  "categories": [
+    "gui",
+    "install",
+    "media",
+    "messaging",
+    "network",
+    "read",
+    "sandbox"
+  ],
+  "rows": [
+    {
+      "tool": "create_folder",
+      "category": "sandbox",
+      "status": "PASS",
+      "evidence": "is_dir(work)=True"
+    },
+    {
+      "tool": "write_text_file",
+      "category": "sandbox",
+      "status": "PASS",
+      "evidence": "disk content == written (27 chars)"
+    },
+    {
+      "tool": "read_text_file",
+      "category": "sandbox",
+      "status": "PASS",
+      "evidence": "returned content == disk content"
+    },
+    {
+      "tool": "edit_text_file",
+      "category": "sandbox",
+      "status": "PASS",
+      "evidence": "disk content now 'AgentDesk live check: edited'"
+    },
+    {
+      "tool": "list_folder",
+      "category": "sandbox",
+      "status": "PASS",
+      "evidence": "note.txt listed"
+    },
+    {
+      "tool": "find_files",
+      "category": "sandbox",
+      "status": "PASS",
+      "evidence": "note.txt found"
+    },
+    {
+      "tool": "find_paths",
+      "category": "sandbox",
+      "status": "PASS",
+      "evidence": "candidates=[\"/tmp/agentdesk_live_4xf7st_e/work\"]"
+    },
+    {
+      "tool": "copy_file",
+      "category": "sandbox",
+      "status": "PASS",
+      "evidence": "source kept, copy has identical bytes"
+    },
+    {
+      "tool": "rename_file",
+      "category": "sandbox",
+      "status": "PASS",
+      "evidence": "copy.txt -> renamed.txt on disk"
+    },
+    {
+      "tool": "move_file",
+      "category": "sandbox",
+      "status": "PASS",
+      "evidence": "file now only in moved/"
+    },
+    {
+      "tool": "compress_folder",
+      "category": "sandbox",
+      "status": "PASS",
+      "evidence": "zip members=['note.txt']"
+    },
+    {
+      "tool": "extract_file",
+      "category": "sandbox",
+      "status": "PASS",
+      "evidence": "extracted note.txt bytes == original"
+    },
+    {
+      "tool": "delete_file",
+      "category": "sandbox",
+      "status": "PASS",
+      "evidence": "gone from disk, trash record present"
+    },
+    {
+      "tool": "list_trash",
+      "category": "sandbox",
+      "status": "PASS",
+      "evidence": "trash ids=['d58d8fbc7bc84c0b861282ae124b03fb']"
+    },
+    {
+      "tool": "restore_file",
+      "category": "sandbox",
+      "status": "PASS",
+      "evidence": "restored to original path with original content"
+    },
+    {
+      "tool": "manage_system_setting",
+      "category": "read",
+      "status": "BLOCKED",
+      "evidence": "not Windows: Could not manage system setting: System brightness, volume, and Bluetooth controls are supported on ..."
+    },
+    {
+      "tool": "control_desktop",
+      "category": "read",
+      "status": "BLOCKED",
+      "evidence": "not Windows: Desktop control dependency is missing. Install backend requirements and restart."
+    },
+    {
+      "tool": "control_browser",
+      "category": "read",
+      "status": "BLOCKED",
+      "evidence": "no extension connected to this process: Browser extension connect nahi hai. Chrome/Edge mein Agent X Browser Bridge load karein."
+    },
+    {
+      "tool": "application_package",
+      "category": "read",
+      "status": "BLOCKED",
+      "evidence": "Application downloads require Windows Package Manager."
+    },
+    {
+      "tool": "open_application",
+      "category": "gui",
+      "status": "BLOCKED",
+      "evidence": "no Windows desktop (Linux): tool error: Application 'notepad' was not found on this system (Linux)."
+    },
+    {
+      "tool": "open_folder",
+      "category": "gui",
+      "status": "BLOCKED",
+      "evidence": "no Windows desktop (Linux): tool error: Could not open folder: [Errno 2] No such file or directory: 'xdg-open'"
+    },
+    {
+      "tool": "open_file",
+      "category": "gui",
+      "status": "BLOCKED",
+      "evidence": "no Windows desktop (Linux): tool error: Could not open file: [Errno 2] No such file or directory: 'xdg-open'"
+    },
+    {
+      "tool": "open_url",
+      "category": "gui",
+      "status": "BLOCKED",
+      "evidence": "no Windows desktop (Linux): tool error: The system reported that no browser could handle the URL"
+    },
+    {
+      "tool": "web_search",
+      "category": "gui",
+      "status": "BLOCKED",
+      "evidence": "no Windows desktop (Linux): tool error: The system reported that no browser could handle the search"
+    },
+    {
+      "tool": "play_youtube_video",
+      "category": "gui",
+      "status": "BLOCKED",
+      "evidence": "no Windows desktop (Linux): tool error: YouTube search failed: 403 Forbidden; no browser could open YouTube search results"
+    },
+    {
+      "tool": "compose_email",
+      "category": "gui",
+      "status": "BLOCKED",
+      "evidence": "no Windows desktop (Linux): tool error: No email application handled the draft. Configure a default mail app and try again."
+    },
+    {
+      "tool": "open_windows_settings",
+      "category": "gui",
+      "status": "BLOCKED",
+      "evidence": "Windows-only tool; not run on Linux"
+    },
+    {
+      "tool": "take_screenshot",
+      "category": "gui",
+      "status": "BLOCKED",
+      "evidence": "no Windows desktop (Linux): tool error: Pillow is not installed; cannot take screenshots"
+    },
+    {
+      "tool": "download_web_content",
+      "category": "network",
+      "status": "BLOCKED",
+      "evidence": "no direct DNS/network here: Invalid download request: Could not resolve website host: [Errno -2] Name or service not known"
+    },
+    {
+      "tool": "media_control",
+      "category": "media",
+      "status": "BLOCKED",
+      "evidence": "Could not send the media key: Media keys need Windows."
+    },
+    {
+      "tool": "whatsapp_open_chat",
+      "category": "messaging",
+      "status": "BLOCKED",
+      "evidence": "not Windows: WhatsApp Desktop is not installed (no whatsapp: link handler)."
+    },
+    {
+      "tool": "winget_install",
+      "category": "install",
+      "status": "BLOCKED",
+      "evidence": "not Windows: WinGet was not found. Install/update Microsoft's App Installer, then retry."
+    }
+  ]
+}

@@ -22,3 +22,9 @@ Conventions:
 
 The set was written and committed **before** the local matcher, and the holdout split is not used for tuning.
 Scored by `scripts/eval_nlu.py`.
+
+## Changes
+
+- **2026-10-31 (Phase 18):** 4 items (WhatsApp messages: `en-*`, `roman_ur-*`, `ur-*`, `hi-*` "…whatsapp… message…")
+  relabelled from `unsupported` to `whatsapp_draft` / `whatsapp_open_chat {contact, text}`, because the product
+  can now pre-fill a WhatsApp chat (the user still presses Send). No other item changed.

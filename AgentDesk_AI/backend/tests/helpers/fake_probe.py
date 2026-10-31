@@ -36,6 +36,9 @@ class AgreeableProbe(SystemProbe):
     def dialog_texts(self, pid):
         return []
 
+    def media_session(self):
+        return {"app": "test", "title": "YouTube (test)", "artist": "", "status": "playing"}
+
     def read_setting(self, setting):
         from app.tools.base import ToolContext
         from app.tools.system import ManageSystemSettingArgs, ManageSystemSettingTool
@@ -49,8 +52,9 @@ class AgreeableProbe(SystemProbe):
 class ScriptedProbe(SystemProbe):
     poll_timeout = 0.01
 
-    def __init__(self, windows=None, settings=None, alive=(), dialogs=None):
+    def __init__(self, windows=None, settings=None, alive=(), dialogs=None, media=None):
         self._windows = list(windows or [])
+        self.media = list(media or [])  # successive media_session() readings; the last one repeats
         self.settings = dict(settings or {})
         self.alive = set(alive)
         self.dialogs = dict(dialogs or {})
@@ -68,3 +72,8 @@ class ScriptedProbe(SystemProbe):
         if setting not in self.settings:
             raise RuntimeError(f"no {setting} reading")
         return dict(self.settings[setting])
+
+    def media_session(self):
+        if not self.media:
+            return None
+        return self.media.pop(0) if len(self.media) > 1 else self.media[0]

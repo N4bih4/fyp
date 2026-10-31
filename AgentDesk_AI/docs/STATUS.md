@@ -6,6 +6,52 @@ Older evidence: `FEATURE_AUDIT.md`, `audit/FEATURE_TRACEABILITY_MATRIX.md`,
 
 ## Session log
 
+### 2026-10-31 — Session 6: Phase 18 INTEGRATIONS
+
+**Done**
+- **Browser extension 1.1** (`browser-extension/`). Root cause of "tab opening needs a Reload": the extension compared
+  `https://site` with Chrome's normalised `https://site/` (open always "not confirmed"), and a still-loading tab only has
+  `pendingUrl`, so closing it failed "Tab changed since inspection". Both now compare normalised URLs. The extension sends
+  `{version, capabilities}` on connect; the backend reads the shipped `manifest.json` and, for an outdated 1.1+, sends
+  `reload` (`chrome.runtime.reload()` loads the updated unpacked files — no manual click). A 1.0 extension (no `open`)
+  gets a verified fallback: launch Chrome, then confirm the tab through the extension's `inspect`. `/browser/status`
+  reports `version`, `expected_version`, `outdated`. Real-browser test notes in `docs/BROWSER_CONTROLS.md`.
+- **`media_control`** (low): media keys via `keybd_event` (0xB3/0xB0/0xB1/0xB2); verified through the Windows media
+  session (SMTC via winsdk): status for play/pause/stop, track title for next/previous; play/pause are idempotent;
+  no session = honest failure. NLU: "next song", "agla gaana", "gaana rok do", Urdu/Hindi (YouTube/video stays with the browser).
+- **YouTube play**: `play_youtube_video` now counts a chosen video only when Windows reports it **playing** (else
+  "autoplay may be blocked — press Play"); before that it asks the extension to press play on the new tab.
+- **`whatsapp_open_chat`** (medium): `whatsapp://send?phone&text` in WhatsApp Desktop, contact only from a number saved in
+  Memory, international format required, never presses Send; verified by the WhatsApp window and, when UI Automation can
+  read it, the draft text. NLU routes WhatsApp messages to it (was "unsupported"); 4 eval items relabelled and disclosed in
+  `tests/nlu_eval/README.md`; Gate G3 still PASS (99.3% / 99.3%, 0 invented, 0 bypasses).
+- **`winget_install`** (high): exact WinGet ID only (schema pattern), approval card says it accepts the license, never
+  interrupted (a killed installer breaks apps), 900 s budget, already-installed is a no-op with evidence, verified by a
+  fresh `winget list --id <id> --exact`. "install zoom" still searches first; "install package VideoLAN.VLC" installs.
+- **Email stays a draft**: test enforces `mailto:` only, `sent: false`, no SMTP code, no tool named send*.
+- Approval card shows package/source/contact/number/message plus a plain note per tool ("not sent — you press Send").
+- `live_check.py`: probes for the three new tools (opt-in `--media`, `--whatsapp-phone`, `--install-id`), `--record`
+  writes `docs/live_runs/*.json`. `docs/INTEGRATIONS.md` lists the four Windows commands to record one live run each.
+
+**Tested how**
+- Backend `pytest tests -q` -> **710 passed, 3 skipped, 0 failed** (new: `test_phase18_tools.py` 35, `test_phase18_browser.py` 10,
+  NLU routes 9). Extension mocks `test_controls.cjs` (now incl. URL normalisation + self-reload) and `test_pairing.cjs` pass.
+  Frontend build pass; `npm run test:e2e` 8/8 (unchanged).
+- **Recorded live run — browser extension** (`docs/live_runs/2026-10-31-browser-extension.json`): real Chromium 153 (headless),
+  real unpacked extension, paired via the real setup page, real backend on :8000: handshake 1.1.0 -> list tabs (verified) ->
+  open Gmail via the extension (verified by re-inspect) -> close that tab (verified gone). This run found the loading-tab close bug.
+- **Recorded live run — container** (`docs/live_runs/2026-10-31T082309Z-live_check-linux.json`): 32 tools, 15 PASS, 0 FAIL,
+  17 BLOCKED. `media_control`, `whatsapp_open_chat`, `winget_install` are BLOCKED here (not Windows).
+
+**Done-when status: NOT fully met.** Each new tool has tests and a verifier. The live run is recorded for the extension only;
+media keys, WhatsApp Desktop and winget need the Windows PC — run the four commands in `docs/INTEGRATIONS.md`.
+
+**Known issues**
+- WhatsApp Desktop's text box may not be readable through UI Automation; then the open window is the only evidence.
+- SMTC only sees players that report to Windows (most do; some old players do not) — those runs fail honestly.
+- winget may trigger a UAC prompt; if declined, the install fails (reported with WinGet's output).
+- Push to GitHub still 403.
+
 ### 2026-10-31 — Session 5: Phase 17 DESKTOP EXPERIENCE
 
 **Done**
