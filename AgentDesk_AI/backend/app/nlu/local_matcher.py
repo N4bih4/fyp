@@ -296,6 +296,8 @@ def r_device(ctx: _Ctx):
 
 
 def r_followup(ctx: _Ctx):
+    if ctx.path() or ctx.has("WRITE"):
+        return None  # "write first version to C:\\x.txt": an explicit target is never a reference to earlier results
     memory = ctx.memory
     ordinal = ctx.first("FIRST", "SECOND", "THIRD")
     if ordinal:
@@ -433,6 +435,10 @@ def r_paths(ctx: _Ctx):
         if m:
             return _plan(ctx, "write_file", [step("write_text_file", path=m.group(2), content=m.group(1), overwrite=False)],
                          BASE, "path.write")
+        m = re.match(r"^(?:overwrite|replace the text of|replace) (\S+) with (.+)$", ctx.norm.text, re.I)
+        if m:  # replacing existing content is high risk (server policy) and can be undone from the checkpoint
+            return _plan(ctx, "write_file", [step("write_text_file", path=m.group(1), content=m.group(2), overwrite=True)],
+                         BASE, "path.overwrite")
         return None
     explained = {"READ", "ZIP", "EXTRACT", "DELETE", "OPEN", "FILE", "FOLDER", "IN", "TO"}
     conf = BASE - _penalty(ctx, explained | {path.casefold()})

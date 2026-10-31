@@ -135,7 +135,7 @@ LEXICON: dict[str, str] = {
     "CREATE": "create make banao bana بناؤ بنا बनाओ बना",
     "NEW": "new naya نیا नया",
     "READ": "read parho padho پڑھو पढ़ो",
-    "WRITE": "write likho لکھو लिखो",
+    "WRITE": "write overwrite likho لکھو लिखो",
     "ZIP": "zip compress",
     "EXTRACT": "extract unzip",
     "SCREENSHOT": "screenshot اسکرین-شاٹ سکرین-شاٹ स्क्रीनशॉट",

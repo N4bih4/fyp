@@ -1,0 +1,8 @@
+task_id,created_at,finished_at,duration_s,status,language,command_chars,source,actions,tools,max_risk,approvals_required,approval_wait_s,verified_actions,failed_actions,stopped,error_kind
+ec1ec5b7-0f9d-44d9-9127-a117bd04954c,2026-10-31T10:51:30,2026-10-31T10:51:30,0.19,completed,en,46,local,1,create_folder,medium,1,0.061,1,0,,
+3a778bc7-372c-4dab-8ca0-92714978c0e5,2026-10-31T10:51:30,2026-10-31T10:51:30,0.079,completed,en,82,local,1,write_text_file,medium,1,0.038,1,0,,
+5f7a5eef-a5d4-4e87-9538-c2f8e7938699,2026-10-31T10:51:30,2026-10-31T10:51:30,0.065,completed,en,89,local,1,write_text_file,high,1,0.032,1,0,,
+c310cff2-60b2-4633-bf79-62d0dac9aaea,2026-10-31T10:51:31,2026-10-31T10:51:31,0.085,completed,en,80,local,1,delete_file,high,1,0.049,1,0,,
+2d1d5181-0360-4c4e-9a7b-2e91607a02ab,2026-10-31T10:51:31,2026-10-31T10:51:31,0.023,cancelled,en,48,local,1,create_folder,medium,1,,0,0,,
+6c3a648a-ca41-4cbf-ada4-61f603853964,2026-10-31T10:51:31,2026-10-31T10:51:31,0.043,failed,roman_ur,16,local,1,manage_system_setting,low,0,0.003,0,1,,unsupported_platform
+0240222b-7b89-4458-8d43-9db84476b53d,2026-10-31T10:51:31,2026-10-31T10:51:31,0.36,failed,en,29,groq,0,,,0,,0,0,,provider

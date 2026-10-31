@@ -5,7 +5,7 @@ I (the assistant) cannot run a pilot with real users and could not exercise real
 **Before you start:** use a scratch Windows user or a PC you can afford to lose settings on; close important work; have the Wi-Fi/Bluetooth recovery path ready (you know how to re-enable them from Windows Settings). Use your own Groq key only if you want to test cloud AI.
 
 ## A. Install (about 10 minutes)
-- [ ] Download `AgentDesk-AI-0.1.0-win.zip` and compare its SHA-256 with the `.sha256` file.
+- [ ] Download `AgentDesk-AI-0.2.0-win.zip` and compare its SHA-256 with the `.sha256` file.
 - [ ] Extract to `C:\Users\<you>\AgentDesk-AI`. Run `INSTALL.cmd`. Expect "Self-check passed" and "Installed".
 - [ ] Run `START_AGENT_X.cmd`. The browser opens the app (the address bar loses the `#token=` part after load).
 - [ ] Run INSTALL.cmd a second time. Expect it to reuse the environment and still succeed.

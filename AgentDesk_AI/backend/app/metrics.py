@@ -26,6 +26,8 @@ from .models import Action, ActionStatus, Task, TaskStatus
 
 TERMINAL = {TaskStatus.COMPLETED, TaskStatus.PARTIALLY_COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED,
             TaskStatus.REJECTED}
+# A command the assistant did not understand stops at awaiting_input with no actions; the pilot must count it.
+REPORTED = TERMINAL | {TaskStatus.AWAITING_INPUT}
 FIELDS = ("task_id", "created_at", "finished_at", "duration_s", "status", "language", "command_chars", "source",
           "actions", "tools", "max_risk", "approvals_required", "approval_wait_s", "verified_actions",
           "failed_actions", "stopped", "error_kind")
@@ -37,7 +39,9 @@ def error_kind(text: str | None) -> str:
     if not text:
         return ""
     t = text.casefold()
-    for kind, words in (("timeout", ("timed out", "timeout", "stopped after")),
+    for kind, words in (("unsupported_platform", ("windows only", "needs windows", "only available on windows",
+                                                  "requires windows", "supported on windows")),
+                        ("timeout", ("timed out", "timeout", "stopped after")),
                         ("verification", ("verif", "evidence", "not confirmed", "did not")),
                         ("approval", ("approval", "approve", "altered")),
                         ("not_found", ("not found", "nahi mila", "does not exist", "no such")),
@@ -75,7 +79,7 @@ def row_for(task: Task) -> dict[str, Any]:
         "created_at": task.created_at.isoformat(timespec="seconds"),
         "finished_at": task.updated_at.isoformat(timespec="seconds"),
         "duration_s": round((task.updated_at - task.created_at).total_seconds(), 3),
-        "status": task.status,
+        "status": "not_understood" if task.status == TaskStatus.AWAITING_INPUT and not actions else task.status,
         "language": detect_language(task.command or ""),
         "command_chars": len(task.command or ""),
         "source": source or "cloud",
@@ -92,7 +96,7 @@ def row_for(task: Task) -> dict[str, Any]:
 
 
 def export_csv(db: Session, days: int | None = None) -> str:
-    query = db.query(Task).filter(Task.status.in_(TERMINAL)).order_by(Task.created_at)
+    query = db.query(Task).filter(Task.status.in_(REPORTED)).order_by(Task.created_at)
     if days:
         query = query.filter(Task.created_at >= datetime.utcnow() - timedelta(days=days))
     buffer = io.StringIO()
@@ -138,7 +142,7 @@ def append_row(row: dict[str, Any], path: Path | None = None) -> Path:
 
 @event.listens_for(Task.status, "set")
 def _on_status(target: Task, value, oldvalue, initiator):
-    if value in TERMINAL and target.id:
+    if value in REPORTED and target.id:
         with _lock:
             _pending.add(target.id)
 
@@ -159,7 +163,7 @@ def _after_commit(session: Session) -> None:
     reader = SessionLocal()
     try:
         for task in reader.query(Task).filter(Task.id.in_(ids)).all():
-            if task.status not in TERMINAL:
+            if task.status not in REPORTED:
                 continue  # another session has not committed it yet
             with _lock:
                 if task.id in _written:

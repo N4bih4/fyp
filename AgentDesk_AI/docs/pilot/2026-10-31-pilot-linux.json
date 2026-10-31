@@ -1,0 +1,135 @@
+{
+  "started": "2026-10-31T10:51:29+00:00",
+  "machine": "Linux-6.18.44-fc-v185-x86_64-with-glibc2.39",
+  "python": "3.13.18",
+  "release": "AgentDesk-AI-0.2.0-win.zip",
+  "summary": {
+    "PASS": 13,
+    "FAIL": 0,
+    "NOT RUN": 7
+  },
+  "results": [
+    {
+      "section": "A",
+      "check": "zip SHA-256 matches the .sha256 file",
+      "status": "PASS",
+      "evidence": "bb82612561c00775\u2026"
+    },
+    {
+      "section": "A",
+      "check": "every file matches MANIFEST.sha256",
+      "status": "PASS",
+      "evidence": "124 files, 0 mismatched"
+    },
+    {
+      "section": "A",
+      "check": "no .env, database, logs, token or venv in the package",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "section": "A",
+      "check": "INSTALL.cmd run on Windows",
+      "status": "NOT RUN",
+      "evidence": "needs Windows (install.ps1 / .cmd)"
+    },
+    {
+      "section": "A",
+      "check": "START_AGENT_X.cmd opens the app",
+      "status": "NOT RUN",
+      "evidence": "needs Windows (install.ps1 / .cmd)"
+    },
+    {
+      "section": "A",
+      "check": "second INSTALL.cmd reuses the environment",
+      "status": "NOT RUN",
+      "evidence": "needs Windows (install.ps1 / .cmd)"
+    },
+    {
+      "section": "B",
+      "check": "create folder: approval shows the exact path, nothing exists before Yes",
+      "status": "PASS",
+      "evidence": "shown=/tmp/agentdesk_pilot_83lahz6v/home/Documents/pilot_test"
+    },
+    {
+      "section": "B",
+      "check": "after Yes: folder exists and the task is verified",
+      "status": "PASS",
+      "evidence": "status=completed evidence={'path': '/tmp/agentdesk_pilot_83lahz6v/home/Documents/pilot_test', 'exists': True, 'is_dir': True}"
+    },
+    {
+      "section": "B",
+      "check": "Undo: folder gone, undone and verified",
+      "status": "PASS",
+      "evidence": "rollback=done"
+    },
+    {
+      "section": "B",
+      "check": "write a text file, overwrite it (high risk), Undo restores the original text",
+      "status": "PASS",
+      "evidence": "rollback=done"
+    },
+    {
+      "section": "B",
+      "check": "delete is high risk; a spoken 'haan' does not delete",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "section": "B",
+      "check": "delete after explicit Approve, then Undo returns the file from Trash",
+      "status": "PASS",
+      "evidence": "rollback=done"
+    },
+    {
+      "section": "B",
+      "check": "Cancel on a pending action changes nothing",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "section": "C",
+      "check": "volume set (real device)",
+      "status": "NOT RUN",
+      "evidence": "not run here: Could not manage system setting: System brightness, volume, and Bluetooth controls are sup"
+    },
+    {
+      "section": "D",
+      "check": "cloud request with no network: clear error, not left running",
+      "status": "PASS",
+      "evidence": "status=failed error=Could not reach Groq: Connection error.. Check your network."
+    },
+    {
+      "section": "D",
+      "check": "the API key appears in no log file and no API response",
+      "status": "PASS",
+      "evidence": "checked logs + 4 routes"
+    },
+    {
+      "section": "F",
+      "check": "history is still there after a restart",
+      "status": "PASS",
+      "evidence": "7 -> 7 tasks"
+    },
+    {
+      "section": "F",
+      "check": "hard kill mid-run shows interrupted, not completed",
+      "status": "NOT RUN",
+      "evidence": "covered by tests/test_phase9_reliability.py (real kill); not re-run here"
+    },
+    {
+      "section": "F",
+      "check": "hands-free voice; own speech ignored",
+      "status": "NOT RUN",
+      "evidence": "needs a microphone (person)"
+    },
+    {
+      "section": "E",
+      "check": "browser extension in a real profile",
+      "status": "NOT RUN",
+      "evidence": "see docs/live_runs/*browser-extension.json (Chromium, headless)"
+    }
+  ],
+  "auto_metrics_rows": 7,
+  "endpoint_metrics_rows": 7
+}

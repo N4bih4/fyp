@@ -72,3 +72,32 @@ def test_error_categories():
     assert metrics.error_kind("Verification failed: folder exists: False") == "verification"
     assert metrics.error_kind("Path is outside the allowed folders") == "refused"
     assert metrics.error_kind(None) == ""
+
+
+def test_not_understood_commands_are_counted(client, db):
+    from app.config import Settings as S
+    from app.tools.registry import ToolRegistry as R
+    task = executor.start_task(db, "blorp the zibble quickly", None, R(), S(ai_provider="groq", groq_api_key=None))
+    assert task.status == "awaiting_input"
+    rows = list(csv.DictReader(io.StringIO(client.get("/metrics/tasks.csv").text)))
+    assert rows and rows[-1]["status"] == "not_understood" and rows[-1]["actions"] == "0"
+    assert metrics.error_kind("System brightness, volume, and Bluetooth controls are supported on Windows only.") == "unsupported_platform"
+
+
+def test_write_and_overwrite_by_command_use_the_local_matcher(db, tmp_path):
+    """FINDING-1 of the pilot: these needed cloud AI before."""
+    from app.config import Settings as S
+    note = tmp_path / "note.txt"
+    registry = ToolRegistry(ToolContext(allowed_directories=[tmp_path]))
+    settings = S(ai_provider="groq", groq_api_key=None)
+    task = executor.start_task(db, f"write first version to {note}", None, registry, settings)
+    assert task.status == "awaiting_approval" and task.actions[0].risk == "medium"
+    task = executor.run_task(db, executor.approve_task(db, task.id).id, registry, settings)
+    assert note.read_text() == "first version"
+    task = executor.start_task(db, f"overwrite {note} with second version", None, registry, settings)
+    assert task.actions[0].risk == "high"
+    task = executor.approve_task(db, task.id, [task.actions[0].id])
+    task = executor.run_task(db, task.id, registry, settings)
+    assert task.status == "completed" and note.read_text() == "second version"
+    task = executor.rollback_task(db, task.id, registry)
+    assert note.read_text() == "first version" and task.actions[0].rollback_status == "done"

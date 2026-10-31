@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "AgentDesk AI"
-    app_version: str = "0.1.0"
+    app_version: str = "0.2.0"
 
     # --- AI provider ---
     # "groq" (primary, real LLM with tool calling), "openai" (alternative),

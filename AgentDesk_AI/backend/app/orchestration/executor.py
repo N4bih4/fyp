@@ -598,6 +598,32 @@ def _action_summary(action: Action) -> str:
     return "; ".join(parts) or "done"
 
 
+_NLU_FALLBACK_INTENTS_SKIP = {"clarify", "chat", "unsupported"}
+
+
+def _nlu_fallback(command: str, registry: ToolRegistry) -> Plan | None:
+    """Ask the Phase 15 local matcher only when the older parser had no answer.
+
+    Used only for a confident, fully valid plan without unresolved step references (find-then-act plans
+    stay with the older parser, which resolves paths with the user). Risk and approval are unchanged:
+    plan_task applies the server policy to every action.
+    """
+    from ..nlu import THRESHOLD, match, validate_plan
+    from ..nlu.schema import STEP_REF
+
+    result = match(command)
+    plan = result.plan
+    if plan is None or result.confidence < THRESHOLD or plan.intent in _NLU_FALLBACK_INTENTS_SKIP or not plan.steps:
+        return None
+    if any(isinstance(v, str) and STEP_REF.match(v) for s in plan.steps for v in s.args.values()):
+        return None
+    if not validate_plan(plan, registry).ok:
+        return None
+    legacy = plan.to_legacy()
+    legacy.note = "Local agent ne plan tayyar kiya; cloud API use nahi hui."
+    return legacy
+
+
 def start_task(
     db: Session, command: str, idempotency_key: str | None,
     registry: ToolRegistry, settings: Settings,
@@ -617,6 +643,14 @@ def start_task(
         if local is not None:
             if not task.agent_state_json:
                 task.agent_state_json = json.dumps({"provider": "local"})
+            task = plan_task(db, task, registry, settings, auto_approve=auto_approve, preplanned=local)
+            if task.status == TaskStatus.APPROVED:
+                return run_task(db, task.id, registry, settings)
+            return task
+        local = _nlu_fallback(command, registry)
+        if local is not None:
+            # The Phase 15 matcher understood what the older local parser did not (e.g. write/overwrite a file).
+            task.agent_state_json = json.dumps({"provider": "local", "matcher": "nlu"})
             task = plan_task(db, task, registry, settings, auto_approve=auto_approve, preplanned=local)
             if task.status == TaskStatus.APPROVED:
                 return run_task(db, task.id, registry, settings)
