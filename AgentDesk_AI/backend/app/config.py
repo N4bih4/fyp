@@ -67,6 +67,9 @@ class Settings(BaseSettings):
         default="./agentdesk_test", validation_alias=AliasChoices("AGENTDESK_TEST_DIR", "test_dir")
     )
     tool_timeout_seconds: int = 30
+    # "process" (default): tools run in a worker process that is killed on timeout/pause/cancel.
+    # "thread": in-process (tests only; a timed-out thread cannot be stopped).
+    tool_isolation: str = "process"
     # Medium/high-risk approvals expire if the action is not run in time.
     approval_ttl_seconds: int = 600
 

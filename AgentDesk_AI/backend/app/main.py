@@ -67,7 +67,17 @@ async def lifespan(app: FastAPI):
         from .retention import prune
 
         prune(db, settings)
+    if settings.tool_isolation == "process":
+        import threading
+
+        from .orchestration import worker
+        # Start one tool worker in the background so the first command does not pay its start-up cost.
+        threading.Thread(target=worker.pool.warm, name="tool-worker-warmup", daemon=True).start()
     yield
+    if settings.tool_isolation == "process":
+        from .orchestration import worker
+
+        worker.pool.shutdown()
     log_event("server_stop")
 
 
@@ -244,7 +254,7 @@ def run_task(task_id: str, db: Session = Depends(get_db)) -> TaskOut:
 @app.post("/tasks/{task_id}/pause", response_model=TaskOut)
 def pause_task(task_id: str, db: Session = Depends(get_db)) -> TaskOut:
     try:
-        return executor.task_out(executor.pause_task(db, task_id))
+        return executor.task_out(executor.pause_task(db, task_id, _registry()))
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:
@@ -264,7 +274,7 @@ def rollback_task(task_id: str, db: Session = Depends(get_db)) -> TaskOut:
 @app.post("/tasks/{task_id}/cancel", response_model=TaskOut)
 def cancel_task(task_id: str, db: Session = Depends(get_db)) -> TaskOut:
     try:
-        return executor.task_out(executor.cancel_task(db, task_id))
+        return executor.task_out(executor.cancel_task(db, task_id, _registry()))
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 

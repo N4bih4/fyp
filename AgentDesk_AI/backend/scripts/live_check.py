@@ -96,6 +96,8 @@ def judge(result: ToolResult, ver: Verification, ok: bool, evidence: str) -> Out
         return Outcome(FAIL, f"tool error: {_short(result.error)}")
     if not ver.passed:
         return Outcome(FAIL, f"verify() failed: {_short(ver.details or ver.checks)}")
+    if not ver.evidence:
+        return Outcome(FAIL, "verify() passed without evidence")
     return Outcome(PASS if ok else FAIL, evidence + ("" if ok else " (independent check FAILED)"))
 
 

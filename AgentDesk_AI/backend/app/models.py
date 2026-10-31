@@ -27,8 +27,9 @@ class TaskStatus:
     APPROVED = "approved"
     EXECUTING = "executing"
     WAITING_RETRY = "waiting_retry"
-    PAUSED = "paused"  # user-requested pause between actions
+    PAUSED = "paused"  # user-requested pause (between actions, or a stopped resumable step)
     COMPLETED = "completed"
+    PARTIALLY_COMPLETED = "partially_completed"  # some steps verified, a later one failed
     FAILED = "failed"
     CANCELLED = "cancelled"
     REJECTED = "rejected"
@@ -43,6 +44,7 @@ class ActionStatus:
     FAILED = "failed"
     SKIPPED = "skipped"
     CANCELLED = "cancelled"
+    PAUSED = "paused"  # a resumable step (download) was stopped; resume continues it
 
 
 class Task(Base):

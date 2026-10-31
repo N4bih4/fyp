@@ -212,7 +212,7 @@ def test_partial_failure_is_reported_and_rollbackable(db, tmp_path):
         ("move_file", {"source": str(tmp_path / "missing.txt"), "destination": str(tmp_path / "x.txt")}),
         ("create_folder", {"path": str(tmp_path / "never")}),
     )
-    assert task.status == TaskStatus.FAILED
+    assert task.status == TaskStatus.PARTIALLY_COMPLETED  # step 1 verified, step 2 failed
     out = executor.task_out(task)
     assert out.partial["succeeded"] == 1 and out.partial["failed"] == 1 and out.partial["not_run"] == 1
     assert out.partial["changes_remain"] == ["create_folder"]

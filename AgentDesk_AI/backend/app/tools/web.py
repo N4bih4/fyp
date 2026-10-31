@@ -2,9 +2,9 @@
 from __future__ import annotations
 
 import ipaddress
+import json
 import re
 import socket
-import uuid
 from pathlib import Path
 from urllib.parse import unquote, urljoin, urlsplit
 
@@ -86,6 +86,8 @@ class DownloadWebContentTool(BaseTool):
     )
     risk_level = RiskLevel.HIGH
     args_schema = DownloadWebContentArgs
+    timeout_seconds = 180
+    interruptible = True  # pause keeps the .part file; Resume continues with an HTTP Range request
 
     @staticmethod
     def _safe_filename(value: str) -> str:
@@ -108,6 +110,21 @@ class DownloadWebContentTool(BaseTool):
             self.ctx.allowed_directories,
         )
 
+    @staticmethod
+    def _partial_paths(destination: Path) -> tuple[Path, Path]:
+        """Fixed names so a paused download can be found again and resumed."""
+        part = destination.with_name(f".{destination.name}.agentdesk.part")
+        return part, part.with_name(part.name + ".json")
+
+    def on_cancel(self, args: BaseModel) -> None:
+        a = DownloadWebContentArgs.model_validate(args.model_dump())
+        try:
+            destination = self._destination(a, a.url)
+        except ValueError:
+            return
+        for path in self._partial_paths(destination):
+            path.unlink(missing_ok=True)
+
     def execute(self, args: BaseModel) -> ToolResult:
         try:
             a = DownloadWebContentArgs.model_validate(args.model_dump())
@@ -119,13 +136,35 @@ class DownloadWebContentTool(BaseTool):
         if destination.exists():
             return ToolResult(success=False, error=f"Destination already exists (not overwritten): {destination}")
 
-        temporary = destination.with_name(f".{destination.name}.{uuid.uuid4().hex}.part")
+        part, meta_path = self._partial_paths(destination)
+        resume_from, meta = 0, {}
+        if part.exists() and meta_path.exists():
+            try:
+                meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                meta = {}
+            if meta.get("url") == a.url and meta.get("save_as_webpage") == a.save_as_webpage:
+                resume_from = part.stat().st_size
+            else:
+                meta = {}
+        if not resume_from:
+            part.unlink(missing_ok=True)
+            meta_path.unlink(missing_ok=True)
+        keep_partial = False  # only a network interruption keeps the partial file for Resume
+        written = 0
+        content_type = ""
         try:
             destination.parent.mkdir(parents=True, exist_ok=True)
+            headers = {"User-Agent": "AgentDeskAI/1.0"}
+            if resume_from:
+                headers["Range"] = f"bytes={resume_from}-"
+                validator = meta.get("etag") or meta.get("last_modified")
+                if validator:
+                    headers["If-Range"] = validator
             with httpx.Client(timeout=20, follow_redirects=False) as client:
                 for redirect_count in range(MAX_REDIRECTS + 1):
                     _validate_public_url(current_url)
-                    with client.stream("GET", current_url, headers={"User-Agent": "AgentDeskAI/1.0"}) as response:
+                    with client.stream("GET", current_url, headers=headers) as response:
                         _require_public_peer(response)
                         if response.status_code in (301, 302, 303, 307, 308):
                             location = response.headers.get("location")
@@ -134,6 +173,9 @@ class DownloadWebContentTool(BaseTool):
                             current_url = urljoin(current_url, location)
                             _validate_public_url(current_url)
                             continue
+                        if response.status_code == 416 and resume_from:
+                            # The saved part no longer fits the file; start over next time.
+                            return ToolResult(success=False, error="The website no longer accepts the saved partial download; retry to start again.")
                         response.raise_for_status()
                         content_type = response.headers.get("content-type", "").split(";", 1)[0].strip().lower()
                         if a.save_as_webpage and content_type != "text/html":
@@ -143,17 +185,29 @@ class DownloadWebContentTool(BaseTool):
                                 success=False,
                                 error="URL returned a webpage; set save_as_webpage=true to save it as HTML",
                             )
+                        appending = resume_from > 0 and response.status_code == 206 and \
+                            response.headers.get("content-range", "").startswith(f"bytes {resume_from}-")
+                        if not appending:
+                            resume_from = 0  # server ignored Range or the file changed: start over
                         length = response.headers.get("content-length")
-                        if length and int(length) > MAX_DOWNLOAD_BYTES:
+                        if length and resume_from + int(length) > MAX_DOWNLOAD_BYTES:
                             return ToolResult(success=False, error="Download exceeds the 20 MB size limit")
-                        written = 0
-                        with temporary.open("wb") as output:
+                        meta_path.write_text(json.dumps({
+                            "url": a.url, "save_as_webpage": a.save_as_webpage, "content_type": content_type,
+                            "etag": response.headers.get("etag"), "last_modified": response.headers.get("last-modified"),
+                        }), encoding="utf-8")
+                        written = resume_from
+                        keep_partial = True
+                        with part.open("ab" if appending else "wb") as output:
                             for chunk in response.iter_bytes():
                                 written += len(chunk)
                                 if written > MAX_DOWNLOAD_BYTES:
+                                    keep_partial = False
                                     return ToolResult(success=False, error="Download exceeds the 20 MB size limit")
                                 output.write(chunk)
+                                output.flush()
                         if written == 0:
+                            keep_partial = False
                             return ToolResult(success=False, error="The website returned an empty response")
                         break
                 else:
@@ -161,16 +215,26 @@ class DownloadWebContentTool(BaseTool):
             if a.save_as_webpage and destination.suffix.lower() not in (".html", ".htm"):
                 destination = destination.with_suffix(".html")
                 if destination.exists():
+                    keep_partial = False
                     return ToolResult(success=False, error=f"Destination already exists (not overwritten): {destination}")
-            temporary.replace(destination)
-        except (httpx.HTTPError, OSError, ValueError) as exc:
+            part.replace(destination)
+            keep_partial = False
+        except (httpx.HTTPError, OSError) as exc:
+            saved = part.stat().st_size if part.exists() else 0
+            note = f" {saved} bytes are kept; Resume continues from there." if keep_partial and saved else ""
+            return ToolResult(success=False, output={"partial_bytes": saved if keep_partial else 0},
+                              error=f"Could not download website content: {exc}.{note}")
+        except ValueError as exc:
+            keep_partial = False
             return ToolResult(success=False, error=f"Could not download website content: {exc}")
         finally:
-            if temporary.exists():
-                temporary.unlink()
+            if not keep_partial:
+                part.unlink(missing_ok=True)
+                meta_path.unlink(missing_ok=True)
         return ToolResult(
             success=True,
-            output={"path": str(destination), "url": current_url, "bytes_written": written, "content_type": content_type},
+            output={"path": str(destination), "url": current_url, "bytes_written": written,
+                    "resumed_from": resume_from, "content_type": content_type},
         )
 
     def verify(self, args: BaseModel, result: ToolResult) -> Verification:

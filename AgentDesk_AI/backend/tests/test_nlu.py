@@ -331,3 +331,16 @@ def test_local_eval_meets_gate_g3(registry):
     assert all(ev.gate(summary).values()), summary["overall"]
     probe = ev.run_probe(ev.predict_local, registry)
     assert probe["confidently_wrong"] == 0
+
+
+@pytest.mark.parametrize("text,target,action", [
+    ("minimize chrome", "chrome", "minimize_window"), ("notepad chota karo", "notepad", "minimize_window"),
+    ("maximize word", "word", "maximize_window"), ("switch to excel", "excel", "focus_window"),
+    ("کروم چھوٹا کرو", "chrome", "minimize_window"),
+])
+def test_window_control_routing(registry, text, target, action):
+    result = match(text)
+    assert result.confident and result.plan.intent == "window_control"
+    step_ = result.plan.steps[0]
+    assert step_.args == {"target_window": target, "steps": [{"action": action}]}
+    assert validate_plan(result.plan, registry, check_paths=False).max_risk == RiskLevel.LOW

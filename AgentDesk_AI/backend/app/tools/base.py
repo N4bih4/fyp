@@ -72,6 +72,15 @@ class BaseTool(ABC):
     args_schema: Type[BaseModel] = BaseModel
     # Seconds before the worker running this tool is killed; None = settings default.
     timeout_seconds: int | None = None
+    # "process": run in a killable worker process (default). "thread": must run inside the
+    # server process (e.g. tools that use the browser-extension socket held by the server).
+    isolation: str = "process"
+    # True: a pause/cancel may stop this tool mid-run (killing its worker) without leaving a
+    # half-applied change. Other tools finish their current step first.
+    interruptible: bool = False
+
+    def on_cancel(self, args: BaseModel) -> None:
+        """Clean up partial work after the step was cancelled (e.g. a partial download)."""
 
     def __init__(self, ctx: ToolContext | None = None) -> None:
         self.ctx = ctx or ToolContext.from_settings()

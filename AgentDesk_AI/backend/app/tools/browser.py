@@ -56,6 +56,7 @@ class BrowserControlTool(BaseTool):
     description = "Inspect actual browser tabs, close one exact named site/title/tab ID, or pause/resume an existing YouTube video. Requires Agent X Browser Bridge extension. Multiple matches require clarification. Never substitutes an active unrelated tab."
     args_schema = BrowserControlArgs
     risk_level = RiskLevel.LOW
+    isolation = "thread"  # the extension socket lives in the server process
 
     def execute(self, args):
         a = BrowserControlArgs.model_validate(args.model_dump())

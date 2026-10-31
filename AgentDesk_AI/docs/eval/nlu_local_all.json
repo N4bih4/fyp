@@ -320,7 +320,7 @@
    "language_ok": true,
    "errors": [],
    "source": "local",
-   "confidence": 0.95,
+   "confidence": 0.89,
    "rule": "device",
    "deferred": false
   },

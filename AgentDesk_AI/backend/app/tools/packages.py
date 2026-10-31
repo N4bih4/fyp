@@ -21,6 +21,8 @@ class PackageArgs(BaseModel):
 
 
 class ApplicationPackageTool(BaseTool):
+    timeout_seconds = 250  # WinGet downloads; the child winget is killed with the worker
+    interruptible = True
     name = "application_package"
     description = ("Search available Windows apps (including VS Code and WhatsApp), show an exact package ID, "
                    "or download its installer after approval. Search first, show publisher/details, clarify ambiguous matches. "

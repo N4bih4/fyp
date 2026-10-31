@@ -568,6 +568,7 @@ def _find_youtube_video(query: str) -> tuple[str, str] | None:
 
 class OpenUrlTool(BaseTool):
     name = "open_url"
+    isolation = "thread"  # may open the tab through the extension socket held by the server
     description = "Open an http(s) website in the default browser or explicitly requested Chrome."
     risk_level = RiskLevel.LOW
     args_schema = OpenUrlArgs

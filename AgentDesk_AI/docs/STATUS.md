@@ -6,6 +6,44 @@ Older evidence: `FEATURE_AUDIT.md`, `audit/FEATURE_TRACEABILITY_MATRIX.md`,
 
 ## Session log
 
+### 2026-10-31 — Session 4: Phase 16 REAL VERIFICATION AND CONTROL
+
+**Done**
+- **Verification contract.** `Verification.evidence` added. `BaseTool.verify()` now FAILS by default; the executor also rejects any pass with empty evidence. All 29 tools have their own `verify()` that re-reads the real system (test enforces it):
+  - files: exists + size + SHA-256 (copy compares source/destination hashes; read compares returned text with disk; list re-lists the folder; find/trash re-check every path);
+  - launches (apps, folders, files, URLs, search, YouTube, e-mail draft, Settings): a matching window must appear (title and/or process, Win32 enumeration, polled up to 4 s); PID liveness recorded;
+  - `manage_system_setting`: independent re-read in a separate worker process — volume value **and mute state** (pycaw; `get` now reports `muted`), brightness via WMI first (`screen_brightness_control` method `wmi`, then default for external monitors), Bluetooth/Wi-Fi state, theme from the HKCU registry; compared with what was requested;
+  - `control_browser`: extension confirmation + re-inspect (closed tab is gone; paused/resumed tab still open); `application_package`: downloaded files exist with hashes;
+  - screenshot: PNG header + hash; download: size + hash.
+  - `app/verification.py` holds the probes; tests use `ScriptedProbe` (strict) or `AgreeableProbe` (session default for unrelated tests).
+- **Worker process with kill-on-timeout** (`app/orchestration/worker.py`). Each action runs execute + verify in a pooled `spawn` child process. On timeout / pause / cancel the parent kills the worker and every process that job started (e.g. a hung winget); apps started by earlier jobs survive. A worker that died while idle is replaced and the job is sent once more only if it was never delivered; a started job is never repeated. Per-tool `timeout_seconds` (WinGet 250 s, download 180 s, default `TOOL_TIMEOUT_SECONDS`=30). `TOOL_ISOLATION=process` (default) / `thread` (tests). `control_browser` and `open_url` stay in-process (`isolation="thread"`) because the extension socket lives in the server process. One worker is warmed at startup; `multiprocessing.freeze_support()` added for the exe.
+- **Window control finished.** New `focus_window` (bring to front, low risk). Every window step records `hwnd`/`pid`; verify re-reads the window: close = gone, minimize = iconic, maximize = zoomed, restore = neither, focus = foreground, close-tab = title changed or window gone, input = target window existed. If a close leaves the window open, pywinauto UIA reads the app's dialog; an unsaved-changes prompt is reported (`needs_confirmation`) and never answered for the user. NLU routes "minimize chrome", "notepad chota karo", "switch to excel", "کروم چھوٹا کرو" (intent `window_control`).
+- **Pause/resume from the last verified checkpoint.** After each verified step the task stores a checkpoint. Resume first re-runs that step's verifier on the real PC; if it no longer holds (e.g. the created folder was deleted), resume is refused with the reason and nothing else runs. Pause stops an *interruptible* running step immediately (download, WinGet, read-only tools); other steps finish first. New statuses: action `paused`; task `partially_completed` (some steps verified, a later one failed — rule 4). Frontend and voice replies updated.
+- **Download pause/resume/cancel.** `download_web_content` writes to a fixed `.agentdesk.part` file plus a small JSON sidecar (URL, ETag/Last-Modified). Pause kills the worker and keeps the part; Resume sends `Range` + `If-Range` and appends on `206`, restarts cleanly on `200` (server ignored Range or file changed). Cancel kills the worker and deletes the part and sidecar. Network interruptions keep the part for Resume; size/type errors delete it.
+- Dependencies: `pywinauto==0.6.9` (+ `six`) for Windows only, in `requirements.txt` and the lock (not yet installed on the Windows PC).
+
+**Tested how (Linux container, Python 3.13)**
+- `python -m pytest tests -q` -> **638 passed, 3 skipped, 0 failed** (skips: Groq live tests).
+- New `tests/test_phase16_worker.py` (7, real processes, no mocks): runs in another process; **timeout kills the worker and the grandchild it started, and the tool's "finished" marker never appears**; cancel via stop request; earlier apps survive a later kill; crash reported; dead idle worker replaced; killed worker never reused.
+- New `tests/test_phase16_download_control.py` (5, real local HTTP server with Range, real worker processes, real executor): pause keeps the part and resume continues with `Range` to an identical SHA-256; server without Range restarts cleanly; executor pause -> resume -> completed; executor cancel deletes the part; **a timed-out task is FAILED with "Stopped after 2s" and its child process is dead**.
+- New `tests/test_phase16_verification.py` (26, strict probe): every tool has a verifier, default verifier never passes, executor rejects a pass without evidence, launch needs the real window, settings read-back mismatches fail (volume, mute, Bluetooth, theme), window states re-read, closed window must be gone, save prompt detected, changed disk detected, resume refused / continued correctly.
+- 6 older tests changed because they asserted success without real evidence (now they supply observed state) or expected `failed` where rule 4 now gives `partially_completed`.
+- `npm run build` pass; `node --test voice.test.mjs` 4/4.
+- `scripts/live_check.py --gui --network` -> 29 tools reported, 15 PASS (all with evidence), 0 FAIL, 14 BLOCKED (Linux: no Windows desktop/extension/DNS). `scripts/eval_nlu.py` -> Gate G3 still PASS (99.3% / 99.3%, 0 invented, 0 bypasses).
+
+**What is left (must be done on the Windows PC)**
+- Run `python scripts/live_check.py --gui --network` there: the Win32 window enumeration, pywinauto dialog reading, WMI brightness and the worker process under Windows `spawn` are unit-tested only.
+- Measure the worker start-up cost and first-action latency on Windows (target local < 2.5 s); the pool warms one worker at startup.
+- PyInstaller exe: confirm spawn workers work in the frozen build (`freeze_support` added; `agentdesk.spec` may need hidden imports for `app.orchestration.worker` and `pywinauto`).
+- Download progress (bytes so far) is not shown in the UI yet.
+
+**Known issues / limits**
+- Launch verification proves a matching window appeared, not that the page/app finished loading; the Settings check confirms the window, not the sub-page.
+- Free input (click/type/keys) cannot be read back in general; evidence is that the target window existed and had focus.
+- A window title that never contains the app/site name (some apps) will fail verification -> task fails honestly instead of claiming success.
+- Non-interruptible steps (file moves, settings) are not killed on pause/cancel, to avoid half-applied changes; they finish first.
+- Push to GitHub still fails with 403; commits are local (bundle available on request).
+
 ### 2026-10-31 — Session 3: Phase 15 NATURAL-LANGUAGE COMMAND MODEL
 
 Phase 14 was skipped as a separate step; its planner pieces (PlannerProvider, Groq structured outputs, fallback chain) are delivered here.

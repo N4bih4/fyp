@@ -12,3 +12,4 @@ pycaw>=20230407
 screen-brightness-control>=0.24.2
 winsdk>=1.0.0b10
 rapidfuzz>=3.9
+pywinauto>=0.6.9 ; sys_platform == "win32"

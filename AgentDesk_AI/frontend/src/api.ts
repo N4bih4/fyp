@@ -11,6 +11,7 @@ export type TaskStatus =
   | 'approved'
   | 'executing'
   | 'completed'
+  | 'partially_completed'
   | 'waiting_retry'
   | 'paused'
   | 'failed'
@@ -25,7 +26,8 @@ export type ActionStatus =
   | 'succeeded'
   | 'failed'
   | 'skipped'
-  | 'cancelled';
+  | 'cancelled'
+  | 'paused';
 
 export type RiskLevel = 'low' | 'medium' | 'high';
 

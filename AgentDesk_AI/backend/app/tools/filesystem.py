@@ -216,6 +216,7 @@ class OpenFolderTool(BaseTool):
     name = "open_folder"
     description = "Open a folder in the system's file explorer. Automatically finds matching folder if exact path is not known."
     risk_level = RiskLevel.LOW
+    interruptible = True  # read-only
     args_schema = OpenFolderArgs
 
     def execute(self, args: BaseModel) -> ToolResult:
@@ -313,6 +314,7 @@ class ListFolderTool(BaseTool):
     name = "list_folder"
     description = "List the contents of a folder inside an allowed directory."
     risk_level = RiskLevel.LOW
+    interruptible = True  # read-only
     args_schema = ListFolderArgs
 
     def execute(self, args: BaseModel) -> ToolResult:
@@ -686,6 +688,7 @@ class ListTrashTool(BaseTool):
     name = "list_trash"
     description = "List files and empty folders in AgentDesk's internal Trash that can be restored."
     risk_level = RiskLevel.LOW
+    interruptible = True  # read-only
     args_schema = ListTrashArgs
 
     def execute(self, args: BaseModel) -> ToolResult:
@@ -866,6 +869,7 @@ class ReadTextFileTool(BaseTool):
     name = "read_text_file"
     description = "Read a UTF-8 text document inside an allowed directory (maximum 50,000 characters)."
     risk_level = RiskLevel.LOW
+    interruptible = True  # read-only
     args_schema = ReadTextFileArgs
 
     def execute(self, args: BaseModel) -> ToolResult:
@@ -910,6 +914,7 @@ class FindFilesTool(BaseTool):
         "Use this when the user named something approximately, then ask them to confirm if several matches exist."
     )
     risk_level = RiskLevel.LOW
+    interruptible = True  # read-only
     args_schema = FindFilesArgs
 
     def execute(self, args: BaseModel) -> ToolResult:

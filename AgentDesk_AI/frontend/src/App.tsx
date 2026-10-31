@@ -77,7 +77,7 @@ function statusClasses(status: string): string {
     return 'bg-red-100 text-red-800 border-red-300';
   if (status === 'running' || status === 'executing')
     return 'bg-blue-100 text-blue-800 border-blue-300';
-  if (status === 'pending' || status === 'awaiting_approval' || status === 'planned')
+  if (status === 'pending' || status === 'awaiting_approval' || status === 'planned' || status === 'partially_completed' || status === 'paused')
     return 'bg-amber-100 text-amber-800 border-amber-300';
   return 'bg-slate-100 text-slate-700 border-slate-300';
 }
@@ -593,11 +593,11 @@ export default function App() {
 
   useEffect(() => {
     if (!activeTask) return;
-    if (!['awaiting_input', 'awaiting_approval', 'waiting_retry', 'completed', 'failed', 'rejected', 'cancelled'].includes(activeTask.status)) return;
+    if (!['awaiting_input', 'awaiting_approval', 'waiting_retry', 'completed', 'partially_completed', 'failed', 'rejected', 'cancelled'].includes(activeTask.status)) return;
     const stateKey = `${activeTask.id}:${activeTask.status}`;
     if (spokenTaskStates.current.has(stateKey)) return;
     spokenTaskStates.current.add(stateKey);
-    const isTerminal = ['completed', 'failed', 'rejected', 'cancelled'].includes(activeTask.status);
+    const isTerminal = ['completed', 'partially_completed', 'failed', 'rejected', 'cancelled'].includes(activeTask.status);
     const finishVoiceTask = () => {
       if ((isTerminal || activeTask.status === 'awaiting_input' || activeTask.status === 'awaiting_approval' || activeTask.status === 'waiting_retry') && voiceTaskActiveRef.current) {
         voiceWaitingForTaskRef.current = false;
@@ -869,13 +869,16 @@ export default function App() {
                 <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg bg-blue-50 p-3 text-sm text-blue-900" role="status">
                   <Spinner label="Running…" />
                   <button type="button" onClick={() => void pauseRun()} className="rounded-md bg-white px-3 py-1.5 font-medium ring-1 ring-inset ring-blue-300 hover:bg-blue-100">
-                    Pause after current action
+                    Pause
                   </button>
                 </div>
               )}
               {activeTask.status === 'paused' && (
                 <div className="mt-3 rounded-lg bg-amber-50 p-4 text-sm" role="status">
-                  <p>Task paused. The remaining approved actions have not run.</p>
+                  <p>
+                    Task paused. The remaining approved actions have not run.
+                    {activeTask.actions.some((a) => a.status === 'paused') && ' A download was stopped part-way; Resume continues it from where it stopped.'}
+                  </p>
                   <button type="button" disabled={busy} onClick={() => void mutate('resume', () => api.run(activeTask.id))} className="mt-2 rounded bg-blue-700 px-4 py-2 text-white disabled:opacity-50">Resume task</button>
                 </div>
               )}

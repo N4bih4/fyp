@@ -77,14 +77,14 @@ def task_out(task: Task) -> TaskOut:
 
 def _partial_summary(task: Task) -> dict | None:
     """Honest record of what already happened when a task did not fully complete."""
-    if task.status not in (TaskStatus.FAILED, TaskStatus.CANCELLED, TaskStatus.REJECTED, TaskStatus.PAUSED):
+    if task.status not in (TaskStatus.FAILED, TaskStatus.PARTIALLY_COMPLETED, TaskStatus.CANCELLED, TaskStatus.REJECTED, TaskStatus.PAUSED):
         return None
     done = [a for a in task.actions if a.status == ActionStatus.SUCCEEDED]
     if not done:
         return None
     return {
         "succeeded": len(done),
-        "not_run": len([a for a in task.actions if a.status in (ActionStatus.SKIPPED, ActionStatus.CANCELLED, ActionStatus.PENDING, ActionStatus.APPROVED)]),
+        "not_run": len([a for a in task.actions if a.status in (ActionStatus.SKIPPED, ActionStatus.CANCELLED, ActionStatus.PENDING, ActionStatus.APPROVED, ActionStatus.PAUSED)]),
         "failed": len([a for a in task.actions if a.status == ActionStatus.FAILED]),
         "changes_remain": [a.tool_name for a in done if a.tool_name in rollback.SUPPORTED_TOOLS or a.risk != "low"],
         "rollback_available": [a.id for a in done if a.rollback_status == "available"],
@@ -271,13 +271,17 @@ def reject_task(db: Session, task_id: str, action_ids: list[str] | None = None) 
     return task
 
 
-def cancel_task(db: Session, task_id: str) -> Task:
+def cancel_task(db: Session, task_id: str, registry: ToolRegistry | None = None) -> Task:
     task = _get_task(db, task_id)
-    if task.status in (TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED):
+    if task.status in (TaskStatus.COMPLETED, TaskStatus.PARTIALLY_COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED):
         return task  # already terminal; nothing to cancel
     for a in task.actions:
-        if a.status in (ActionStatus.PENDING, ActionStatus.APPROVED):
+        if a.status in (ActionStatus.PENDING, ActionStatus.APPROVED, ActionStatus.PAUSED):
+            if a.status == ActionStatus.PAUSED and registry is not None:
+                tool = registry.get(a.tool_name)
+                tool.on_cancel(tool.validate_args(json.loads(a.args_json or "{}")))  # e.g. delete .part
             a.status = ActionStatus.CANCELLED
+    _stop_running(task, registry, "cancel")
     task.status = TaskStatus.CANCELLED
     task.updated_at = utcnow()
     db.commit()
@@ -286,8 +290,50 @@ def cancel_task(db: Session, task_id: str) -> Task:
 
 
 # ------------------------------------------------------------------ execution
+STOP_MESSAGES = {
+    "timeout": "Stopped after {limit}s: the tool process was killed ({killed} process(es)). Check the real state before retrying.",
+    "pause": "Paused: the running step was stopped ({killed} process(es) killed). Resume continues from the last verified step.",
+    "cancel": "Cancelled: the running step was stopped ({killed} process(es) killed).",
+    "crashed": "The tool process exited unexpectedly; nothing was confirmed.",
+}
+
+
+def _run_and_verify(tool, parsed_args, settings: Settings, action_id: str | None = None) -> tuple[ToolResult, Verification, str | None]:
+    """Execute and verify one action. Returns (result, verification, stop_reason).
+
+    Process isolation (default): both run in a worker process that is killed on
+    timeout, pause or cancel, so a stopped step really stops.
+    """
+    limit = tool.timeout_seconds or settings.tool_timeout_seconds
+    if settings.tool_isolation == "process" and tool.isolation == "process":
+        from . import worker
+
+        control = worker.register(action_id) if action_id else None
+        try:
+            outcome = worker.run_tool(tool, parsed_args, limit, control)
+        finally:
+            if action_id:
+                worker.unregister(action_id)
+        if outcome.stopped:
+            message = STOP_MESSAGES[outcome.stopped].format(limit=limit, killed=len(outcome.killed_pids))
+            result = ToolResult(success=False, error=message,
+                                output={"stopped": outcome.stopped, "timed_out": outcome.stopped == "timeout",
+                                        "killed_pids": outcome.killed_pids})
+            return result, Verification(passed=False, checks=[f"stopped: {outcome.stopped}"], details=message), outcome.stopped
+        result = ToolResult.model_validate(outcome.result)
+        verification = (Verification.model_validate(outcome.verification) if outcome.verification
+                        else Verification(passed=False, checks=[], details=result.error))
+        return result, verification, None
+    result = _run_with_timeout(tool, parsed_args, limit)
+    if result.success:
+        verification = tool.verify(parsed_args, result)
+    else:
+        verification = Verification(passed=False, checks=[], details=result.error)
+    return result, verification, ("timeout" if (result.output or {}).get("timed_out") else None)
+
+
 def _run_with_timeout(tool, parsed_args, timeout_seconds: int) -> ToolResult:
-    limit = max(timeout_seconds, 250) if tool.name == "application_package" else timeout_seconds
+    limit = timeout_seconds
     # No `with` block: its exit would wait for the worker and defeat the timeout.
     pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
     future = pool.submit(tool.execute, parsed_args)
@@ -312,8 +358,12 @@ def run_task(db: Session, task_id: str, registry: ToolRegistry, settings: Settin
     and a task is only runnable from an approved state with no pending actions.
     """
     task = _get_task(db, task_id)
-    if task.status in (TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED, TaskStatus.REJECTED):
+    if task.status in (TaskStatus.COMPLETED, TaskStatus.PARTIALLY_COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED, TaskStatus.REJECTED):
         return task  # already finished; never re-execute
+    if task.status == TaskStatus.PAUSED:
+        refused = _resume_from_checkpoint(db, task, registry)
+        if refused is not None:
+            return refused
     pending = [a for a in task.actions if a.status == ActionStatus.PENDING]
     if pending:
         raise ValueError(
@@ -350,6 +400,17 @@ def run_task(db: Session, task_id: str, registry: ToolRegistry, settings: Settin
         tool = registry.get(action.tool_name)
         parsed = tool.validate_args(json.loads(action.args_json or "{}"))
         _execute_single_action(db, action, tool, parsed, settings)
+        if action.status == ActionStatus.PAUSED:
+            task.status = TaskStatus.PAUSED
+            task.plan_note = "Task pause hai. Chalta hua step roka gaya; Resume us step ko wahin se aage chalayega."
+            task.updated_at = utcnow()
+            db.commit()
+            db.refresh(task)
+            return task
+        if action.status == ActionStatus.CANCELLED:
+            break
+        if action.status == ActionStatus.SUCCEEDED:
+            _save_checkpoint(db, task, action)
         if action.status == ActionStatus.FAILED:
             failed = True
             break  # never continue blindly after a failure
@@ -363,7 +424,8 @@ def run_task(db: Session, task_id: str, registry: ToolRegistry, settings: Settin
         for a in runnable:
             if a.status == ActionStatus.APPROVED:
                 a.status = ActionStatus.SKIPPED
-        task.status = TaskStatus.FAILED
+        verified_before = any(a.status == ActionStatus.SUCCEEDED for a in task.actions)
+        task.status = TaskStatus.PARTIALLY_COMPLETED if verified_before else TaskStatus.FAILED
         failed_action = next((a for a in runnable if a.status == ActionStatus.FAILED), None)
         task.error = failed_action.error if failed_action else "One or more actions failed; remaining actions were skipped."
         if failed_action and json.loads(failed_action.result_json or "{}").get("output", {}).get("needs_confirmation"):
@@ -441,13 +503,18 @@ def _execute_single_action(db: Session, action: Action, tool, parsed, settings: 
         action.error = f"Not run: {exc}"
         db.commit()
         return
-    result = _run_with_timeout(tool, parsed, settings.tool_timeout_seconds)
+    result, verification, stop_reason = _run_and_verify(tool, parsed, settings, action.id)
     action.result_json = result.model_dump_json()
-    verification = (
-        tool.verify(parsed, result)
-        if result.success
-        else Verification(passed=False, checks=[], details=result.error)
-    )
+    if stop_reason in ("pause", "cancel"):
+        action.verification_json = verification.model_dump_json()
+        action.status = ActionStatus.PAUSED if stop_reason == "pause" else ActionStatus.CANCELLED
+        action.error = result.error
+        if stop_reason == "cancel":
+            tool.on_cancel(parsed)
+        db.commit()
+        log_event("action_end", level=30, task_id=action.task_id, action_id=action.id, tool=action.tool_name,
+                  status=action.status, detail=result.error)
+        return
     if result.success and verification.passed and not verification.evidence:
         # A pass with nothing observed is not a verification.
         verification = Verification(passed=False, checks=verification.checks + ["no evidence recorded"],
@@ -842,7 +909,7 @@ def continue_agent_task(db: Session, task_id: str, registry: ToolRegistry, provi
 
 
 # ------------------------------------------------------------------ pause / rollback
-def pause_task(db: Session, task_id: str) -> Task:
+def pause_task(db: Session, task_id: str, registry: ToolRegistry | None = None) -> Task:
     """Request a pause. It takes effect before the next action; an action already
     running cannot be interrupted safely and finishes first."""
     task = _get_task(db, task_id)
@@ -851,6 +918,60 @@ def pause_task(db: Session, task_id: str) -> Task:
     state = _agent_state(task)
     state["pause_requested"] = True
     task.agent_state_json = json.dumps(state)
+    task.updated_at = utcnow()
+    db.commit()
+    _stop_running(task, registry, "pause")
+    db.refresh(task)
+    return task
+
+
+# ------------------------------------------------------------------ checkpoints / stopping
+def _stop_running(task: Task, registry: ToolRegistry | None, reason: str) -> list[str]:
+    """Stop the running step now if its tool is interruptible; others finish first."""
+    from . import worker
+
+    running = [a for a in task.actions if a.status == ActionStatus.RUNNING]
+    if registry is not None:
+        running = [a for a in running if registry.get(a.tool_name).interruptible]
+    return worker.request_stop([a.id for a in running], reason)
+
+
+def _save_checkpoint(db: Session, task: Task, action: Action) -> None:
+    """Remember the last step whose real outcome was verified."""
+    state = _agent_state(task)
+    state["checkpoint"] = {"action_id": action.id, "seq": action.seq, "tool": action.tool_name,
+                           "verified_at": utcnow().isoformat()}
+    task.agent_state_json = json.dumps(state)
+    db.commit()
+
+
+def _resume_from_checkpoint(db: Session, task: Task, registry: ToolRegistry) -> Task | None:
+    """Before resuming, re-check that the last verified step still holds on the real system.
+    Returns the refused task, or None to continue."""
+    for a in task.actions:
+        if a.status == ActionStatus.PAUSED:
+            a.status = ActionStatus.APPROVED  # the same approved action continues (download resumes from .part)
+    state = _agent_state(task)
+    if state.pop("pause_requested", None):  # the pause was already honoured
+        task.agent_state_json = json.dumps(state)
+    db.commit()
+    checkpoint = _agent_state(task).get("checkpoint")
+    if not checkpoint:
+        return None
+    action = next((a for a in task.actions if a.id == checkpoint["action_id"]), None)
+    if action is None or not action.result_json:
+        return None
+    tool = registry.get(action.tool_name)
+    parsed = tool.validate_args(json.loads(action.args_json or "{}"))
+    recheck = tool.verify(parsed, ToolResult.model_validate_json(action.result_json))
+    if recheck.passed and recheck.evidence:
+        return None
+    for a in task.actions:
+        if a.status == ActionStatus.APPROVED:
+            a.status = ActionStatus.SKIPPED
+    task.status = TaskStatus.FAILED
+    task.error = (f"Resume refused: step {action.seq + 1} ({action.tool_name}) no longer holds on this PC "
+                  f"({'; '.join(recheck.checks) or recheck.details}). Nothing else was run.")
     task.updated_at = utcnow()
     db.commit()
     db.refresh(task)
