@@ -26,6 +26,7 @@ os.environ["AGENTDESK_ALLOWED_DIRECTORIES"] = ",".join(
 os.environ["AGENTDESK_MOCK_HOME"] = str(SESSION_TMP / "home")
 os.environ["AGENTDESK_TEST_DIR"] = str(SESSION_TMP / "testdir")
 os.environ["TOOL_TIMEOUT_SECONDS"] = "10"
+os.environ["TOOL_ISOLATION"] = "thread"  # tests monkeypatch tools in-process; worker tests opt in
 os.environ["AGENTDESK_LOG_DIR"] = str(SESSION_TMP / "logs")
 os.environ["AGENTDESK_REQUIRE_API_TOKEN"] = "0"  # auth is covered by tests/test_phase5_approvals.py
 os.environ["AGENTDESK_TOKEN_FILE"] = str(SESSION_TMP / "api_token")
@@ -108,3 +109,12 @@ def client(db):
 def pytest_sessionfinish(session, exitstatus):
     shutil.rmtree(SESSION_TMP, ignore_errors=True)
 
+
+@pytest.fixture(autouse=True)
+def _agreeable_probe():
+    """Verifiers need a desktop; tests get a permissive fake unless they install a strict one."""
+    from app.verification import use_probe
+    from tests.helpers.fake_probe import AgreeableProbe
+
+    with use_probe(AgreeableProbe()) as probe:
+        yield probe

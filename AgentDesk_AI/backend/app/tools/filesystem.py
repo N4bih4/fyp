@@ -20,6 +20,7 @@ from pydantic import BaseModel, Field
 
 from ..security.paths import is_allowed_root, is_executable_path, resolve_within_allowed
 from . import platform as _platform
+from ..verification import failed_result, file_evidence, text_sha256, verdict, window_check
 from .base import BaseTool, RiskLevel, ToolContext, ToolResult, Verification
 
 
@@ -196,6 +197,17 @@ class FindPathsTool(BaseTool):
 
 
 # ---------------------------------------------------------------- open_folder
+
+    def verify(self, args: BaseModel, result: ToolResult) -> Verification:
+        if not result.success:
+            return failed_result(result)
+        a = FindPathsArgs.model_validate(args.model_dump())
+        candidates = [Path(c) for c in result.output.get("candidates", [])]
+        kind_ok = [(c.is_dir() if a.kind == "folder" else c.is_file()) for c in candidates]
+        return verdict([("every candidate exists with the right kind", all(kind_ok))],
+                       {"candidates": len(candidates), "existing": sum(kind_ok),
+                        "truncated": bool(result.output.get("truncated"))})
+
 class OpenFolderArgs(BaseModel):
     path: str = Field(description="Name or path of the folder to open. If relative or partial name, the system locates it automatically.")
 
@@ -204,6 +216,7 @@ class OpenFolderTool(BaseTool):
     name = "open_folder"
     description = "Open a folder in the system's file explorer. Automatically finds matching folder if exact path is not known."
     risk_level = RiskLevel.LOW
+    interruptible = True  # read-only
     args_schema = OpenFolderArgs
 
     def execute(self, args: BaseModel) -> ToolResult:
@@ -232,19 +245,12 @@ class OpenFolderTool(BaseTool):
         return ToolResult(success=True, output={"path": str(target), "launched": True})
 
     def verify(self, args: BaseModel, result: ToolResult) -> Verification:
-        checks = []
-        path_str = result.output.get("path") if result.output else None
-        exists = False
-        if path_str:
-            try:
-                exists = Path(path_str).is_dir()
-            except Exception:
-                exists = False
-        checks.append(f"folder exists: {exists}")
-        launched = bool(result.success and result.output.get("launched"))
-        checks.append(f"explorer launch reported: {launched}")
-        return Verification(passed=exists and launched, checks=checks)
-
+        if not result.success:
+            return failed_result(result)
+        target = Path(result.output["path"])
+        seen, windows = window_check(title_contains=[target.name or str(target)], processes={"explorer.exe"})
+        return verdict([("folder exists", target.is_dir()), ("Explorer window shows the folder", seen)],
+                       {**file_evidence(target), **windows})
 
 # --------------------------------------------------------------- create_folder
 class CreateFolderArgs(BaseModel):
@@ -295,11 +301,9 @@ class CreateFolderTool(BaseTool):
         a = CreateFolderArgs.model_validate(args.model_dump())
         try:
             target = _resolve_create_folder_path(a.path)
-            exists = target.is_dir()
-        except ValueError:
-            exists = False
-        return Verification(passed=exists, checks=[f"folder exists: {exists}"])
-
+        except ValueError as exc:
+            return Verification(passed=False, checks=[f"path invalid: {exc}"])
+        return verdict([("folder exists", target.is_dir())], file_evidence(target))
 
 # ----------------------------------------------------------------- list_folder
 class ListFolderArgs(BaseModel):
@@ -310,6 +314,7 @@ class ListFolderTool(BaseTool):
     name = "list_folder"
     description = "List the contents of a folder inside an allowed directory."
     risk_level = RiskLevel.LOW
+    interruptible = True  # read-only
     args_schema = ListFolderArgs
 
     def execute(self, args: BaseModel) -> ToolResult:
@@ -331,6 +336,20 @@ class ListFolderTool(BaseTool):
 
 
 # ------------------------------------------------------------------- move_file
+
+    def verify(self, args: BaseModel, result: ToolResult) -> Verification:
+        if not result.success:
+            return failed_result(result)
+        target = Path(result.output["path"])
+        listed = {e["name"] for e in result.output.get("entries", [])}
+        try:
+            on_disk = {p.name for p in target.iterdir()}
+        except OSError as exc:
+            return Verification(passed=False, checks=[f"folder re-read failed: {exc}"])
+        return verdict([("every listed entry exists", listed <= on_disk), ("no entry missing", on_disk <= listed)],
+                       {"path": str(target), "listed": len(listed), "on_disk": len(on_disk),
+                        "missing_from_list": sorted(on_disk - listed)[:5], "not_on_disk": sorted(listed - on_disk)[:5]})
+
 class CopyFileArgs(BaseModel):
     source: str = Field(description="Absolute path of the file/folder to copy")
     destination: str = Field(description="Absolute destination path or an existing folder")
@@ -376,30 +395,19 @@ class CopyFileTool(BaseTool):
 
     def verify(self, args: BaseModel, result: ToolResult) -> Verification:
         if not result.success:
-            return Verification(passed=False, checks=[], details="tool reported failure")
+            return failed_result(result)
         src = Path(result.output["source"])
         dst = Path(result.output["destination"])
-        if src.is_file() and dst.is_file():
-            same = src.read_bytes() == dst.read_bytes()
-        else:
-            same = src.is_dir() and dst.is_dir()
-            if same:
-                source_files = {
-                    Path(folder, name).relative_to(src)
-                    for folder, _, names in os.walk(src)
-                    for name in names
-                }
-                destination_files = {
-                    Path(folder, name).relative_to(dst)
-                    for folder, _, names in os.walk(dst)
-                    for name in names
-                }
-                same = source_files == destination_files and all(
-                    (src / relative).read_bytes() == (dst / relative).read_bytes()
-                    for relative in source_files
-                )
-        return Verification(passed=same, checks=[f"copied item exists: {dst.exists()}", f"source and copy match: {same}"])
-
+        if src.is_file():
+            se, de = file_evidence(src), file_evidence(dst)
+            same = de.get("exists") and se.get("size") == de.get("size") and se.get("sha256") == de.get("sha256")
+            return verdict([("source still exists", se["exists"]), ("copy has identical size and hash", bool(same))],
+                           {"source": se, "destination": de})
+        source_files = {Path(f, n).relative_to(src) for f, _, names in os.walk(src) for n in names} if src.is_dir() else set()
+        destination_files = {Path(f, n).relative_to(dst) for f, _, names in os.walk(dst) for n in names} if dst.is_dir() else set()
+        return verdict([("source folder still exists", src.is_dir()), ("destination has every file", source_files <= destination_files)],
+                       {"source": str(src), "destination": str(dst), "source_files": len(source_files),
+                        "destination_files": len(destination_files)})
 
 # ------------------------------------------------------------------- move_file
 class MoveFileArgs(BaseModel):
@@ -436,12 +444,11 @@ class MoveFileTool(BaseTool):
 
     def verify(self, args: BaseModel, result: ToolResult) -> Verification:
         if not result.success:
-            return Verification(passed=False, checks=[], details="tool reported failure")
+            return failed_result(result)
         dst = Path(result.output["destination"])
         src = Path(result.output["source"])
-        checks = [f"destination exists: {dst.exists()}", f"source removed: {not src.exists()}"]
-        return Verification(passed=dst.exists() and not src.exists(), checks=checks)
-
+        return verdict([("destination exists", dst.exists()), ("source removed", not src.exists())],
+                       {"destination": file_evidence(dst), "source_exists": src.exists()})
 
 # ----------------------------------------------------------------- rename_file
 class RenameFileArgs(BaseModel):
@@ -478,12 +485,11 @@ class RenameFileTool(BaseTool):
 
     def verify(self, args: BaseModel, result: ToolResult) -> Verification:
         if not result.success:
-            return Verification(passed=False, checks=[], details="tool reported failure")
+            return failed_result(result)
         new = Path(result.output["new_path"])
         old = Path(result.output["old_path"])
-        checks = [f"new path exists: {new.exists()}", f"old path removed: {not old.exists()}"]
-        return Verification(passed=new.exists() and not old.exists(), checks=checks)
-
+        return verdict([("new path exists", new.exists()), ("old path removed", not old.exists())],
+                       {"new": file_evidence(new), "old_exists": old.exists()})
 
 # -------------------------------------------------------------- compress_folder
 class CompressFolderArgs(BaseModel):
@@ -524,11 +530,12 @@ class CompressFolderTool(BaseTool):
 
     def verify(self, args: BaseModel, result: ToolResult) -> Verification:
         if not result.success:
-            return Verification(passed=False, checks=[], details="tool reported failure")
+            return failed_result(result)
         zp = Path(result.output["zip_path"])
         valid = zp.is_file() and zipfile.is_zipfile(zp)
-        return Verification(passed=valid, checks=[f"zip exists and is valid: {valid}"])
-
+        members = len(zipfile.ZipFile(zp).namelist()) if valid else 0
+        return verdict([("zip exists and is valid", valid), ("zip has members", members > 0)],
+                       {**file_evidence(zp), "members": members})
 
 # ---------------------------------------------------------------- extract_file
 MAX_EXTRACT_ENTRIES = 5000
@@ -580,12 +587,12 @@ class ExtractFileTool(BaseTool):
 
     def verify(self, args: BaseModel, result: ToolResult) -> Verification:
         if not result.success:
-            return Verification(passed=False, checks=[], details="tool reported failure")
+            return failed_result(result)
         dest = Path(result.output["destination"])
-        files = [p for p in dest.rglob("*") if p.is_file()]
-        ok = dest.is_dir() and len(files) > 0
-        return Verification(passed=ok, checks=[f"destination has extracted files: {ok} ({len(files)} files)"])
-
+        files = [p for p in dest.rglob("*") if p.is_file()] if dest.is_dir() else []
+        return verdict([("destination has extracted files", bool(files))],
+                       {"destination": str(dest), "files": len(files),
+                        "sample": [file_evidence(p, with_hash=False) for p in files[:3]]})
 
 # ----------------------------------------------------------------- delete_file
 class DeleteFileArgs(BaseModel):
@@ -663,18 +670,15 @@ class DeleteFileTool(BaseTool):
 
     def verify(self, args: BaseModel, result: ToolResult) -> Verification:
         if not result.success:
-            return Verification(passed=False, checks=[], details="tool reported failure")
+            return failed_result(result)
         original = Path(result.output["deleted"])
         trash_root = _trash_root_for(original, self.ctx.allowed_directories)
         trash_id = result.output["trash_id"]
-        gone = not original.exists()
         manifest_path = _trash_manifest_path(original, trash_id, self.ctx.allowed_directories)
         retained = (trash_root / trash_id).exists() and manifest_path.is_file()
-        return Verification(
-            passed=gone and retained,
-            checks=[f"original path removed: {gone}", f"item retained in AgentDesk Trash: {retained}"],
-        )
-
+        return verdict([("original path removed", not original.exists()), ("item retained in AgentDesk Trash", retained)],
+                       {"original_exists": original.exists(), "trashed": file_evidence(trash_root / trash_id, with_hash=False),
+                        "manifest": str(manifest_path)})
 
 class ListTrashArgs(BaseModel):
     pass
@@ -684,6 +688,7 @@ class ListTrashTool(BaseTool):
     name = "list_trash"
     description = "List files and empty folders in AgentDesk's internal Trash that can be restored."
     risk_level = RiskLevel.LOW
+    interruptible = True  # read-only
     args_schema = ListTrashArgs
 
     def execute(self, args: BaseModel) -> ToolResult:
@@ -741,6 +746,19 @@ class ListTrashTool(BaseTool):
                 return ToolResult(success=False, error=f"Could not list AgentDesk Trash: {exc}")
         return ToolResult(success=True, output={"items": items})
 
+    def verify(self, args: BaseModel, result: ToolResult) -> Verification:
+        if not result.success:
+            return failed_result(result)
+        items = result.output.get("items", [])
+        present = []
+        for item in items:
+            original = Path(item["original_path"])
+            trashed = _trash_root_for(original, self.ctx.allowed_directories) / item["trash_id"]
+            present.append(trashed.exists())
+        return verdict([("every listed item is in Trash", all(present))],
+                       {"items": len(items), "present": sum(present)})
+
+
 
 class RestoreFileArgs(BaseModel):
     trash_id: str = Field(description="trash_id returned by list_trash")
@@ -791,10 +809,9 @@ class RestoreFileTool(BaseTool):
 
     def verify(self, args: BaseModel, result: ToolResult) -> Verification:
         if not result.success:
-            return Verification(passed=False, checks=[], details="tool reported failure")
-        restored = Path(result.output["restored"]).exists()
-        return Verification(passed=restored, checks=[f"restored path exists: {restored}"])
-
+            return failed_result(result)
+        restored = Path(result.output["restored"])
+        return verdict([("restored path exists", restored.exists())], file_evidence(restored))
 
 class WriteTextFileArgs(BaseModel):
     path: str = Field(description="Absolute path of a text document inside an allowed directory")
@@ -836,11 +853,13 @@ class WriteTextFileTool(BaseTool):
 
     def verify(self, args: BaseModel, result: ToolResult) -> Verification:
         if not result.success:
-            return Verification(passed=False, checks=[], details="tool reported failure")
+            return failed_result(result)
         target = Path(result.output["path"])
-        matches = target.is_file() and target.read_text(encoding="utf-8") == WriteTextFileArgs.model_validate(args.model_dump()).content
-        return Verification(passed=matches, checks=[f"document content matches requested text: {matches}"])
-
+        expected = WriteTextFileArgs.model_validate(args.model_dump()).content
+        evidence = file_evidence(target)
+        matches = target.is_file() and target.read_text(encoding="utf-8") == expected
+        return verdict([("document content matches requested text", matches)],
+                       {**evidence, "expected_sha256": text_sha256(expected)})
 
 class ReadTextFileArgs(BaseModel):
     path: str = Field(description="Absolute path of a UTF-8 text document inside an allowed directory")
@@ -850,6 +869,7 @@ class ReadTextFileTool(BaseTool):
     name = "read_text_file"
     description = "Read a UTF-8 text document inside an allowed directory (maximum 50,000 characters)."
     risk_level = RiskLevel.LOW
+    interruptible = True  # read-only
     args_schema = ReadTextFileArgs
 
     def execute(self, args: BaseModel) -> ToolResult:
@@ -868,6 +888,19 @@ class ReadTextFileTool(BaseTool):
             return ToolResult(success=False, error="Document is larger than the 50,000-character read limit")
         return ToolResult(success=True, output={"path": str(target), "content": content})
 
+    def verify(self, args: BaseModel, result: ToolResult) -> Verification:
+        if not result.success:
+            return failed_result(result)
+        target = Path(result.output["path"])
+        try:
+            on_disk = target.read_text(encoding="utf-8")
+        except OSError as exc:
+            return Verification(passed=False, checks=[f"could not re-read document: {exc}"])
+        returned = result.output.get("content", "")
+        return verdict([("returned text equals file on disk", returned == on_disk)],
+                       {**file_evidence(target), "returned_sha256": text_sha256(returned), "characters": len(returned)})
+
+
 
 class FindFilesArgs(BaseModel):
     name: str = Field(min_length=1, max_length=200, description="File or folder name, including approximate spoken names")
@@ -881,6 +914,7 @@ class FindFilesTool(BaseTool):
         "Use this when the user named something approximately, then ask them to confirm if several matches exist."
     )
     risk_level = RiskLevel.LOW
+    interruptible = True  # read-only
     args_schema = FindFilesArgs
 
     def execute(self, args: BaseModel) -> ToolResult:
@@ -964,6 +998,14 @@ class FindFilesTool(BaseTool):
             },
         )
 
+    def verify(self, args: BaseModel, result: ToolResult) -> Verification:
+        if not result.success:
+            return failed_result(result)
+        matches = result.output.get("matches", [])
+        exists = [Path(m["path"] if isinstance(m, dict) else m).exists() for m in matches]
+        return verdict([("every match exists", all(exists))], {"matches": len(matches), "existing": sum(exists)})
+
+
 
 class EditTextFileArgs(BaseModel):
     path: str = Field(description="Absolute path of a UTF-8 text document inside an allowed directory")
@@ -1006,7 +1048,7 @@ class EditTextFileTool(BaseTool):
 
     def verify(self, args: BaseModel, result: ToolResult) -> Verification:
         if not result.success:
-            return Verification(passed=False, checks=[], details="tool reported failure")
+            return failed_result(result)
         a = EditTextFileArgs.model_validate(args.model_dump())
         target = Path(result.output["path"])
         try:
@@ -1014,8 +1056,7 @@ class EditTextFileTool(BaseTool):
         except OSError:
             return Verification(passed=False, checks=["could not re-read document"])
         replaced = a.new_text in content and (not a.old_text or a.old_text not in content or a.old_text in a.new_text)
-        return Verification(passed=replaced, checks=[f"snippet replaced: {replaced}"])
-
+        return verdict([("snippet replaced", replaced)], file_evidence(target))
 
 class OpenFileArgs(BaseModel):
     path: str = Field(description="Name or path of an existing file. If relative or partial name, the system locates it automatically.")
@@ -1055,19 +1096,12 @@ class OpenFileTool(BaseTool):
         return ToolResult(success=True, output={"path": str(target), "launched": True})
 
     def verify(self, args: BaseModel, result: ToolResult) -> Verification:
-        checks = []
-        path_str = result.output.get("path") if result.output else None
-        exists = False
-        if path_str:
-            try:
-                exists = Path(path_str).is_file()
-            except Exception:
-                exists = False
-        checks.append(f"file exists: {exists}")
-        launched = bool(result.success and result.output.get("launched"))
-        checks.append(f"app launch reported: {launched}")
-        return Verification(passed=exists and launched, checks=checks)
-
+        if not result.success:
+            return failed_result(result)
+        target = Path(result.output["path"])
+        seen, windows = window_check(title_contains=[target.name, target.stem])
+        return verdict([("file exists", target.is_file()), ("a window shows the file", seen)],
+                       {**file_evidence(target, with_hash=False), **windows})
 
 def filesystem_tools(ctx: ToolContext | None = None) -> list[BaseTool]:
     ctx = ctx or ToolContext.from_settings()

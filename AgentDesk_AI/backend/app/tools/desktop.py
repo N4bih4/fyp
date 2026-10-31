@@ -10,7 +10,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from .base import BaseTool, RiskLevel, ToolResult
+from ..verification import ProbeUnavailable, current, failed_result, verdict
+from .base import BaseTool, RiskLevel, ToolResult, Verification
 
 _NAMED_KEYS = {
     "alt", "backspace", "ctrl", "delete", "down", "end", "enter", "esc",
@@ -29,6 +30,8 @@ _SW_RESTORE = 9
 # never allows an LLM to perform, even with user approval. Closing, minimising
 # and inspecting these windows remains supported.
 _INPUT_ACTIONS = {"click", "type_text", "press_key", "hotkey", "scroll"}
+_WINDOW_STATE_ACTIONS = {"minimize_window", "maximize_window", "restore_window", "focus_window"}
+_SAVE_PROMPT_WORDS = ("save", "don't save", "dont save", "محفوظ", "सहेज", "सेव")
 _SHELL_PROCESSES = {
     "powershell.exe", "pwsh.exe", "cmd.exe", "windowsterminal.exe", "wt.exe", "conhost.exe",
     "openconsole.exe", "wsl.exe", "wslhost.exe", "bash.exe", "mintty.exe", "regedit.exe",
@@ -67,14 +70,14 @@ class DesktopStep(BaseModel):
 
     action: (
         Literal[
-            "inspect", "close_window", "close_tab", "minimize_window", "maximize_window", "restore_window",
+            "inspect", "close_window", "close_tab", "minimize_window", "maximize_window", "restore_window", "focus_window",
             "click", "type_text", "press_key", "hotkey", "scroll",
         ]
         | None
     ) = None
     type: (
         Literal[
-            "inspect", "close_window", "close_tab", "minimize_window", "maximize_window", "restore_window",
+            "inspect", "close_window", "close_tab", "minimize_window", "maximize_window", "restore_window", "focus_window",
             "click", "type_text", "press_key", "hotkey", "scroll", "key", "text",
         ]
         | None
@@ -138,6 +141,7 @@ class DesktopStep(BaseModel):
             "minimize_window": set(),
             "maximize_window": set(),
             "restore_window": set(),
+            "focus_window": set(),
             "click": {"x", "y"},
             "type_text": {"text"},
             "press_key": {"key"},
@@ -178,7 +182,7 @@ class DesktopControlArgs(BaseModel):
         needs_target = any(step.action != "inspect" for step in self.steps)
         if needs_target and not (self.target_window and self.target_window.strip()):
             raise ValueError("target_window is required for keyboard and mouse actions")
-        if any(step.action in {"close_window", "close_tab", "minimize_window", "maximize_window", "restore_window"} for step in self.steps[:-1]):
+        if any(step.action in _WINDOW_STATE_ACTIONS | {"close_window", "close_tab"} for step in self.steps[:-1]):
             raise ValueError("close_window, close_tab, and window state actions must be the final desktop action")
         return self
 
@@ -188,7 +192,8 @@ class DesktopControlTool(BaseTool):
     description = (
         "Inspect the active window and list open titles; close one uniquely identified tab "
         "(close_tab / Ctrl+W) or app window (close_window / Alt+F4); minimize (minimize_window); "
-        "maximize (maximize_window); or perform a short bounded mouse/keyboard sequence. "
+        "maximize (maximize_window); restore (restore_window); bring to front (focus_window); "
+        "or perform a short bounded mouse/keyboard sequence. "
         "Inspect first and pass a listed title as target_window. Never substitute a different "
         "window when the requested app/site is not listed; Ctrl+W closes the active tab in the matched window."
     )
@@ -199,7 +204,7 @@ class DesktopControlTool(BaseTool):
         if args is None:
             return RiskLevel.HIGH
         parsed = DesktopControlArgs.model_validate(args.model_dump())
-        if all(step.action in {"inspect", "minimize_window", "maximize_window", "restore_window"} for step in parsed.steps):
+        if all(step.action in {"inspect"} | _WINDOW_STATE_ACTIONS for step in parsed.steps):
             return RiskLevel.LOW
         return RiskLevel.HIGH
 
@@ -209,7 +214,7 @@ class DesktopControlTool(BaseTool):
         parsed = DesktopControlArgs.model_validate(args.model_dump())
         if parsed.target_window_id is not None and any(step.action == "close_window" for step in parsed.steps):
             return RiskLevel.HIGH  # batch/window-ID closes require explicit review
-        if all(step.action in {"inspect", "minimize_window", "maximize_window", "restore_window"} for step in parsed.steps):
+        if all(step.action in {"inspect"} | _WINDOW_STATE_ACTIONS for step in parsed.steps):
             return RiskLevel.LOW
         if not parsed.target_window:
             return RiskLevel.HIGH
@@ -471,6 +476,61 @@ class DesktopControlTool(BaseTool):
             for item in pyautogui.getAllWindows()
         )
 
+    @staticmethod
+    def _save_prompt(pid: int | None) -> str | None:
+        """Text of an unsaved-changes dialog owned by the app, read with UI Automation."""
+        if not pid:
+            return None
+        try:
+            texts = current().dialog_texts(pid)
+        except (ProbeUnavailable, Exception):  # noqa: BLE001 - no dialog evidence
+            return None
+        hits = [t for t in texts if any(w in t.casefold() for w in _SAVE_PROMPT_WORDS)]
+        return hits[0][:160] if hits else None
+
+    def verify(self, args: BaseModel, result: ToolResult) -> Verification:
+        """Re-read each touched window's real state (exists, minimized, maximized, foreground)."""
+        if not result.success:
+            return failed_result(result)
+        probe = current()
+        steps = result.output.get("completed_steps", [])
+        checks: list[tuple[str, bool]] = []
+        evidence: dict[str, Any] = {"steps": []}
+        try:
+            for step in steps:
+                action, hwnd = step.get("action"), step.get("hwnd") or step.get("foreground_hwnd")
+                if hwnd:
+                    seen = probe.window(hwnd)
+                else:  # no handle (non-Win32 backend): fall back to the exact title
+                    title = step.get("window")
+                    seen = next((w for w in probe.windows() if title and w.title == title), None)
+                record = {"action": action, "hwnd": hwnd, "now": seen.as_evidence() if seen else None}
+                if action == "inspect":
+                    windows = probe.windows()
+                    record["windows_now"] = len(windows)
+                    checks.append(("desktop windows re-read", bool(windows)))
+                elif action == "close_window":
+                    checks.append((f"window {hwnd or step.get('window')!r} is gone", seen is None))
+                elif action == "close_tab":
+                    checks.append(("tab closed (window gone or title changed)",
+                                   seen is None or seen.title != step.get("title_before")))
+                elif action == "minimize_window":
+                    checks.append(("window is minimized", bool(seen and seen.minimized)))
+                elif action == "maximize_window":
+                    checks.append(("window is maximized", bool(seen and seen.maximized)))
+                elif action == "restore_window":
+                    checks.append(("window is restored", bool(seen and not seen.minimized and not seen.maximized)))
+                elif action == "focus_window":
+                    checks.append(("window is in the foreground", bool(seen and seen.foreground)))
+                elif action in _INPUT_ACTIONS:
+                    # The effect of free input cannot be read back generally; the evidence is
+                    # that the target window existed and had focus when the input was sent.
+                    checks.append(("input went to the target window", seen is not None))
+                evidence["steps"].append(record)
+        except ProbeUnavailable as exc:
+            return Verification(passed=False, checks=["window state could not be re-read"], details=str(exc))
+        return verdict(checks, evidence)
+
     def execute(self, args: BaseModel) -> ToolResult:
         try:
             parsed = DesktopControlArgs.model_validate(args.model_dump())
@@ -487,6 +547,7 @@ class DesktopControlTool(BaseTool):
 
         pyautogui.FAILSAFE = True
         completed = []
+        input_hwnd = None
         try:
             for step in parsed.steps:
                 if step.action != "inspect":
@@ -519,6 +580,8 @@ class DesktopControlTool(BaseTool):
                                 {
                                     "action": "close_tab",
                                     "window": target.title,
+                                    "title_before": title,
+                                    "hwnd": self._window_hwnd(target),
                                     "closed_tab": True,
                                 }
                             )
@@ -533,15 +596,26 @@ class DesktopControlTool(BaseTool):
                             if used_hotkey:
                                 time.sleep(0.75)
                                 still_open = self._window_is_open(target, closed_title, pyautogui)
+                        meta = self._window_metadata(target)
                         completed.append(
                             {
                                 "action": "close_window",
                                 "window": closed_title,
+                                "hwnd": self._window_hwnd(target),
+                                "pid": meta.get("pid"),
                                 "closed": not still_open,
                                 "posted_close": posted,
                             }
                         )
                         if still_open:
+                            prompt = self._save_prompt(meta.get("pid"))
+                            if prompt:
+                                return ToolResult(
+                                    success=False,
+                                    output={"completed_steps": completed, "needs_confirmation": True, "save_prompt": prompt},
+                                    error=(f"{closed_title!r} is asking whether to save changes ({prompt!r}). "
+                                           "Choose Save or Don't Save yourself; AgentDesk will not pick for you."),
+                                )
                             if not used_hotkey:
                                 active = pyautogui.getActiveWindow()
                                 raise ValueError(
@@ -554,7 +628,7 @@ class DesktopControlTool(BaseTool):
                                 f"Window {closed_title!r} is still open. It may have an unsaved-changes prompt."
                             )
                         continue
-                    if step.action in {"minimize_window", "maximize_window", "restore_window"}:
+                    if step.action in _WINDOW_STATE_ACTIONS:
                         self._activate_window(target, pyautogui)
                         time.sleep(0.25)
                         if step.action == "minimize_window":
@@ -563,26 +637,21 @@ class DesktopControlTool(BaseTool):
                             except Exception:
                                 if self._foreground_matches(target, pyautogui):
                                     pyautogui.hotkey("win", "down")
-                            completed.append(
-                                {"action": "minimize_window", "window": target.title, "minimized": True}
-                            )
                         elif step.action == "maximize_window":
                             try:
                                 target.maximize()
                             except Exception:
                                 if self._foreground_matches(target, pyautogui):
                                     pyautogui.hotkey("win", "up")
-                            completed.append(
-                                {"action": "maximize_window", "window": target.title, "maximized": True}
-                            )
                         elif step.action == "restore_window":
                             try:
                                 target.restore()
                             except Exception:
                                 pass
-                            completed.append(
-                                {"action": "restore_window", "window": target.title, "restored": True}
-                            )
+                        elif step.action == "focus_window" and not self._foreground_matches(target, pyautogui):
+                            raise ValueError(f"Windows did not bring {target.title!r} to the front.")
+                        time.sleep(0.2)
+                        completed.append({"action": step.action, "window": target.title, "hwnd": self._window_hwnd(target)})
                         continue
                     active = pyautogui.getActiveWindow()
                     if not active or active.title != target.title:
@@ -590,6 +659,7 @@ class DesktopControlTool(BaseTool):
                             f"Foreground window {active.title if active else None!r} does not match "
                             f"target {target.title!r}; no input was sent."
                         )
+                    input_hwnd = self._window_hwnd(target)
                     if step.action in _INPUT_ACTIONS and is_shell_target(
                         target.title, self._window_metadata(target).get("process")
                     ):
@@ -615,20 +685,20 @@ class DesktopControlTool(BaseTool):
                     if step.x >= width or step.y >= height:
                         raise ValueError(f"Click coordinates must be within the {width}x{height} screen.")
                     pyautogui.click(step.x, step.y)
-                    completed.append({"action": "click", "x": step.x, "y": step.y})
+                    completed.append({"action": "click", "x": step.x, "y": step.y, "foreground_hwnd": input_hwnd})
                 elif step.action == "type_text":
                     self._type_text(pyautogui, step.text)
-                    completed.append({"action": "type_text", "characters": len(step.text)})
+                    completed.append({"action": "type_text", "characters": len(step.text), "foreground_hwnd": input_hwnd})
                 elif step.action == "press_key":
                     pyautogui.press(step.key.lower())
-                    completed.append({"action": "press_key", "key": step.key.lower()})
+                    completed.append({"action": "press_key", "key": step.key.lower(), "foreground_hwnd": input_hwnd})
                 elif step.action == "hotkey":
                     keys = [key.lower() for key in step.keys]
                     pyautogui.hotkey(*keys)
-                    completed.append({"action": "hotkey", "keys": keys})
+                    completed.append({"action": "hotkey", "keys": keys, "foreground_hwnd": input_hwnd})
                 elif step.action == "scroll":
                     pyautogui.scroll(step.amount)
-                    completed.append({"action": "scroll", "amount": step.amount})
+                    completed.append({"action": "scroll", "amount": step.amount, "foreground_hwnd": input_hwnd})
         except Exception as exc:
             return ToolResult(
                 success=False,

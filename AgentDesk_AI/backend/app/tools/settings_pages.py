@@ -3,7 +3,8 @@ import os
 import platform
 from typing import Literal
 from pydantic import BaseModel
-from .base import BaseTool, RiskLevel, ToolResult
+from ..verification import failed_result, verdict, window_check
+from .base import BaseTool, RiskLevel, ToolResult, Verification
 
 PAGES = {
     "root": "ms-settings:", "display": "ms-settings:display",
@@ -32,3 +33,12 @@ class OpenWindowsSettingsTool(BaseTool):
             return ToolResult(success=True, output={"page": parsed.page, "uri": PAGES[parsed.page], "launch_requested": True})
         except OSError as exc:
             return ToolResult(success=False, error=f"Windows could not launch Settings: {exc}")
+
+    def verify(self, args, result: ToolResult) -> Verification:
+        if not result.success:
+            return failed_result(result)
+        seen, windows = window_check(title_contains=["settings"], processes={"systemsettings.exe", "applicationframehost.exe"})
+        return verdict([("Settings window is open", seen)], {"page": result.output.get("page"), **windows},
+                       details="The window is confirmed; the exact sub-page is not read.")
+
+

@@ -21,7 +21,7 @@ from .logging_setup import log_event
 from .models import Task, TaskStatus, utcnow
 from .orchestration.rollback import BACKUP_DIR_NAME
 
-_FINISHED = (TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED, TaskStatus.REJECTED)
+_FINISHED = (TaskStatus.COMPLETED, TaskStatus.PARTIALLY_COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED, TaskStatus.REJECTED)
 
 
 def _backup_folder(plan: dict) -> Path | None:

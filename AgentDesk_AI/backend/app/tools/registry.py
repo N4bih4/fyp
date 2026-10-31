@@ -3,12 +3,14 @@ from __future__ import annotations
 
 import json
 
-from .packages import ApplicationPackageTool
+from .packages import package_tools
+from .messaging import messaging_tools
 from .apps import app_tools
 from .base import BaseTool, ToolContext
 from .desktop import DesktopControlTool
 from .browser import BrowserControlTool
 from .filesystem import filesystem_tools
+from .media import media_tools
 from .system import system_tools
 from .web import web_tools
 
@@ -23,11 +25,13 @@ class ToolRegistry:
         tools: list[BaseTool] = []
         tools.extend(filesystem_tools(self.ctx))
         tools.extend(app_tools(self.ctx))
-        tools.append(ApplicationPackageTool(self.ctx))
+        tools.extend(package_tools(self.ctx))
+        tools.extend(messaging_tools(self.ctx))
         tools.append(DesktopControlTool(self.ctx))
         tools.append(BrowserControlTool(self.ctx))
         tools.extend(system_tools(self.ctx))
         tools.extend(web_tools(self.ctx))
+        tools.extend(media_tools(self.ctx))
         self._tools: dict[str, BaseTool] = {t.name: t for t in tools}
 
     def get(self, name: str) -> BaseTool:

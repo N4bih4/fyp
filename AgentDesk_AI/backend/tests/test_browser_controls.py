@@ -141,10 +141,14 @@ def test_local_tab_close_never_constructs_ai_provider(db, ctx, monkeypatch):
     from app.tools.registry import ToolRegistry
     monkeypatch.setattr(executor, "get_provider", lambda *_: pytest.fail("API used for tab close"))
     calls = []
+    open_tabs = list(TABS)
     def request(action, **args):
         calls.append(action)
-        return {"success": True, "tabs": TABS} if action == "inspect" else {"success": True, "closed": True}
+        if action == "close":
+            open_tabs[:] = [t for t in open_tabs if t["id"] != args["tab_id"]]
+            return {"success": True, "closed": True}
+        return {"success": True, "tabs": list(open_tabs)}
     monkeypatch.setattr(bridge, "request", request)
     task = executor.start_task(db, "Google Drive ka tab band kar do", None, ToolRegistry(ctx), Settings(ai_provider="groq", groq_api_key=None))
     assert task.status == "completed"
-    assert calls == ["inspect", "close"]
+    assert calls == ["inspect", "close", "inspect"]  # verify re-inspects: the tab must really be gone

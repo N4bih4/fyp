@@ -13,7 +13,7 @@ def _post_task(client, command, key=None):
 
 
 def test_health_and_config_do_not_leak_secrets(client):
-    assert client.get("/health").json() == {"status": "ok", "version": "0.1.0"}
+    assert client.get("/health").json() == {"status": "ok", "version": "0.2.0"}
     status = client.get("/config/status").json()
     assert status["mock_mode"] is True
     assert status["ai_configured"] is True

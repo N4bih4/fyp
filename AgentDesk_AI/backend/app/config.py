@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "AgentDesk AI"
-    app_version: str = "0.1.0"
+    app_version: str = "0.2.0"
 
     # --- AI provider ---
     # "groq" (primary, real LLM with tool calling), "openai" (alternative),
@@ -40,6 +40,11 @@ class Settings(BaseSettings):
     ai_cloud_mode: str = "explicit"
     discovery_directories: str = Field(default="", validation_alias=AliasChoices("AGENTDESK_DISCOVERY_DIRECTORIES", "discovery_directories"))
     ai_timeout_seconds: int = 30
+    # Speech models on Groq (used by ai/groq_client.py). STT falls back in order.
+    groq_stt_model: str = "whisper-large-v3-turbo"
+    groq_stt_fallback_model: str = "whisper-large-v3"
+    groq_tts_model: str = "canopylabs/orpheus-v1-english"
+    groq_tts_voice: str = "autumn"
     ai_max_retries: int = 2
     # Bound on agentic-loop tool steps per task (cost + runaway protection).
     agent_max_steps: int = 10
@@ -62,6 +67,11 @@ class Settings(BaseSettings):
         default="./agentdesk_test", validation_alias=AliasChoices("AGENTDESK_TEST_DIR", "test_dir")
     )
     tool_timeout_seconds: int = 30
+    # "process" (default): tools run in a worker process that is killed on timeout/pause/cancel.
+    # "thread": in-process (tests only; a timed-out thread cannot be stopped).
+    tool_isolation: str = "process"
+    # Pilot: append one privacy-safe CSV row per finished task (app/metrics.py). Off by default.
+    pilot_metrics: bool = False
     # Medium/high-risk approvals expire if the action is not run in time.
     approval_ttl_seconds: int = 600
 

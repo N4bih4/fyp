@@ -21,7 +21,9 @@ from . import usage
 from .logging_setup import log_event, setup_logging
 from .security.token import get_api_token
 from .database import get_db, init_db, SessionLocal
-from .models import Task, TaskStatus, ActionStatus, utcnow
+from .models import MemoryItem, Task, TaskStatus, ActionStatus, utcnow
+from . import preferences as prefs
+from . import metrics  # registers the automatic pilot export
 from .orchestration import executor
 from .schemas import (
     ActionOut,
@@ -67,7 +69,17 @@ async def lifespan(app: FastAPI):
         from .retention import prune
 
         prune(db, settings)
+    if settings.tool_isolation == "process":
+        import threading
+
+        from .orchestration import worker
+        # Start one tool worker in the background so the first command does not pay its start-up cost.
+        threading.Thread(target=worker.pool.warm, name="tool-worker-warmup", daemon=True).start()
     yield
+    if settings.tool_isolation == "process":
+        from .orchestration import worker
+
+        worker.pool.shutdown()
     log_event("server_stop")
 
 
@@ -84,7 +96,7 @@ app.add_middleware(
 
 _LOCAL_HOSTS = {"127.0.0.1", "localhost", "[::1]", "testserver"}
 _SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
-_PROTECTED_PREFIXES = ("/tasks", "/config", "/tools", "/usage", "/browser/connect-token")
+_PROTECTED_PREFIXES = ("/tasks", "/config", "/tools", "/usage", "/browser/connect-token", "/preferences", "/memory", "/metrics")
 
 
 @app.middleware("http")
@@ -133,6 +145,73 @@ async def quota_exceeded_handler(request: Request, exc: usage.QuotaExceeded):
 def get_usage(db: Session = Depends(get_db)) -> dict:
     """Plan, limits and local usage counters. Contains no command text."""
     return usage.snapshot(db, get_settings())
+
+
+# ------------------------------------------------------------------ pilot metrics
+@app.get("/metrics/tasks.csv")
+def task_metrics_csv(days: int | None = None, db: Session = Depends(get_db)):
+    """One row per finished task: timings, tools, risk, approvals, verification. No command text or paths."""
+    from fastapi.responses import PlainTextResponse
+
+    if days is not None and not 1 <= days <= 365:
+        raise HTTPException(status_code=422, detail="days must be 1-365")
+    return PlainTextResponse(metrics.export_csv(db, days), media_type="text/csv",
+                             headers={"Content-Disposition": "attachment; filename=agentdesk_task_metrics.csv"})
+
+
+# ------------------------------------------------------------------ preferences & memory
+@app.get("/preferences")
+def get_preferences_route(db: Session = Depends(get_db)) -> dict:
+    return prefs.get_preferences(db).model_dump()
+
+
+@app.put("/preferences")
+def put_preferences(payload: prefs.PreferencesUpdate, db: Session = Depends(get_db)) -> dict:
+    updated = prefs.update_preferences(db, payload)
+    log_event("preferences_updated", detail=",".join(sorted(payload.model_dump(exclude_none=True))))
+    return updated.model_dump()
+
+
+@app.get("/memory")
+def list_memory(db: Session = Depends(get_db)) -> dict:
+    current = prefs.get_preferences(db)
+    items = db.query(MemoryItem).order_by(MemoryItem.updated_at.desc()).all()
+    return {"enabled": current.memory_enabled, "items": [prefs.memory_out(i) for i in items],
+            "recent_turns": prefs.recent_turns(db, current), "conversation_cutoff": current.conversation_cutoff}
+
+
+@app.post("/memory", status_code=201)
+def add_memory(payload: prefs.MemoryIn, db: Session = Depends(get_db)) -> dict:
+    item = MemoryItem(kind=payload.kind, text=payload.text)
+    db.add(item)
+    db.commit()
+    return prefs.memory_out(item)
+
+
+@app.put("/memory/{item_id}")
+def edit_memory(item_id: str, payload: prefs.MemoryIn, db: Session = Depends(get_db)) -> dict:
+    item = db.get(MemoryItem, item_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Memory item not found")
+    item.kind, item.text = payload.kind, payload.text
+    db.commit()
+    return prefs.memory_out(item)
+
+
+@app.delete("/memory/{item_id}")
+def delete_memory(item_id: str, db: Session = Depends(get_db)) -> dict:
+    item = db.get(MemoryItem, item_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Memory item not found")
+    db.delete(item)
+    db.commit()
+    return {"deleted": item_id}
+
+
+@app.post("/memory/forget-conversation")
+def forget_conversation(db: Session = Depends(get_db)) -> dict:
+    """Earlier commands stay in task history but are no longer used as conversation memory."""
+    return prefs.forget_conversation(db).model_dump()
 
 
 @app.get("/health", response_model=HealthOut)
@@ -244,7 +323,7 @@ def run_task(task_id: str, db: Session = Depends(get_db)) -> TaskOut:
 @app.post("/tasks/{task_id}/pause", response_model=TaskOut)
 def pause_task(task_id: str, db: Session = Depends(get_db)) -> TaskOut:
     try:
-        return executor.task_out(executor.pause_task(db, task_id))
+        return executor.task_out(executor.pause_task(db, task_id, _registry()))
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:
@@ -264,7 +343,7 @@ def rollback_task(task_id: str, db: Session = Depends(get_db)) -> TaskOut:
 @app.post("/tasks/{task_id}/cancel", response_model=TaskOut)
 def cancel_task(task_id: str, db: Session = Depends(get_db)) -> TaskOut:
     try:
-        return executor.task_out(executor.cancel_task(db, task_id))
+        return executor.task_out(executor.cancel_task(db, task_id, _registry()))
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -285,16 +364,15 @@ def reply_task(task_id: str, payload: TaskReply, db: Session = Depends(get_db)) 
         no = {"no", "cancel", "cancel it", "stop", "don't", "do not", "nahi", "nahin", "nahi karo", "नहीं", "नहीं करो", "रहने दो", "نہیں", "نہیں کرو", "رہنے دو"}
         if message in yes and task.status == "awaiting_approval":
             pending = [a for a in task.actions if a.status == ActionStatus.PENDING]
-            # A bare "yes" confirms exactly the one proposal on screen. With several
-            # pending actions, high-risk ones must be approved individually.
-            if len(pending) == 1:
-                ids = [pending[0].id]
-            elif any(a.risk == "high" for a in pending):
-                task.plan_note = "Kai actions pending hain aur kam az kam ek high-risk hai. Har action ko alag Approve karein."
+            # Rule 3: a spoken/typed "yes" may approve low/medium risk only. High risk
+            # (delete, overwrite, download, input) needs the on-screen Approve click.
+            if any(a.risk == "high" for a in pending):
+                task.plan_note = ("High-risk action: on-screen Approve button dabayein. Voice/typed 'haan' sirf "
+                                  "medium-risk actions approve karta hai. (High risk needs a click on Approve.)")
                 db.commit()
+                log_event("voice_approval_refused_high_risk", task_id=task.id, count=len(pending))
                 return executor.task_out(task)
-            else:
-                ids = None
+            ids = [a.id for a in pending]
             approved = executor.approve_task(db, task_id, ids)
             if approved.status != TaskStatus.APPROVED:
                 return executor.task_out(approved)

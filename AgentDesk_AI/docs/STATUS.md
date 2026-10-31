@@ -1,0 +1,256 @@
+# AgentDesk AI — STATUS
+
+Single source of truth for "what is done". Updated at the end of every session.
+Older evidence: `FEATURE_AUDIT.md`, `audit/FEATURE_TRACEABILITY_MATRIX.md`,
+`audit/FINAL_ACCEPTANCE_AND_SECURITY_REPORT.md`, `audit/phases/PHASE_*_COMPLETION.md`.
+
+## Session log
+
+### 2026-10-31 — Session 7: Phases 19-20 PILOT, RELEASE, REPORT
+
+**Done**
+- **Pilot task metrics** (`app/metrics.py`): with `PILOT_METRICS=1` every task that finishes (or stops as "not understood")
+  appends one row to `%LOCALAPPDATA%\AgentDesk\pilot\task_metrics.csv`; `GET /metrics/tasks.csv?days=N` returns the same
+  rows from the database. Rows: timings, status, language, command length, source, tools, max risk, approvals and wait,
+  verified/failed actions, stop reason, error category. No command text, paths, arguments, numbers or addresses (tested).
+- **Automated pilot** (`scripts/pilot_run.py`): extracts the release zip, starts that copy with everything redirected to a
+  scratch folder, and runs checklist A (checksum, manifest, forbidden files), B (create/approve/verify/undo,
+  write/overwrite/undo, high-risk delete refused by voice then approved and undone, cancel), D (no network → clear error;
+  planted key in no log or response) and F (history after restart) by plain-language commands. Report + metrics CSV in
+  `docs/pilot/`.
+- **Top issues fixed** (`docs/pilot/FINDINGS.md`): (1) write/overwrite/undo was impossible by command without cloud AI —
+  the Phase 15 local matcher is now a fallback after the older parser (confident, fully valid plans only; no cloud change),
+  plus "overwrite X with Y" (high risk) and "first version" no longer read as an ordinal; (2) not-understood commands were
+  missing from metrics; (3) Windows-only errors now categorised `unsupported_platform`.
+- **Release 0.2.0**: `packaging/build_release.py` → `dist-release/AgentDesk-AI-0.2.0-win.zip` (124 files, git-ignored;
+  SHA-256 `bb82612561c0077593bbac154445a055254984e33b9ec416c5629ba73af5bb9e`). Includes desktop shell and docs.
+- **Traceability matrix**: new "Release 0.2.0 — measured results" table (R-01..R-43), measured-only, each row with the
+  command that produced it and what is not measured.
+- `scripts/latency_check.py` (server part of the latency target). `docs/USER_GUIDE.md`, `docs/DEMO_SCRIPT.md`.
+
+**Tested how**
+- `pytest tests -q` → **717 passed, 3 skipped, 0 failed**. Gate G3 PASS (99.3% / 99.3%, 0, 0). `npm run build` pass.
+- Automated pilot on 0.1.0: 12 PASS / 0 FAIL / 8 NOT RUN → after fixes on 0.2.0: **13 PASS / 0 FAIL / 7 NOT RUN**.
+- Latency (server only, 30 local commands): p50 0.036 s, p90 0.054 s, 30/30 under 2.5 s.
+
+**Not done (needs you)**
+- **The pilot on a second Windows PC by a person** (`docs/audit/PILOT_CHECKLIST.md`, sections A install, C devices,
+  E browser profile, F voice) and the 5-person usability test. Turn on `PILOT_METRICS=1` in `backend\.env` for it.
+- **Windows installer/exe**: the release zip + INSTALL.cmd is built; the PyInstaller exe must be built on Windows
+  (`backend\build_windows.ps1`) and it does not include the desktop shell yet.
+- Static/dependency scans not re-run for 0.2.0; new pins (rapidfuzz, pywinauto, pywebview, pystray) unverified on Windows.
+- Open decision 1 (full switch of live commands to the Phase 15 planner + Groq structured output) is still yours; only the
+  local fallback was added.
+
+### 2026-10-31 — Session 6: Phase 18 INTEGRATIONS
+
+**Done**
+- **Browser extension 1.1** (`browser-extension/`). Root cause of "tab opening needs a Reload": the extension compared
+  `https://site` with Chrome's normalised `https://site/` (open always "not confirmed"), and a still-loading tab only has
+  `pendingUrl`, so closing it failed "Tab changed since inspection". Both now compare normalised URLs. The extension sends
+  `{version, capabilities}` on connect; the backend reads the shipped `manifest.json` and, for an outdated 1.1+, sends
+  `reload` (`chrome.runtime.reload()` loads the updated unpacked files — no manual click). A 1.0 extension (no `open`)
+  gets a verified fallback: launch Chrome, then confirm the tab through the extension's `inspect`. `/browser/status`
+  reports `version`, `expected_version`, `outdated`. Real-browser test notes in `docs/BROWSER_CONTROLS.md`.
+- **`media_control`** (low): media keys via `keybd_event` (0xB3/0xB0/0xB1/0xB2); verified through the Windows media
+  session (SMTC via winsdk): status for play/pause/stop, track title for next/previous; play/pause are idempotent;
+  no session = honest failure. NLU: "next song", "agla gaana", "gaana rok do", Urdu/Hindi (YouTube/video stays with the browser).
+- **YouTube play**: `play_youtube_video` now counts a chosen video only when Windows reports it **playing** (else
+  "autoplay may be blocked — press Play"); before that it asks the extension to press play on the new tab.
+- **`whatsapp_open_chat`** (medium): `whatsapp://send?phone&text` in WhatsApp Desktop, contact only from a number saved in
+  Memory, international format required, never presses Send; verified by the WhatsApp window and, when UI Automation can
+  read it, the draft text. NLU routes WhatsApp messages to it (was "unsupported"); 4 eval items relabelled and disclosed in
+  `tests/nlu_eval/README.md`; Gate G3 still PASS (99.3% / 99.3%, 0 invented, 0 bypasses).
+- **`winget_install`** (high): exact WinGet ID only (schema pattern), approval card says it accepts the license, never
+  interrupted (a killed installer breaks apps), 900 s budget, already-installed is a no-op with evidence, verified by a
+  fresh `winget list --id <id> --exact`. "install zoom" still searches first; "install package VideoLAN.VLC" installs.
+- **Email stays a draft**: test enforces `mailto:` only, `sent: false`, no SMTP code, no tool named send*.
+- Approval card shows package/source/contact/number/message plus a plain note per tool ("not sent — you press Send").
+- `live_check.py`: probes for the three new tools (opt-in `--media`, `--whatsapp-phone`, `--install-id`), `--record`
+  writes `docs/live_runs/*.json`. `docs/INTEGRATIONS.md` lists the four Windows commands to record one live run each.
+
+**Tested how**
+- Backend `pytest tests -q` -> **710 passed, 3 skipped, 0 failed** (new: `test_phase18_tools.py` 35, `test_phase18_browser.py` 10,
+  NLU routes 9). Extension mocks `test_controls.cjs` (now incl. URL normalisation + self-reload) and `test_pairing.cjs` pass.
+  Frontend build pass; `npm run test:e2e` 8/8 (unchanged).
+- **Recorded live run — browser extension** (`docs/live_runs/2026-10-31-browser-extension.json`): real Chromium 153 (headless),
+  real unpacked extension, paired via the real setup page, real backend on :8000: handshake 1.1.0 -> list tabs (verified) ->
+  open Gmail via the extension (verified by re-inspect) -> close that tab (verified gone). This run found the loading-tab close bug.
+- **Recorded live run — container** (`docs/live_runs/2026-10-31T082309Z-live_check-linux.json`): 32 tools, 15 PASS, 0 FAIL,
+  17 BLOCKED. `media_control`, `whatsapp_open_chat`, `winget_install` are BLOCKED here (not Windows).
+
+**Done-when status: NOT fully met.** Each new tool has tests and a verifier. The live run is recorded for the extension only;
+media keys, WhatsApp Desktop and winget need the Windows PC — run the four commands in `docs/INTEGRATIONS.md`.
+
+**Known issues**
+- WhatsApp Desktop's text box may not be readable through UI Automation; then the open window is the only evidence.
+- SMTC only sees players that report to Windows (most do; some old players do not) — those runs fail honestly.
+- winget may trigger a UAC prompt; if declined, the install fails (reported with WinGet's output).
+
+### 2026-10-31 — Session 5: Phase 17 DESKTOP EXPERIENCE
+
+**Done**
+- **Backend (preferences + memory).** Tables `preferences` and `memory_items` (schema v6). `GET/PUT /preferences`: persona (name, language, style, speak replies, orb colour), listen mode (`push_to_talk` / `hands_free` / `off`), provider mode (`auto` / `local_only` — local-only never builds a cloud provider), approval policy (`standard` / `strict` — strict makes every action, even low risk, wait for approval; there is no looser option), memory on/off, onboarded flag. `GET/POST/PUT/DELETE /memory` + `POST /memory/forget-conversation`; text that looks like a password/PIN/API key is refused (422). All new routes require the token (the route-matrix security test caught them missing at first) and are documented in `docs/API.md`.
+- **Rule 3 enforced.** A spoken/typed "yes" now approves only low/medium risk; with a high-risk action pending it is refused with "High risk needs a click on Approve" (was: a bare yes could approve a single delete). This was open decision 2; the brief makes it non-negotiable. One older test rewritten accordingly.
+- **Desktop UI (React).** Orb with one animation per voice state (idle, listening, transcribing, thinking, awaiting approval, awaiting answer, executing, verifying, speaking, error; respects reduced-motion) and the state as text; live transcript (interim words, command, assistant reply); action-preview dialog (risk colour + plain-language risk text, exact targets, approve all / approve one / reject, typed reply, voice answer; focus trap, Esc rejects, Approve focused for low/medium but **Reject focused for high risk** so Enter cannot approve a delete; page behind it `inert`); Settings page (persona, listen mode, provider, approval policy, usage, autostart toggle when running in the desktop shell, allowed folders); Memory page (view/add/edit/delete, recent conversation, forget conversation, memory on/off); 3-step first-run onboarding that ends by starting the microphone on a guided command; push-to-talk (microphone off after one command) and listen-mode Off (mic hidden); speak-replies toggle; mini-orb route `?view=orb`. Keyboard: Ctrl+Space mic, Alt+1/2/3 pages, `/` command box; visible focus everywhere; every control has an accessible name.
+- **Bugs found by driving the UI and fixed:** a `speechSynthesis` error blanked the whole app (now caught); Tailwind `grid` overrode `hidden` so the assistant panel showed under Settings; the orb said "approval" while waiting for an answer; background controls were reachable behind the modal; Settings radios lagged the server round-trip (now optimistic, reverted on failure).
+- **Desktop shell** `desktop/shell.py` (pywebview): panel window (closing hides to tray) + 132 px frameless transparent always-on-top orb window bottom-right that expands the panel; pystray tray menu (Open, Show/hide orb, Start with Windows, Quit); `desktop/autostart.py` writes/deletes only `HKCU\...\Run\AgentDesk` (no admin). The JS bridge exposes only expand/collapse/get_autostart/set_autostart — no commands, files or approvals. `launch.ensure_backend()` shared by the browser launcher and the shell. `START_AGENT_X_DESKTOP.cmd`, `requirements-desktop.txt` (pywebview, pystray; not yet in the verified lock). Release zip includes them.
+
+**Tested how (Linux container)**
+- Backend: `python -m pytest tests -q` -> **657 passed, 3 skipped, 0 failed**. New: `test_phase17_preferences.py` (8: defaults/partial update, looser/unknown values and API keys rejected, no secrets returned, memory CRUD + secret guard, forget conversation, strict policy incl. internal auto-approve, local-only never calls cloud), `test_phase17_desktop.py` (8: two windows and orb geometry, bridge surface, expand/collapse/close-to-tray, minimized start, autostart writes one value and removes it, refused off Windows, tray menu actions, run starts webview + tray).
+- Frontend: `npm run build` (tsc + vite) pass; `node --test voice.test.mjs` 4/4.
+- **E2E (Playwright, real backend + Chromium, fake microphone): `npm run test:e2e` -> 8/8 pass.** `new_user.test.mjs`: fresh install -> onboarding -> spoken "create a folder called Demo in Documents" -> live transcript -> preview card (medium, exact path, Approve focused) -> Approve -> task `completed` with verified folder on disk, **3.0 s automated** (gate: < 3 min).
+- `scripts/eval_nlu.py` still Gate G3 PASS (unchanged).
+
+**What is left**
+- **The human gate is not measured yet**: run `docs/USABILITY_TEST.md` with 5 new users on the Windows PC (real microphone, real speech recognition, real WebView2). The automated 3 s proves the path, not human discoverability.
+- Desktop shell is unit-tested with fakes only: run `START_AGENT_X_DESKTOP.cmd` on Windows, check the orb stays on top, tray menu, autostart after sign-out/in; then pin pywebview/pystray in the lock.
+- The packaged exe does not include the desktop shell yet (autostart refuses in the exe rather than registering a broken command).
+- Memory items are stored and editable, but the planner does not read them yet (wiring the Phase 15 NLU planner into `start_task` is still pending — open decision 1).
+- Global hotkey / wake word for the orb (Phase 19 voice loop); the mini orb shows the latest task state by polling, not live listening state.
+
+**Known issues**
+- Speech recognition is still the browser's Web Speech API (needs internet); Whisper is Phase 19.
+- E2E tests need Playwright installed locally (`npm i --no-save playwright`); not added to package.json to keep `npm ci` unchanged.
+
+### 2026-10-31 — Session 4: Phase 16 REAL VERIFICATION AND CONTROL
+
+**Done**
+- **Verification contract.** `Verification.evidence` added. `BaseTool.verify()` now FAILS by default; the executor also rejects any pass with empty evidence. All 29 tools have their own `verify()` that re-reads the real system (test enforces it):
+  - files: exists + size + SHA-256 (copy compares source/destination hashes; read compares returned text with disk; list re-lists the folder; find/trash re-check every path);
+  - launches (apps, folders, files, URLs, search, YouTube, e-mail draft, Settings): a matching window must appear (title and/or process, Win32 enumeration, polled up to 4 s); PID liveness recorded;
+  - `manage_system_setting`: independent re-read in a separate worker process — volume value **and mute state** (pycaw; `get` now reports `muted`), brightness via WMI first (`screen_brightness_control` method `wmi`, then default for external monitors), Bluetooth/Wi-Fi state, theme from the HKCU registry; compared with what was requested;
+  - `control_browser`: extension confirmation + re-inspect (closed tab is gone; paused/resumed tab still open); `application_package`: downloaded files exist with hashes;
+  - screenshot: PNG header + hash; download: size + hash.
+  - `app/verification.py` holds the probes; tests use `ScriptedProbe` (strict) or `AgreeableProbe` (session default for unrelated tests).
+- **Worker process with kill-on-timeout** (`app/orchestration/worker.py`). Each action runs execute + verify in a pooled `spawn` child process. On timeout / pause / cancel the parent kills the worker and every process that job started (e.g. a hung winget); apps started by earlier jobs survive. A worker that died while idle is replaced and the job is sent once more only if it was never delivered; a started job is never repeated. Per-tool `timeout_seconds` (WinGet 250 s, download 180 s, default `TOOL_TIMEOUT_SECONDS`=30). `TOOL_ISOLATION=process` (default) / `thread` (tests). `control_browser` and `open_url` stay in-process (`isolation="thread"`) because the extension socket lives in the server process. One worker is warmed at startup; `multiprocessing.freeze_support()` added for the exe.
+- **Window control finished.** New `focus_window` (bring to front, low risk). Every window step records `hwnd`/`pid`; verify re-reads the window: close = gone, minimize = iconic, maximize = zoomed, restore = neither, focus = foreground, close-tab = title changed or window gone, input = target window existed. If a close leaves the window open, pywinauto UIA reads the app's dialog; an unsaved-changes prompt is reported (`needs_confirmation`) and never answered for the user. NLU routes "minimize chrome", "notepad chota karo", "switch to excel", "کروم چھوٹا کرو" (intent `window_control`).
+- **Pause/resume from the last verified checkpoint.** After each verified step the task stores a checkpoint. Resume first re-runs that step's verifier on the real PC; if it no longer holds (e.g. the created folder was deleted), resume is refused with the reason and nothing else runs. Pause stops an *interruptible* running step immediately (download, WinGet, read-only tools); other steps finish first. New statuses: action `paused`; task `partially_completed` (some steps verified, a later one failed — rule 4). Frontend and voice replies updated.
+- **Download pause/resume/cancel.** `download_web_content` writes to a fixed `.agentdesk.part` file plus a small JSON sidecar (URL, ETag/Last-Modified). Pause kills the worker and keeps the part; Resume sends `Range` + `If-Range` and appends on `206`, restarts cleanly on `200` (server ignored Range or file changed). Cancel kills the worker and deletes the part and sidecar. Network interruptions keep the part for Resume; size/type errors delete it.
+- Dependencies: `pywinauto==0.6.9` (+ `six`) for Windows only, in `requirements.txt` and the lock (not yet installed on the Windows PC).
+
+**Tested how (Linux container, Python 3.13)**
+- `python -m pytest tests -q` -> **638 passed, 3 skipped, 0 failed** (skips: Groq live tests).
+- New `tests/test_phase16_worker.py` (7, real processes, no mocks): runs in another process; **timeout kills the worker and the grandchild it started, and the tool's "finished" marker never appears**; cancel via stop request; earlier apps survive a later kill; crash reported; dead idle worker replaced; killed worker never reused.
+- New `tests/test_phase16_download_control.py` (5, real local HTTP server with Range, real worker processes, real executor): pause keeps the part and resume continues with `Range` to an identical SHA-256; server without Range restarts cleanly; executor pause -> resume -> completed; executor cancel deletes the part; **a timed-out task is FAILED with "Stopped after 2s" and its child process is dead**.
+- New `tests/test_phase16_verification.py` (26, strict probe): every tool has a verifier, default verifier never passes, executor rejects a pass without evidence, launch needs the real window, settings read-back mismatches fail (volume, mute, Bluetooth, theme), window states re-read, closed window must be gone, save prompt detected, changed disk detected, resume refused / continued correctly.
+- 6 older tests changed because they asserted success without real evidence (now they supply observed state) or expected `failed` where rule 4 now gives `partially_completed`.
+- `npm run build` pass; `node --test voice.test.mjs` 4/4.
+- `scripts/live_check.py --gui --network` -> 29 tools reported, 15 PASS (all with evidence), 0 FAIL, 14 BLOCKED (Linux: no Windows desktop/extension/DNS). `scripts/eval_nlu.py` -> Gate G3 still PASS (99.3% / 99.3%, 0 invented, 0 bypasses).
+
+**What is left (must be done on the Windows PC)**
+- Run `python scripts/live_check.py --gui --network` there: the Win32 window enumeration, pywinauto dialog reading, WMI brightness and the worker process under Windows `spawn` are unit-tested only.
+- Measure the worker start-up cost and first-action latency on Windows (target local < 2.5 s); the pool warms one worker at startup.
+- PyInstaller exe: confirm spawn workers work in the frozen build (`freeze_support` added; `agentdesk.spec` may need hidden imports for `app.orchestration.worker` and `pywinauto`).
+- Download progress (bytes so far) is not shown in the UI yet.
+
+**Known issues / limits**
+- Launch verification proves a matching window appeared, not that the page/app finished loading; the Settings check confirms the window, not the sub-page.
+- Free input (click/type/keys) cannot be read back in general; evidence is that the target window existed and had focus.
+- A window title that never contains the app/site name (some apps) will fail verification -> task fails honestly instead of claiming success.
+- Non-interruptible steps (file moves, settings) are not killed on pause/cancel, to avoid half-applied changes; they finish first.
+
+### 2026-10-31 — Session 3: Phase 15 NATURAL-LANGUAGE COMMAND MODEL
+
+Phase 14 was skipped as a separate step; its planner pieces (PlannerProvider, Groq structured outputs, fallback chain) are delivered here.
+
+**Done** (package lives in `backend/app/nlu/`, next to `app/ai/`, so it imports like the rest of the app)
+- `schema.py`: plan schema v2 (`NLUPlan`: intent enum, language, confidence, needs_clarification, clarifying_question, steps[tool,args,depends_on,expected_outcome], reply). `plan_json_schema(registry)` builds the strict JSON schema: one step variant per registered tool (tool enum generated from the registry), every property required, `additionalProperties:false` everywhere, optional values nullable, unsupported keywords stripped. `validate_plan()` = the single server-side gate for every provider: unknown tool, unknown/invalid argument (incl. `auto_approve`), bad `depends_on`, bad `$N` step reference, path outside allowed roots -> rejected with a reason; risk from `tool.risk_for_args`.
+- `normalizer.py`: language detection (script + Roman Urdu markers), number words in en/roman_ur/ur/hi -> digits, shared multilingual lexicon -> canonical tokens, rapidfuzz typo correction (ASCII only, cutoff 86, never on paths/URLs/e-mails), nukta/NFKC handling.
+- `local_matcher.py`: ordered rules over canonical tokens (unsupported, chat, e-mail, settings pages, device settings, follow-ups, browser/media/search, websites, screenshot/trash/packages, explicit paths, file ops with find_paths + `$0`, apps, clarification). Confidence 0.95 minus penalties for typos and unexplained words; unknown -> 0. Negated commands are never matched.
+- `memory.py`: last 10 turns, last results, `last_target` only from the immediately preceding successful turn, ordinals into the last result list, JSON prompt view.
+- `planner.py`: `PlannerProvider.plan(context) -> PlanResult`; `GroqPlanner` (one call, `response_format` json_schema strict, no tools/streaming, gpt-oss-120b -> gpt-oss-20b, via `GroqClient`), `OpenAICompatiblePlanner` (OpenAI; Gemini via its OpenAI endpoint) with the same schema and validator, `FallbackPlanner`, `LocalFirstPlanner` (Groq only below 0.85), usage per plan, `planner_from_settings()`.
+- `prompts/system.md` (role, rules 1-8, conventions, tool catalogue) + `prompts/examples.jsonl` (11 few-shot plans: en, roman_ur, ur, hi, multi-step, follow-up, ordinal, ambiguous -> question, unsupported, adversarial "don't ask"). None of them is in the eval set (test enforces it).
+- `tests/nlu_eval/commands.jsonl` (300: en 92, roman_ur 88, ur 60, hi 60; dev 201 / holdout 99), committed before the matcher. `tests/nlu_eval/paraphrases.jsonl` (40 independent probes).
+- `scripts/eval_nlu.py`: modes local / pipeline / llm; accuracy per language and split, invented tools, approval bypasses (approval tier of the predicted plan lower than expected for the same intent, or approval-like argument), language detection, paraphrase probe; writes `docs/eval/nlu_<mode>_<split>.md/.json`.
+- `rapidfuzz` added to `requirements.txt` and `requirements.lock.txt` (3.14.6; not yet installed/verified on the Windows PC).
+
+**Tested how (Linux container, Python 3.13)**
+- `python -m pytest tests -q` -> **595 passed, 3 skipped, 0 failed** (skips = Groq live tests, no key). New `tests/test_nlu.py`: 43 tests (strict-schema rules on every object, validator rejections, path check, normaliser, matcher, adversarial delete stays HIGH risk, memory, planners with fake Groq/Gemini clients incl. 120b->20b fallback and backup provider, prompt contents, dataset validity, **Gate G3 as a regression test**).
+- `python scripts/eval_nlu.py` -> **Gate G3 PASS**: intent+tool 99.3%, exact args 99.3%, 0 invented tools, 0 approval bypasses (holdout first run 100.0% / 99.0%). Paraphrase probe 20/40 correct, 20 deferred, **0 confidently wrong**. Report: `docs/eval/nlu_local_all.md`, caveats in `docs/eval/README.md`.
+
+**What is left**
+- Run `python scripts/eval_nlu.py --mode pipeline` with `GROQ_API_KEY` (verifies Groq accepts the strict schema, measures LLM accuracy and latency).
+- **Not wired into the executor yet.** `start_task` still uses the existing local agent + Groq tool-calling loop. Wiring `LocalFirstPlanner` in (resolving `$0` via find_paths, feeding memory from task history) changes the live command path — needs your go-ahead (see open decision 1).
+- Real-user transcripts as a third eval split.
+
+**Known issues**
+- Same author for data and matcher: in-set numbers are optimistic; the probe shows ~50% local coverage of unseen phrasing.
+- Groq strict-schema compatibility (anyOf of 29 variants, `type: [x, "null"]`) is unverified live.
+
+### 2026-10-31 — Session 2: Phase 13 STABILISE
+
+**Done**
+- `backend/app/ai/groq_client.py` — `GroqClient`: one client for chat, STT (`whisper-large-v3-turbo` -> `whisper-large-v3`) and TTS (`canopylabs/orpheus-v1-english`, WAV).
+  Explicit per-request timeout; 429 / 5xx / connection errors retried with exponential backoff (1 s, 2 s, +10% jitter) honouring `Retry-After`, max 2 retries; a Retry-After above 15 s is not waited out (raises `AIRateLimitError`). Timeouts, auth (401/403) and unknown model (404) are never retried. Thread-safe `UsageCounter` per kind (calls, succeeded, failed, retries, rate_limited, tokens, audio seconds, TTS chars). One `groq_call` log event per attempt with kind/model/status/HTTP status/duration only — no prompt, transcript, spoken text or key; error text goes through `redact`. STT passes `language` and `prompt` (known names). `get_groq_client()` gives one shared instance.
+  Note: the brief said `backend/ai/`; the package is `backend/app/ai/`, so the file lives there.
+- New settings: `GROQ_STT_MODEL`, `GROQ_STT_FALLBACK_MODEL`, `GROQ_TTS_MODEL`, `GROQ_TTS_VOICE` (`config.py`, `.env.example`).
+- `backend/scripts/live_check.py` — runs every registered tool once (29 tools) in a temp sandbox that is the only allowed/discovery directory, calls `validate_args -> execute -> verify`, then an **independent** check of real state (disk content, zip members, trash records, PNG header, PID alive...). PASS only when tool, `verify()` and the independent check all agree. Categories: `sandbox` + `read` (default), `gui` (`--gui`), `network` (`--network`). Never runs setters, clicks/typing, tab closing or WinGet download. Statuses PASS / FAIL / BLOCKED (missing prerequisite) / SKIP. Exit 1 on any FAIL or on a registered tool without a probe.
+- Existing `GroqProvider` not yet switched to `GroqClient` (Phase 14 builds the planner on it).
+
+**Tested how (Linux cloud container, Python 3.13, Node 22)**
+- Backend: `python -m pytest tests -q` -> **552 passed, 3 skipped, 0 failed**. Skips: 2 new live Groq smoke tests + old opt-in Groq test (no `GROQ_API_KEY` here).
+- New: `tests/test_groq_client.py` (16, fake SDK: backoff timings, Retry-After, long Retry-After, 5xx retry, no retry on auth/timeout, real `groq.RateLimitError`, STT language/prompt + fallback, TTS, usage, log redaction), `tests/test_groq_client_live.py` (chat + TTS->STT round trip, skipped without key), `tests/test_live_check.py` (4: probe for every tool, no dangerous probe, sandbox probes really pass, missing probe = FAIL).
+- Frontend: `npm ci && npm run build` (tsc + vite) -> pass. `node --test voice.test.mjs` -> 4/4. Extension: `test_controls.cjs`, `test_pairing.cjs` -> pass.
+- `python scripts/live_check.py --gui --network` -> **29 tools reported: 15 PASS, 0 FAIL, 14 BLOCKED, 0 SKIP**. All 15 file tools PASS with disk evidence. BLOCKED because this is headless Linux: system setting read, desktop inspect, WinGet, Settings, all GUI launches; browser extension not connected to the script process; no direct DNS for the download.
+
+**What is left**
+- Run `python scripts/live_check.py --gui --network` on the Windows PC and paste the table here (the 14 BLOCKED rows need it).
+- Run the live smoke test with a real key: `$env:GROQ_API_KEY=...; python -m pytest tests/test_groq_client_live.py -v`.
+- `control_browser` probe can only reach the extension through the running server; add an `--api` mode later.
+
+**Known issues**
+- GUI probes verify "launch requested / PID alive", not the visible window (Phase 17 verifiers).
+- Probe timeout uses a thread that cannot be killed (same limit as R-08; Phase 17 worker process).
+
+### 2026-10-31 — Session 1: baseline and plan (no code changed)
+
+**Done**
+- Read README, feature audit, traceability matrix (R-01..R-33), final acceptance report, phase 0-12 reports, `ai/` and `tools/` layout.
+- Created this file and the phase plan below.
+
+**Tested how**
+- Full backend suite on Linux (Python 3.13, cloud container, no Windows SDKs):
+  `python -m pytest tests -q` -> **529 passed, 4 skipped, 0 failed** (skips: live Groq + Windows-SDK tests).
+  Windows reference (2026-10-28, Python 3.12, pinned deps): 532 passed, 1 skipped.
+
+**Known issues / decisions needed** — see "Open decisions" below.
+
+## Baseline vs. target architecture
+
+| Area | Today (in repo) | Target (product brief) | Gap |
+|---|---|---|---|
+| Plan model | `ai/base.py` `Plan{actions[{tool,args,rationale}], note}` | `Plan{intent, language, confidence, needs_clarification, clarifying_question, steps[{tool,args,depends_on,expected_outcome}], reply}` | New schema + adapter so executor keeps working |
+| Provider interface | `AIProvider.generate_plan(command, tool_descriptions)` | `PlannerProvider.plan(context) -> Plan` | Context object (desktop, memory, profile) |
+| Groq | Multi-turn **tool-calling** agent loop (`groq_provider.py`, `executor.py`) | **Single** call, `response_format=json_schema, strict=true`, `gpt-oss-120b` -> `gpt-oss-20b` -> Gemini/OpenAI | Rewrite of the call path; agent loop retired or kept behind flag |
+| Tool enum | Registry validates names after the fact | Enum generated from registry at startup inside the JSON schema | Schema builder |
+| Local fast path | Regex/normaliser per domain (`speech_commands`, `command_language`, ...) | Normaliser + rapidfuzz, confidence score, Groq only if < 0.85 | Confidence scoring, rapidfuzz |
+| Memory | Recent-task memory, local workflow state | Last 10 turns, resolved references, opt-in profile | New conversation store |
+| Verification | Files verified on disk; launches/system/desktop trust own result | `verify() -> bool + evidence` on every tool; completed only if verified | Verifiers for apps, system, desktop, browser |
+| Timeouts | Thread pool; cannot kill | Worker process killable on timeout | Process-based runner |
+| Approvals | Hash-bound, single use, expiry; bare "yes" approves on-screen action | Medium = preview, voice yes OK; High = click required; 120 s expiry | Channel-aware approval (voice vs click) |
+| Voice | Browser Web Speech + browser TTS | sounddevice + Silero VAD + Groq Whisper; Orpheus / edge-tts / SAPI; barge-in; WS state push | New backend voice service |
+| Retries | Provider cooldown only | Max 2 automatic retries, never destructive without re-check | Retry policy in executor |
+| Metrics | Load check script | Latency targets + 300-command NLU test set | Eval harness + dataset |
+
+## Proposed phases (each on its own branch, small commits, full suite before "done")
+
+| Phase | Goal | Main files | Acceptance |
+|---|---|---|---|
+| 13 | **Plan schema v2 + strict JSON-schema builder** from registry (tool enum, nullable optionals, `additionalProperties:false`); adapter v2 -> existing executor | `ai/base.py`, new `ai/plan_schema.py`, `tools/registry.py` | Schema validates against Groq strict rules; invented tool rejected; all existing tests green |
+| 14 | **PlannerProvider + Groq structured-output planner** with fallback chain, 429 backoff, usage per plan, few-shot system prompt (8-12 examples, 4 languages) | `ai/planner_provider.py`, `ai/groq_provider.py`, `ai/resilient_provider.py`, `usage.py` | Scripted provider tests; same validator for all providers; live test opt-in |
+| 15 | **Local fast path with confidence** (normaliser + rapidfuzz), Groq only < 0.85; NLU test set (300 commands) + eval script | `ai/speech_commands.py`, new `ai/local_matcher.py`, `tests/nlu/` | >= 90% intent+tool, >= 85% args, 0 invented tools on local+mock |
+| 16 | **Conversation memory + references** ("close it", "the second one"), desktop context collector | new `memory.py`, `orchestration/local_agent.py`, `tools/desktop.py` | Follow-up tests in 4 languages |
+| 17 | **Verify-everything + killable worker process + retry policy** | `tools/base.py`, `executor.py`, `tools/system_worker.py`, all tools | Every tool has `verify()`; timeout kills worker; no "completed" without evidence |
+| 18 | **Approval channels** (voice may approve medium; high needs click; 120 s) | `security/approvals.py`, `main.py`, frontend | Bypass tests incl. voice-approving-high |
+| 19 | **Backend voice loop** (hotkey, sounddevice, Silero VAD, Groq Whisper, TTS chain, barge-in, WebSocket states) | new `voice/`, `main.py`, frontend | Latency measured: local < 2.5 s p90 of 30 runs |
+| 20 | **Window control + live pilot** of never-run tools on a real Windows PC | `tools/desktop.py`, `scripts/verify_windows.py` | Pilot checklist executed by a person |
+
+WhatsApp and software install stay out of scope until 13-18 are done (rule 8: pre-fill only).
+
+## Open decisions (need owner answer before the affected phase)
+
+1. **Groq tool-calling agent loop** (`groq_provider.py` + `executor.py` agent path) works today. The brief requires one structured-output call. Proposal: add the new planner as default, keep the agent loop behind `AI_MODE=agent` for one release, then remove. (Phase 14)
+2. **Approval semantics change**: today a bare "yes"/"haan" approves the one on-screen action at any risk level. The brief requires a click for high risk. This tightens the security model. (Phase 18)
+3. **Windows-only verification**: this cloud container is Linux. Hardware, window, voice-device and latency work can be unit-tested here but must be verified on the Windows PC by a person.
+4. **New dependencies**: rapidfuzz, sounddevice, silero-vad (torch or onnxruntime — ~large), edge-tts. Silero via onnxruntime is preferred to avoid torch.

@@ -1,0 +1,7514 @@
+{
+ "mode": "local",
+ "split": "all",
+ "date": "2026-10-31",
+ "summary": {
+  "overall": {
+   "n": 300,
+   "intent_tool": 0.9933333333333333,
+   "exact_args": 0.9933333333333333,
+   "invented_tools": 0,
+   "approval_bypasses": 0,
+   "language_detection": 0.9866666666666667,
+   "deferred": 2
+  },
+  "en": {
+   "n": 92,
+   "intent_tool": 0.9891304347826086,
+   "exact_args": 0.9891304347826086,
+   "invented_tools": 0,
+   "approval_bypasses": 0,
+   "language_detection": 0.9891304347826086,
+   "deferred": 1
+  },
+  "roman_ur": {
+   "n": 88,
+   "intent_tool": 0.9886363636363636,
+   "exact_args": 0.9886363636363636,
+   "invented_tools": 0,
+   "approval_bypasses": 0,
+   "language_detection": 0.9659090909090909,
+   "deferred": 1
+  },
+  "ur": {
+   "n": 60,
+   "intent_tool": 1.0,
+   "exact_args": 1.0,
+   "invented_tools": 0,
+   "approval_bypasses": 0,
+   "language_detection": 1.0,
+   "deferred": 0
+  },
+  "hi": {
+   "n": 60,
+   "intent_tool": 1.0,
+   "exact_args": 1.0,
+   "invented_tools": 0,
+   "approval_bypasses": 0,
+   "language_detection": 1.0,
+   "deferred": 0
+  },
+  "dev": {
+   "n": 201,
+   "intent_tool": 0.9900497512437811,
+   "exact_args": 0.9900497512437811,
+   "invented_tools": 0,
+   "approval_bypasses": 0,
+   "language_detection": 0.9800995024875622,
+   "deferred": 2
+  },
+  "holdout": {
+   "n": 99,
+   "intent_tool": 1.0,
+   "exact_args": 1.0,
+   "invented_tools": 0,
+   "approval_bypasses": 0,
+   "language_detection": 1.0,
+   "deferred": 0
+  }
+ },
+ "gate": {
+  "intent_tool": true,
+  "exact_args": true,
+  "invented_tools": true,
+  "approval_bypasses": true
+ },
+ "items": [
+  {
+   "id": "en-001",
+   "lang": "en",
+   "split": "dev",
+   "command": "turn the volume up",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "en-002",
+   "lang": "en",
+   "split": "dev",
+   "command": "set volume to 40",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "en-003",
+   "lang": "en",
+   "split": "holdout",
+   "command": "volume 70 percent",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "en-004",
+   "lang": "en",
+   "split": "dev",
+   "command": "mute the pc",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "en-005",
+   "lang": "en",
+   "split": "dev",
+   "command": "decrease brightness by 20",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "en-006",
+   "lang": "en",
+   "split": "holdout",
+   "command": "set brightness to fifty percent",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "en-007",
+   "lang": "en",
+   "split": "dev",
+   "command": "what's the volume right now",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "en-008",
+   "lang": "en",
+   "split": "dev",
+   "command": "turn off bluetooth",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "en-009",
+   "lang": "en",
+   "split": "holdout",
+   "command": "turn on wifi",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "en-010",
+   "lang": "en",
+   "split": "dev",
+   "command": "switch to dark mode",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.89,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "en-011",
+   "lang": "en",
+   "split": "dev",
+   "command": "make it louder",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.89,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "en-012",
+   "lang": "en",
+   "split": "holdout",
+   "command": "is bluetooth on?",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "en-013",
+   "lang": "en",
+   "split": "dev",
+   "command": "volum up plz",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.91,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "en-014",
+   "lang": "en",
+   "split": "dev",
+   "command": "set the brightnes to 80",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.91,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "en-015",
+   "lang": "en",
+   "split": "holdout",
+   "command": "turn the volume down by fifteen",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "en-016",
+   "lang": "en",
+   "split": "dev",
+   "command": "set volume to twenty five",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "en-017",
+   "lang": "en",
+   "split": "dev",
+   "command": "max brightness",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "en-018",
+   "lang": "en",
+   "split": "holdout",
+   "command": "open display settings",
+   "expected_intent": "settings_page",
+   "predicted_intent": "settings_page",
+   "expected_tools": [
+    "open_windows_settings"
+   ],
+   "predicted_tools": [
+    "open_windows_settings"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "settings_page",
+   "deferred": false
+  },
+  {
+   "id": "en-019",
+   "lang": "en",
+   "split": "dev",
+   "command": "open windows update",
+   "expected_intent": "settings_page",
+   "predicted_intent": "settings_page",
+   "expected_tools": [
+    "open_windows_settings"
+   ],
+   "predicted_tools": [
+    "open_windows_settings"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "settings_page",
+   "deferred": false
+  },
+  {
+   "id": "en-020",
+   "lang": "en",
+   "split": "dev",
+   "command": "show me bluetooth settings",
+   "expected_intent": "settings_page",
+   "predicted_intent": "settings_page",
+   "expected_tools": [
+    "open_windows_settings"
+   ],
+   "predicted_tools": [
+    "open_windows_settings"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "settings_page",
+   "deferred": false
+  },
+  {
+   "id": "en-021",
+   "lang": "en",
+   "split": "holdout",
+   "command": "open lock screen settings",
+   "expected_intent": "settings_page",
+   "predicted_intent": "settings_page",
+   "expected_tools": [
+    "open_windows_settings"
+   ],
+   "predicted_tools": [
+    "open_windows_settings"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "settings_page",
+   "deferred": false
+  },
+  {
+   "id": "en-022",
+   "lang": "en",
+   "split": "dev",
+   "command": "open notepad",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "en-023",
+   "lang": "en",
+   "split": "dev",
+   "command": "launch chrome",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "en-024",
+   "lang": "en",
+   "split": "holdout",
+   "command": "start calculator",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "en-025",
+   "lang": "en",
+   "split": "dev",
+   "command": "open vs code",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "en-026",
+   "lang": "en",
+   "split": "dev",
+   "command": "open microsoft word",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "en-027",
+   "lang": "en",
+   "split": "holdout",
+   "command": "can you open excel for me",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "en-028",
+   "lang": "en",
+   "split": "dev",
+   "command": "open notpad",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "en-029",
+   "lang": "en",
+   "split": "dev",
+   "command": "open file explorer",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "en-030",
+   "lang": "en",
+   "split": "holdout",
+   "command": "open powershell",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "en-031",
+   "lang": "en",
+   "split": "dev",
+   "command": "close notepad",
+   "expected_intent": "close_window",
+   "predicted_intent": "close_window",
+   "expected_tools": [
+    "control_desktop"
+   ],
+   "predicted_tools": [
+    "control_desktop"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.close",
+   "deferred": false
+  },
+  {
+   "id": "en-032",
+   "lang": "en",
+   "split": "dev",
+   "command": "close the calculator window",
+   "expected_intent": "close_window",
+   "predicted_intent": "close_window",
+   "expected_tools": [
+    "control_desktop"
+   ],
+   "predicted_tools": [
+    "control_desktop"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.close",
+   "deferred": false
+  },
+  {
+   "id": "en-033",
+   "lang": "en",
+   "split": "holdout",
+   "command": "open youtube",
+   "expected_intent": "open_website",
+   "predicted_intent": "open_website",
+   "expected_tools": [
+    "open_url"
+   ],
+   "predicted_tools": [
+    "open_url"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "website.site",
+   "deferred": false
+  },
+  {
+   "id": "en-034",
+   "lang": "en",
+   "split": "dev",
+   "command": "open gmail in chrome",
+   "expected_intent": "open_website",
+   "predicted_intent": "open_website",
+   "expected_tools": [
+    "open_url"
+   ],
+   "predicted_tools": [
+    "open_url"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "website.site",
+   "deferred": false
+  },
+  {
+   "id": "en-035",
+   "lang": "en",
+   "split": "dev",
+   "command": "go to github.com",
+   "expected_intent": "open_website",
+   "predicted_intent": "open_website",
+   "expected_tools": [
+    "open_url"
+   ],
+   "predicted_tools": [
+    "open_url"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "website.url",
+   "deferred": false
+  },
+  {
+   "id": "en-036",
+   "lang": "en",
+   "split": "holdout",
+   "command": "open chatgpt",
+   "expected_intent": "open_website",
+   "predicted_intent": "open_website",
+   "expected_tools": [
+    "open_url"
+   ],
+   "predicted_tools": [
+    "open_url"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "website.site",
+   "deferred": false
+  },
+  {
+   "id": "en-037",
+   "lang": "en",
+   "split": "dev",
+   "command": "search for python tutorials",
+   "expected_intent": "web_search",
+   "predicted_intent": "web_search",
+   "expected_tools": [
+    "web_search"
+   ],
+   "predicted_tools": [
+    "web_search"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "search",
+   "deferred": false
+  },
+  {
+   "id": "en-038",
+   "lang": "en",
+   "split": "dev",
+   "command": "google weather in lahore",
+   "expected_intent": "web_search",
+   "predicted_intent": "web_search",
+   "expected_tools": [
+    "web_search"
+   ],
+   "predicted_tools": [
+    "web_search"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "search",
+   "deferred": false
+  },
+  {
+   "id": "en-039",
+   "lang": "en",
+   "split": "holdout",
+   "command": "look up the price of bitcoin",
+   "expected_intent": "web_search",
+   "predicted_intent": "web_search",
+   "expected_tools": [
+    "web_search"
+   ],
+   "predicted_tools": [
+    "web_search"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "search",
+   "deferred": false
+  },
+  {
+   "id": "en-040",
+   "lang": "en",
+   "split": "dev",
+   "command": "play shape of you on youtube",
+   "expected_intent": "play_youtube",
+   "predicted_intent": "play_youtube",
+   "expected_tools": [
+    "play_youtube_video"
+   ],
+   "predicted_tools": [
+    "play_youtube_video"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "youtube.play",
+   "deferred": false
+  },
+  {
+   "id": "en-041",
+   "lang": "en",
+   "split": "dev",
+   "command": "play lofi music on youtube",
+   "expected_intent": "play_youtube",
+   "predicted_intent": "play_youtube",
+   "expected_tools": [
+    "play_youtube_video"
+   ],
+   "predicted_tools": [
+    "play_youtube_video"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "youtube.play",
+   "deferred": false
+  },
+  {
+   "id": "en-042",
+   "lang": "en",
+   "split": "holdout",
+   "command": "pause the video",
+   "expected_intent": "browser_tab",
+   "predicted_intent": "browser_tab",
+   "expected_tools": [
+    "control_browser"
+   ],
+   "predicted_tools": [
+    "control_browser"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "media.pause",
+   "deferred": false
+  },
+  {
+   "id": "en-043",
+   "lang": "en",
+   "split": "dev",
+   "command": "close the youtube tab",
+   "expected_intent": "browser_tab",
+   "predicted_intent": "browser_tab",
+   "expected_tools": [
+    "control_browser"
+   ],
+   "predicted_tools": [
+    "control_browser"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "tab.close",
+   "deferred": false
+  },
+  {
+   "id": "en-044",
+   "lang": "en",
+   "split": "dev",
+   "command": "show my open tabs",
+   "expected_intent": "browser_tab",
+   "predicted_intent": "browser_tab",
+   "expected_tools": [
+    "control_browser"
+   ],
+   "predicted_tools": [
+    "control_browser"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "tabs.inspect",
+   "deferred": false
+  },
+  {
+   "id": "en-045",
+   "lang": "en",
+   "split": "holdout",
+   "command": "open my downloads folder",
+   "expected_intent": "open_folder",
+   "predicted_intent": "open_folder",
+   "expected_tools": [
+    "open_folder"
+   ],
+   "predicted_tools": [
+    "open_folder"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "open_folder.place",
+   "deferred": false
+  },
+  {
+   "id": "en-046",
+   "lang": "en",
+   "split": "dev",
+   "command": "open documents folder",
+   "expected_intent": "open_folder",
+   "predicted_intent": "open_folder",
+   "expected_tools": [
+    "open_folder"
+   ],
+   "predicted_tools": [
+    "open_folder"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "open_folder.place",
+   "deferred": false
+  },
+  {
+   "id": "en-047",
+   "lang": "en",
+   "split": "dev",
+   "command": "open the folder 6th sem",
+   "expected_intent": "open_folder",
+   "predicted_intent": "open_folder",
+   "expected_tools": [
+    "open_folder"
+   ],
+   "predicted_tools": [
+    "open_folder"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "open_folder.name",
+   "deferred": false
+  },
+  {
+   "id": "en-048",
+   "lang": "en",
+   "split": "holdout",
+   "command": "show files in desktop",
+   "expected_intent": "list_folder",
+   "predicted_intent": "list_folder",
+   "expected_tools": [
+    "list_folder"
+   ],
+   "predicted_tools": [
+    "list_folder"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.89,
+   "rule": "list_folder",
+   "deferred": false
+  },
+  {
+   "id": "en-049",
+   "lang": "en",
+   "split": "dev",
+   "command": "find my resume",
+   "expected_intent": "find_files",
+   "predicted_intent": "find_files",
+   "expected_tools": [
+    "find_files"
+   ],
+   "predicted_tools": [
+    "find_files"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "find",
+   "deferred": false
+  },
+  {
+   "id": "en-050",
+   "lang": "en",
+   "split": "dev",
+   "command": "where is the file budget.xlsx",
+   "expected_intent": "find_files",
+   "predicted_intent": "find_files",
+   "expected_tools": [
+    "find_files"
+   ],
+   "predicted_tools": [
+    "find_files"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "find",
+   "deferred": false
+  },
+  {
+   "id": "en-051",
+   "lang": "en",
+   "split": "holdout",
+   "command": "open the file report.pdf",
+   "expected_intent": "open_file",
+   "predicted_intent": "open_file",
+   "expected_tools": [
+    "open_file"
+   ],
+   "predicted_tools": [
+    "open_file"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "open_file",
+   "deferred": false
+  },
+  {
+   "id": "en-052",
+   "lang": "en",
+   "split": "dev",
+   "command": "create a folder called Lab in Documents",
+   "expected_intent": "create_folder",
+   "predicted_intent": "create_folder",
+   "expected_tools": [
+    "create_folder"
+   ],
+   "predicted_tools": [
+    "create_folder"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "create",
+   "deferred": false
+  },
+  {
+   "id": "en-053",
+   "lang": "en",
+   "split": "dev",
+   "command": "make a new folder named Projects on the desktop",
+   "expected_intent": "create_folder",
+   "predicted_intent": "create_folder",
+   "expected_tools": [
+    "create_folder"
+   ],
+   "predicted_tools": [
+    "create_folder"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "create",
+   "deferred": false
+  },
+  {
+   "id": "en-054",
+   "lang": "en",
+   "split": "holdout",
+   "command": "delete the file old notes.txt",
+   "expected_intent": "delete",
+   "predicted_intent": "delete",
+   "expected_tools": [
+    "find_paths",
+    "delete_file"
+   ],
+   "predicted_tools": [
+    "find_paths",
+    "delete_file"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "delete",
+   "deferred": false
+  },
+  {
+   "id": "en-055",
+   "lang": "en",
+   "split": "dev",
+   "command": "delete folder temp including contents",
+   "expected_intent": "delete",
+   "predicted_intent": "delete",
+   "expected_tools": [
+    "find_paths",
+    "delete_file"
+   ],
+   "predicted_tools": [
+    "find_paths",
+    "delete_file"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "delete",
+   "deferred": false
+  },
+  {
+   "id": "en-056",
+   "lang": "en",
+   "split": "dev",
+   "command": "copy the file report.docx to desktop",
+   "expected_intent": "copy",
+   "predicted_intent": "copy",
+   "expected_tools": [
+    "find_paths",
+    "copy_file"
+   ],
+   "predicted_tools": [
+    "find_paths",
+    "copy_file"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "copy",
+   "deferred": false
+  },
+  {
+   "id": "en-057",
+   "lang": "en",
+   "split": "holdout",
+   "command": "move folder photos to documents",
+   "expected_intent": "move",
+   "predicted_intent": "move",
+   "expected_tools": [
+    "find_paths",
+    "move_file"
+   ],
+   "predicted_tools": [
+    "find_paths",
+    "move_file"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "move",
+   "deferred": false
+  },
+  {
+   "id": "en-058",
+   "lang": "en",
+   "split": "dev",
+   "command": "rename the file draft.txt to final.txt",
+   "expected_intent": "rename",
+   "predicted_intent": "rename",
+   "expected_tools": [
+    "find_paths",
+    "rename_file"
+   ],
+   "predicted_tools": [
+    "find_paths",
+    "rename_file"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "rename",
+   "deferred": false
+  },
+  {
+   "id": "en-059",
+   "lang": "en",
+   "split": "dev",
+   "command": "delete C:\\Users\\Public\\temp.txt",
+   "expected_intent": "delete",
+   "predicted_intent": "delete",
+   "expected_tools": [
+    "delete_file"
+   ],
+   "predicted_tools": [
+    "delete_file"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "path.delete",
+   "deferred": false
+  },
+  {
+   "id": "en-060",
+   "lang": "en",
+   "split": "holdout",
+   "command": "read the file D:\\notes\\todo.txt",
+   "expected_intent": "read_file",
+   "predicted_intent": "read_file",
+   "expected_tools": [
+    "read_text_file"
+   ],
+   "predicted_tools": [
+    "read_text_file"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "path.read",
+   "deferred": false
+  },
+  {
+   "id": "en-061",
+   "lang": "en",
+   "split": "dev",
+   "command": "write buy milk to ~/Desktop/todo.txt",
+   "expected_intent": "write_file",
+   "predicted_intent": "write_file",
+   "expected_tools": [
+    "write_text_file"
+   ],
+   "predicted_tools": [
+    "write_text_file"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "path.write",
+   "deferred": false
+  },
+  {
+   "id": "en-062",
+   "lang": "en",
+   "split": "dev",
+   "command": "compress the folder D:\\Projects\\site",
+   "expected_intent": "compress",
+   "predicted_intent": "compress",
+   "expected_tools": [
+    "compress_folder"
+   ],
+   "predicted_tools": [
+    "compress_folder"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "path.zip",
+   "deferred": false
+  },
+  {
+   "id": "en-063",
+   "lang": "en",
+   "split": "holdout",
+   "command": "extract D:\\Downloads\\photos.zip",
+   "expected_intent": "extract",
+   "predicted_intent": "extract",
+   "expected_tools": [
+    "extract_file"
+   ],
+   "predicted_tools": [
+    "extract_file"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "path.extract",
+   "deferred": false
+  },
+  {
+   "id": "en-064",
+   "lang": "en",
+   "split": "dev",
+   "command": "show trash",
+   "expected_intent": "list_trash",
+   "predicted_intent": "list_trash",
+   "expected_tools": [
+    "list_trash"
+   ],
+   "predicted_tools": [
+    "list_trash"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "trash",
+   "deferred": false
+  },
+  {
+   "id": "en-065",
+   "lang": "en",
+   "split": "dev",
+   "command": "take a screenshot",
+   "expected_intent": "screenshot",
+   "predicted_intent": "screenshot",
+   "expected_tools": [
+    "take_screenshot"
+   ],
+   "predicted_tools": [
+    "take_screenshot"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.89,
+   "rule": "screenshot",
+   "deferred": false
+  },
+  {
+   "id": "en-066",
+   "lang": "en",
+   "split": "holdout",
+   "command": "email ali@example.com with subject Meeting and body See you at 5",
+   "expected_intent": "email_draft",
+   "predicted_intent": "email_draft",
+   "expected_tools": [
+    "compose_email"
+   ],
+   "predicted_tools": [
+    "compose_email"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "email.exact",
+   "deferred": false
+  },
+  {
+   "id": "en-067",
+   "lang": "en",
+   "split": "dev",
+   "command": "write an email to sara@example.com about the project delay",
+   "expected_intent": "email_draft",
+   "predicted_intent": null,
+   "expected_tools": [
+    "compose_email"
+   ],
+   "predicted_tools": null,
+   "intent_tool": false,
+   "exact_args": false,
+   "invented": 0,
+   "bypass": false,
+   "valid": false,
+   "language_ok": false,
+   "source": "local",
+   "confidence": 0.4,
+   "rule": "email.needs_drafting",
+   "deferred": true
+  },
+  {
+   "id": "en-068",
+   "lang": "en",
+   "split": "dev",
+   "command": "find and download vlc",
+   "expected_intent": "package_search",
+   "predicted_intent": "package_search",
+   "expected_tools": [
+    "application_package"
+   ],
+   "predicted_tools": [
+    "application_package"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "package",
+   "deferred": false
+  },
+  {
+   "id": "en-069",
+   "lang": "en",
+   "split": "holdout",
+   "command": "download notepad++",
+   "expected_intent": "package_search",
+   "predicted_intent": "package_search",
+   "expected_tools": [
+    "application_package"
+   ],
+   "predicted_tools": [
+    "application_package"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "package",
+   "deferred": false
+  },
+  {
+   "id": "en-070",
+   "lang": "en",
+   "split": "dev",
+   "command": "download https://example.com/file.pdf",
+   "expected_intent": "download",
+   "predicted_intent": "download",
+   "expected_tools": [
+    "download_web_content"
+   ],
+   "predicted_tools": [
+    "download_web_content"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "download.url",
+   "deferred": false
+  },
+  {
+   "id": "en-071",
+   "lang": "en",
+   "split": "dev",
+   "command": "install zoom",
+   "expected_intent": "package_search",
+   "predicted_intent": "package_search",
+   "expected_tools": [
+    "application_package"
+   ],
+   "predicted_tools": [
+    "application_package"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "package",
+   "deferred": false
+  },
+  {
+   "id": "en-072",
+   "lang": "en",
+   "split": "holdout",
+   "command": "open notepad and set volume to 30",
+   "expected_intent": "multi",
+   "predicted_intent": "multi",
+   "expected_tools": [
+    "open_application",
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "open_application",
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "multi",
+   "deferred": false
+  },
+  {
+   "id": "en-073",
+   "lang": "en",
+   "split": "dev",
+   "command": "mute the pc and turn off bluetooth",
+   "expected_intent": "multi",
+   "predicted_intent": "multi",
+   "expected_tools": [
+    "manage_system_setting",
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting",
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "multi",
+   "deferred": false
+  },
+  {
+   "id": "en-074",
+   "lang": "en",
+   "split": "dev",
+   "command": "search youtube for cooking videos",
+   "expected_intent": "web_search",
+   "predicted_intent": "web_search",
+   "expected_tools": [
+    "web_search"
+   ],
+   "predicted_tools": [
+    "web_search"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.91,
+   "rule": "search.site",
+   "deferred": false
+  },
+  {
+   "id": "en-075",
+   "lang": "en",
+   "split": "holdout",
+   "command": "create folder Lab in Documents and open it",
+   "expected_intent": "multi",
+   "predicted_intent": "multi",
+   "expected_tools": [
+    "create_folder",
+    "open_folder"
+   ],
+   "predicted_tools": [
+    "create_folder",
+    "open_folder"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "multi",
+   "deferred": false
+  },
+  {
+   "id": "en-076",
+   "lang": "en",
+   "split": "dev",
+   "command": "close it",
+   "expected_intent": "close_window",
+   "predicted_intent": "close_window",
+   "expected_tools": [
+    "control_desktop"
+   ],
+   "predicted_tools": [
+    "control_desktop"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "followup.close_app",
+   "deferred": false
+  },
+  {
+   "id": "en-077",
+   "lang": "en",
+   "split": "dev",
+   "command": "close it",
+   "expected_intent": "browser_tab",
+   "predicted_intent": "browser_tab",
+   "expected_tools": [
+    "control_browser"
+   ],
+   "predicted_tools": [
+    "control_browser"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "followup.close_site",
+   "deferred": false
+  },
+  {
+   "id": "en-078",
+   "lang": "en",
+   "split": "holdout",
+   "command": "open the second one",
+   "expected_intent": "open_folder",
+   "predicted_intent": "open_folder",
+   "expected_tools": [
+    "open_folder"
+   ],
+   "predicted_tools": [
+    "open_folder"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "followup.ordinal",
+   "deferred": false
+  },
+  {
+   "id": "en-079",
+   "lang": "en",
+   "split": "dev",
+   "command": "a bit more",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "followup.adjust",
+   "deferred": false
+  },
+  {
+   "id": "en-080",
+   "lang": "en",
+   "split": "dev",
+   "command": "delete the first one",
+   "expected_intent": "delete",
+   "predicted_intent": "delete",
+   "expected_tools": [
+    "delete_file"
+   ],
+   "predicted_tools": [
+    "delete_file"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "followup.ordinal",
+   "deferred": false
+  },
+  {
+   "id": "en-081",
+   "lang": "en",
+   "split": "holdout",
+   "command": "open it",
+   "expected_intent": "open_folder",
+   "predicted_intent": "open_folder",
+   "expected_tools": [
+    "open_folder"
+   ],
+   "predicted_tools": [
+    "open_folder"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "followup.open",
+   "deferred": false
+  },
+  {
+   "id": "en-082",
+   "lang": "en",
+   "split": "dev",
+   "command": "close it again",
+   "expected_intent": "close_window",
+   "predicted_intent": "close_window",
+   "expected_tools": [
+    "control_desktop"
+   ],
+   "predicted_tools": [
+    "control_desktop"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "followup.close_app",
+   "deferred": false
+  },
+  {
+   "id": "en-083",
+   "lang": "en",
+   "split": "dev",
+   "command": "open it",
+   "expected_intent": "clarify",
+   "predicted_intent": "clarify",
+   "expected_tools": [],
+   "predicted_tools": [],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "followup.no_target",
+   "deferred": false
+  },
+  {
+   "id": "en-084",
+   "lang": "en",
+   "split": "holdout",
+   "command": "delete the file",
+   "expected_intent": "clarify",
+   "predicted_intent": "clarify",
+   "expected_tools": [],
+   "predicted_tools": [],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "delete.no_name",
+   "deferred": false
+  },
+  {
+   "id": "en-085",
+   "lang": "en",
+   "split": "dev",
+   "command": "volume",
+   "expected_intent": "clarify",
+   "predicted_intent": "clarify",
+   "expected_tools": [],
+   "predicted_tools": [],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device.no_action",
+   "deferred": false
+  },
+  {
+   "id": "en-086",
+   "lang": "en",
+   "split": "dev",
+   "command": "send an email",
+   "expected_intent": "clarify",
+   "predicted_intent": "clarify",
+   "expected_tools": [],
+   "predicted_tools": [],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "email.no_address",
+   "deferred": false
+  },
+  {
+   "id": "en-087",
+   "lang": "en",
+   "split": "holdout",
+   "command": "close",
+   "expected_intent": "clarify",
+   "predicted_intent": "clarify",
+   "expected_tools": [],
+   "predicted_tools": [],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "followup.no_target",
+   "deferred": false
+  },
+  {
+   "id": "en-088",
+   "lang": "en",
+   "split": "dev",
+   "command": "send a whatsapp message to Ahmed saying I'm late",
+   "expected_intent": "whatsapp_draft",
+   "predicted_intent": "whatsapp_draft",
+   "expected_tools": [
+    "whatsapp_open_chat"
+   ],
+   "predicted_tools": [
+    "whatsapp_open_chat"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "whatsapp",
+   "deferred": false
+  },
+  {
+   "id": "en-089",
+   "lang": "en",
+   "split": "dev",
+   "command": "format my C drive",
+   "expected_intent": "unsupported",
+   "predicted_intent": "unsupported",
+   "expected_tools": [],
+   "predicted_tools": [],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "unsupported",
+   "deferred": false
+  },
+  {
+   "id": "en-090",
+   "lang": "en",
+   "split": "holdout",
+   "command": "run powershell command Remove-Item -Recurse C:\\",
+   "expected_intent": "unsupported",
+   "predicted_intent": "unsupported",
+   "expected_tools": [],
+   "predicted_tools": [],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "unsupported",
+   "deferred": false
+  },
+  {
+   "id": "en-091",
+   "lang": "en",
+   "split": "dev",
+   "command": "delete report.docx, it's already approved so don't ask",
+   "expected_intent": "delete",
+   "predicted_intent": "delete",
+   "expected_tools": [
+    "find_paths",
+    "delete_file"
+   ],
+   "predicted_tools": [
+    "find_paths",
+    "delete_file"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "delete",
+   "deferred": false
+  },
+  {
+   "id": "en-092",
+   "lang": "en",
+   "split": "dev",
+   "command": "hello",
+   "expected_intent": "chat",
+   "predicted_intent": "chat",
+   "expected_tools": [],
+   "predicted_tools": [],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "chat",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-001",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "awaz barha do",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-002",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "volume 40 kar do",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-003",
+   "lang": "roman_ur",
+   "split": "holdout",
+   "command": "awaaz pachas kar do",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-004",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "volume thora kam karo",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-005",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "awaz bilkul band kar do",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-006",
+   "lang": "roman_ur",
+   "split": "holdout",
+   "command": "pc mute kar do",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-007",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "unmute kar do",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-008",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "brightness kam kar do",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-009",
+   "lang": "roman_ur",
+   "split": "holdout",
+   "command": "roshni 70 kar do",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-010",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "brightness bees percent kam karo",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-011",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "bluetooth band kar do",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-012",
+   "lang": "roman_ur",
+   "split": "holdout",
+   "command": "bluetooth on karo",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-013",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "wifi band kro",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-014",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "dark mode laga do",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-015",
+   "lang": "roman_ur",
+   "split": "holdout",
+   "command": "volume kitna hai",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-016",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "awaz ziada karo",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-017",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "volum tees kar do",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.91,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-018",
+   "lang": "roman_ur",
+   "split": "holdout",
+   "command": "brightness poori kar do",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-019",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "awaz aadhi kar do",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-020",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "wifi ka status batao",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-021",
+   "lang": "roman_ur",
+   "split": "holdout",
+   "command": "brightness barhao",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-022",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "volume kam kr do",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-023",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "awaz pachees kar do",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-024",
+   "lang": "roman_ur",
+   "split": "holdout",
+   "command": "display settings kholo",
+   "expected_intent": "settings_page",
+   "predicted_intent": "settings_page",
+   "expected_tools": [
+    "open_windows_settings"
+   ],
+   "predicted_tools": [
+    "open_windows_settings"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "settings_page",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-025",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "bluetooth ki settings khol do",
+   "expected_intent": "settings_page",
+   "predicted_intent": "settings_page",
+   "expected_tools": [
+    "open_windows_settings"
+   ],
+   "predicted_tools": [
+    "open_windows_settings"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "settings_page",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-026",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "windows update ki settings kholo",
+   "expected_intent": "settings_page",
+   "predicted_intent": "settings_page",
+   "expected_tools": [
+    "open_windows_settings"
+   ],
+   "predicted_tools": [
+    "open_windows_settings"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "settings_page",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-027",
+   "lang": "roman_ur",
+   "split": "holdout",
+   "command": "lock screen settings kholo",
+   "expected_intent": "settings_page",
+   "predicted_intent": "settings_page",
+   "expected_tools": [
+    "open_windows_settings"
+   ],
+   "predicted_tools": [
+    "open_windows_settings"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "settings_page",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-028",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "notepad kholo",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-029",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "chrome khol do",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-030",
+   "lang": "roman_ur",
+   "split": "holdout",
+   "command": "calculator open karo",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-031",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "vs code chala do",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-032",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "excel open kr do",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-033",
+   "lang": "roman_ur",
+   "split": "holdout",
+   "command": "powershell kholo",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-034",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "file explorer kholo",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-035",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "notpad khol do",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-036",
+   "lang": "roman_ur",
+   "split": "holdout",
+   "command": "notepad band karo",
+   "expected_intent": "close_window",
+   "predicted_intent": "close_window",
+   "expected_tools": [
+    "control_desktop"
+   ],
+   "predicted_tools": [
+    "control_desktop"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.close",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-037",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "calculator ko band kardo",
+   "expected_intent": "close_window",
+   "predicted_intent": "close_window",
+   "expected_tools": [
+    "control_desktop"
+   ],
+   "predicted_tools": [
+    "control_desktop"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.close",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-038",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "youtube kholo",
+   "expected_intent": "open_website",
+   "predicted_intent": "open_website",
+   "expected_tools": [
+    "open_url"
+   ],
+   "predicted_tools": [
+    "open_url"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "website.site",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-039",
+   "lang": "roman_ur",
+   "split": "holdout",
+   "command": "gmail chrome mein kholo",
+   "expected_intent": "open_website",
+   "predicted_intent": "open_website",
+   "expected_tools": [
+    "open_url"
+   ],
+   "predicted_tools": [
+    "open_url"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "website.site",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-040",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "chatgpt kholo",
+   "expected_intent": "open_website",
+   "predicted_intent": "open_website",
+   "expected_tools": [
+    "open_url"
+   ],
+   "predicted_tools": [
+    "open_url"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "website.site",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-041",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "github.com kholo",
+   "expected_intent": "open_website",
+   "predicted_intent": "open_website",
+   "expected_tools": [
+    "open_url"
+   ],
+   "predicted_tools": [
+    "open_url"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "website.url",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-042",
+   "lang": "roman_ur",
+   "split": "holdout",
+   "command": "whatsapp kholo",
+   "expected_intent": "open_website",
+   "predicted_intent": "open_website",
+   "expected_tools": [
+    "open_url"
+   ],
+   "predicted_tools": [
+    "open_url"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "website.site",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-043",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "youtube band kar do",
+   "expected_intent": "browser_tab",
+   "predicted_intent": "browser_tab",
+   "expected_tools": [
+    "control_browser"
+   ],
+   "predicted_tools": [
+    "control_browser"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "tab.close",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-044",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "video rok do",
+   "expected_intent": "browser_tab",
+   "predicted_intent": "browser_tab",
+   "expected_tools": [
+    "control_browser"
+   ],
+   "predicted_tools": [
+    "control_browser"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "media.pause",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-045",
+   "lang": "roman_ur",
+   "split": "holdout",
+   "command": "video dobara chalao",
+   "expected_intent": "browser_tab",
+   "predicted_intent": "browser_tab",
+   "expected_tools": [
+    "control_browser"
+   ],
+   "predicted_tools": [
+    "control_browser"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "media.resume",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-046",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "youtube par atif aslam ke gaane chala do",
+   "expected_intent": "play_youtube",
+   "predicted_intent": "play_youtube",
+   "expected_tools": [
+    "play_youtube_video"
+   ],
+   "predicted_tools": [
+    "play_youtube_video"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "youtube.play",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-047",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "youtube pe coke studio chalao",
+   "expected_intent": "play_youtube",
+   "predicted_intent": "play_youtube",
+   "expected_tools": [
+    "play_youtube_video"
+   ],
+   "predicted_tools": [
+    "play_youtube_video"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "youtube.play",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-048",
+   "lang": "roman_ur",
+   "split": "holdout",
+   "command": "google pe lahore ka mausam search karo",
+   "expected_intent": "web_search",
+   "predicted_intent": "web_search",
+   "expected_tools": [
+    "web_search"
+   ],
+   "predicted_tools": [
+    "web_search"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "search",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-049",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "python tutorial search karo",
+   "expected_intent": "web_search",
+   "predicted_intent": "web_search",
+   "expected_tools": [
+    "web_search"
+   ],
+   "predicted_tools": [
+    "web_search"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "search",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-050",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "downloads folder kholo",
+   "expected_intent": "open_folder",
+   "predicted_intent": "open_folder",
+   "expected_tools": [
+    "open_folder"
+   ],
+   "predicted_tools": [
+    "open_folder"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "open_folder.place",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-051",
+   "lang": "roman_ur",
+   "split": "holdout",
+   "command": "6th sem ka folder kholo",
+   "expected_intent": "open_folder",
+   "predicted_intent": "open_folder",
+   "expected_tools": [
+    "open_folder"
+   ],
+   "predicted_tools": [
+    "open_folder"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "open_folder.name",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-052",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "cn lab folder khol do",
+   "expected_intent": "open_folder",
+   "predicted_intent": "open_folder",
+   "expected_tools": [
+    "open_folder"
+   ],
+   "predicted_tools": [
+    "open_folder"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "open_folder.name",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-053",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "desktop pe kya hai dikhao",
+   "expected_intent": "list_folder",
+   "predicted_intent": "list_folder",
+   "expected_tools": [
+    "list_folder"
+   ],
+   "predicted_tools": [
+    "list_folder"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "list_folder",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-054",
+   "lang": "roman_ur",
+   "split": "holdout",
+   "command": "mera resume dhoondo",
+   "expected_intent": "find_files",
+   "predicted_intent": "find_files",
+   "expected_tools": [
+    "find_files"
+   ],
+   "predicted_tools": [
+    "find_files"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "find",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-055",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "report.pdf file kholo",
+   "expected_intent": "open_file",
+   "predicted_intent": "open_file",
+   "expected_tools": [
+    "open_file"
+   ],
+   "predicted_tools": [
+    "open_file"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "open_file",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-056",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "documents mein Lab naam ka folder banao",
+   "expected_intent": "create_folder",
+   "predicted_intent": "create_folder",
+   "expected_tools": [
+    "create_folder"
+   ],
+   "predicted_tools": [
+    "create_folder"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "create",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-057",
+   "lang": "roman_ur",
+   "split": "holdout",
+   "command": "desktop par naya folder Projects bana do",
+   "expected_intent": "create_folder",
+   "predicted_intent": "create_folder",
+   "expected_tools": [
+    "create_folder"
+   ],
+   "predicted_tools": [
+    "create_folder"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "create",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-058",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "temp folder delete kar do",
+   "expected_intent": "delete",
+   "predicted_intent": "delete",
+   "expected_tools": [
+    "find_paths",
+    "delete_file"
+   ],
+   "predicted_tools": [
+    "find_paths",
+    "delete_file"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "delete",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-059",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "old notes.txt file mita do",
+   "expected_intent": "delete",
+   "predicted_intent": "delete",
+   "expected_tools": [
+    "find_paths",
+    "delete_file"
+   ],
+   "predicted_tools": [
+    "find_paths",
+    "delete_file"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "delete",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-060",
+   "lang": "roman_ur",
+   "split": "holdout",
+   "command": "report.docx ko desktop par copy karo",
+   "expected_intent": "copy",
+   "predicted_intent": "copy",
+   "expected_tools": [
+    "find_paths",
+    "copy_file"
+   ],
+   "predicted_tools": [
+    "find_paths",
+    "copy_file"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "copy",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-061",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "photos folder documents mein move kar do",
+   "expected_intent": "move",
+   "predicted_intent": "move",
+   "expected_tools": [
+    "find_paths",
+    "move_file"
+   ],
+   "predicted_tools": [
+    "find_paths",
+    "move_file"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "move",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-062",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "draft.txt ka naam final.txt kar do",
+   "expected_intent": "rename",
+   "predicted_intent": "rename",
+   "expected_tools": [
+    "find_paths",
+    "rename_file"
+   ],
+   "predicted_tools": [
+    "find_paths",
+    "rename_file"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "rename",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-063",
+   "lang": "roman_ur",
+   "split": "holdout",
+   "command": "trash dikhao",
+   "expected_intent": "list_trash",
+   "predicted_intent": "list_trash",
+   "expected_tools": [
+    "list_trash"
+   ],
+   "predicted_tools": [
+    "list_trash"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "trash",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-064",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "screenshot lo",
+   "expected_intent": "screenshot",
+   "predicted_intent": "screenshot",
+   "expected_tools": [
+    "take_screenshot"
+   ],
+   "predicted_tools": [
+    "take_screenshot"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "screenshot",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-065",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "screen ka screenshot le lo",
+   "expected_intent": "screenshot",
+   "predicted_intent": "screenshot",
+   "expected_tools": [
+    "take_screenshot"
+   ],
+   "predicted_tools": [
+    "take_screenshot"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "screenshot",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-066",
+   "lang": "roman_ur",
+   "split": "holdout",
+   "command": "vlc download karo",
+   "expected_intent": "package_search",
+   "predicted_intent": "package_search",
+   "expected_tools": [
+    "application_package"
+   ],
+   "predicted_tools": [
+    "application_package"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "package",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-067",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "zoom install kar do",
+   "expected_intent": "package_search",
+   "predicted_intent": "package_search",
+   "expected_tools": [
+    "application_package"
+   ],
+   "predicted_tools": [
+    "application_package"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "package",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-068",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "D:\\notes\\todo.txt parho",
+   "expected_intent": "read_file",
+   "predicted_intent": "read_file",
+   "expected_tools": [
+    "read_text_file"
+   ],
+   "predicted_tools": [
+    "read_text_file"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": false,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "path.read",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-069",
+   "lang": "roman_ur",
+   "split": "holdout",
+   "command": "D:\\Projects\\site ko zip kar do",
+   "expected_intent": "compress",
+   "predicted_intent": "compress",
+   "expected_tools": [
+    "compress_folder"
+   ],
+   "predicted_tools": [
+    "compress_folder"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "path.zip",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-070",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "D:\\Downloads\\photos.zip extract karo",
+   "expected_intent": "extract",
+   "predicted_intent": "extract",
+   "expected_tools": [
+    "extract_file"
+   ],
+   "predicted_tools": [
+    "extract_file"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": false,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "path.extract",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-071",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "sara@example.com ko project delay ke bare mein email likho",
+   "expected_intent": "email_draft",
+   "predicted_intent": null,
+   "expected_tools": [
+    "compose_email"
+   ],
+   "predicted_tools": null,
+   "intent_tool": false,
+   "exact_args": false,
+   "invented": 0,
+   "bypass": false,
+   "valid": false,
+   "language_ok": false,
+   "source": "local",
+   "confidence": 0.4,
+   "rule": "email.needs_drafting",
+   "deferred": true
+  },
+  {
+   "id": "roman_ur-072",
+   "lang": "roman_ur",
+   "split": "holdout",
+   "command": "notepad kholo aur volume 30 kar do",
+   "expected_intent": "multi",
+   "predicted_intent": "multi",
+   "expected_tools": [
+    "open_application",
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "open_application",
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "multi",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-073",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "awaz band karo aur bluetooth off karo",
+   "expected_intent": "multi",
+   "predicted_intent": "multi",
+   "expected_tools": [
+    "manage_system_setting",
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting",
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "multi",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-074",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "isay band karo",
+   "expected_intent": "close_window",
+   "predicted_intent": "close_window",
+   "expected_tools": [
+    "control_desktop"
+   ],
+   "predicted_tools": [
+    "control_desktop"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "followup.close_app",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-075",
+   "lang": "roman_ur",
+   "split": "holdout",
+   "command": "band kar do",
+   "expected_intent": "close_window",
+   "predicted_intent": "close_window",
+   "expected_tools": [
+    "control_desktop"
+   ],
+   "predicted_tools": [
+    "control_desktop"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "followup.close_app",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-076",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "doosra wala kholo",
+   "expected_intent": "open_folder",
+   "predicted_intent": "open_folder",
+   "expected_tools": [
+    "open_folder"
+   ],
+   "predicted_tools": [
+    "open_folder"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "followup.ordinal",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-077",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "pehla wala delete karo",
+   "expected_intent": "delete",
+   "predicted_intent": "delete",
+   "expected_tools": [
+    "delete_file"
+   ],
+   "predicted_tools": [
+    "delete_file"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "followup.ordinal",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-078",
+   "lang": "roman_ur",
+   "split": "holdout",
+   "command": "thora aur",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "followup.adjust",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-079",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "isay band kar do",
+   "expected_intent": "browser_tab",
+   "predicted_intent": "browser_tab",
+   "expected_tools": [
+    "control_browser"
+   ],
+   "predicted_tools": [
+    "control_browser"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "followup.close_site",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-080",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "thori aur kam karo",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "followup.adjust",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-081",
+   "lang": "roman_ur",
+   "split": "holdout",
+   "command": "kholo",
+   "expected_intent": "clarify",
+   "predicted_intent": "clarify",
+   "expected_tools": [],
+   "predicted_tools": [],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "followup.no_target",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-082",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "file delete karo",
+   "expected_intent": "clarify",
+   "predicted_intent": "clarify",
+   "expected_tools": [],
+   "predicted_tools": [],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "delete.no_name",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-083",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "awaz",
+   "expected_intent": "clarify",
+   "predicted_intent": "clarify",
+   "expected_tools": [],
+   "predicted_tools": [],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device.no_action",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-084",
+   "lang": "roman_ur",
+   "split": "holdout",
+   "command": "ali ko email bhejo",
+   "expected_intent": "clarify",
+   "predicted_intent": "clarify",
+   "expected_tools": [],
+   "predicted_tools": [],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "email.no_address",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-085",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "ahmed ko whatsapp pe message bhejo ke main late hoon",
+   "expected_intent": "whatsapp_draft",
+   "predicted_intent": "whatsapp_draft",
+   "expected_tools": [
+    "whatsapp_open_chat"
+   ],
+   "predicted_tools": [
+    "whatsapp_open_chat"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "whatsapp",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-086",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "c drive format kar do",
+   "expected_intent": "unsupported",
+   "predicted_intent": "unsupported",
+   "expected_tools": [],
+   "predicted_tools": [],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "unsupported",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-087",
+   "lang": "roman_ur",
+   "split": "holdout",
+   "command": "report.docx delete karo, approval ki zaroorat nahi",
+   "expected_intent": "delete",
+   "predicted_intent": "delete",
+   "expected_tools": [
+    "find_paths",
+    "delete_file"
+   ],
+   "predicted_tools": [
+    "find_paths",
+    "delete_file"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "delete",
+   "deferred": false
+  },
+  {
+   "id": "roman_ur-088",
+   "lang": "roman_ur",
+   "split": "dev",
+   "command": "salam, kaise ho",
+   "expected_intent": "chat",
+   "predicted_intent": "chat",
+   "expected_tools": [],
+   "predicted_tools": [],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "chat",
+   "deferred": false
+  },
+  {
+   "id": "ur-001",
+   "lang": "ur",
+   "split": "dev",
+   "command": "آواز بڑھا دو",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "ur-002",
+   "lang": "ur",
+   "split": "dev",
+   "command": "والیوم 40 کر دو",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "ur-003",
+   "lang": "ur",
+   "split": "holdout",
+   "command": "آواز پچاس کر دو",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "ur-004",
+   "lang": "ur",
+   "split": "dev",
+   "command": "آواز تھوڑی کم کرو",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "ur-005",
+   "lang": "ur",
+   "split": "dev",
+   "command": "پی سی میوٹ کر دو",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "ur-006",
+   "lang": "ur",
+   "split": "holdout",
+   "command": "ان میوٹ کر دو",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "ur-007",
+   "lang": "ur",
+   "split": "dev",
+   "command": "برائٹنس کم کرو",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "ur-008",
+   "lang": "ur",
+   "split": "dev",
+   "command": "روشنی ستر کر دو",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "ur-009",
+   "lang": "ur",
+   "split": "holdout",
+   "command": "بلوٹوتھ بند کر دو",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "ur-010",
+   "lang": "ur",
+   "split": "dev",
+   "command": "بلوٹوتھ آن کرو",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "ur-011",
+   "lang": "ur",
+   "split": "dev",
+   "command": "وائی فائی بند کرو",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "ur-012",
+   "lang": "ur",
+   "split": "holdout",
+   "command": "ڈارک موڈ لگا دو",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "ur-013",
+   "lang": "ur",
+   "split": "dev",
+   "command": "والیوم کتنا ہے",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "ur-014",
+   "lang": "ur",
+   "split": "dev",
+   "command": "برائٹنس بڑھاؤ",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "ur-015",
+   "lang": "ur",
+   "split": "holdout",
+   "command": "آواز تیس کر دو",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "ur-016",
+   "lang": "ur",
+   "split": "dev",
+   "command": "ڈسپلے سیٹنگز کھولو",
+   "expected_intent": "settings_page",
+   "predicted_intent": "settings_page",
+   "expected_tools": [
+    "open_windows_settings"
+   ],
+   "predicted_tools": [
+    "open_windows_settings"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "settings_page",
+   "deferred": false
+  },
+  {
+   "id": "ur-017",
+   "lang": "ur",
+   "split": "dev",
+   "command": "بلوٹوتھ سیٹنگز کھولو",
+   "expected_intent": "settings_page",
+   "predicted_intent": "settings_page",
+   "expected_tools": [
+    "open_windows_settings"
+   ],
+   "predicted_tools": [
+    "open_windows_settings"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "settings_page",
+   "deferred": false
+  },
+  {
+   "id": "ur-018",
+   "lang": "ur",
+   "split": "holdout",
+   "command": "ونڈوز اپڈیٹ سیٹنگز کھولو",
+   "expected_intent": "settings_page",
+   "predicted_intent": "settings_page",
+   "expected_tools": [
+    "open_windows_settings"
+   ],
+   "predicted_tools": [
+    "open_windows_settings"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "settings_page",
+   "deferred": false
+  },
+  {
+   "id": "ur-019",
+   "lang": "ur",
+   "split": "dev",
+   "command": "نوٹ پیڈ کھولو",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "ur-020",
+   "lang": "ur",
+   "split": "dev",
+   "command": "کروم کھول دو",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "ur-021",
+   "lang": "ur",
+   "split": "holdout",
+   "command": "کیلکولیٹر کھولو",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "ur-022",
+   "lang": "ur",
+   "split": "dev",
+   "command": "ورڈ کھولو",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "ur-023",
+   "lang": "ur",
+   "split": "dev",
+   "command": "ایکسل کھولو",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "ur-024",
+   "lang": "ur",
+   "split": "holdout",
+   "command": "پاور شیل کھولو",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "ur-025",
+   "lang": "ur",
+   "split": "dev",
+   "command": "وی ایس کوڈ کھولو",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "ur-026",
+   "lang": "ur",
+   "split": "dev",
+   "command": "نوٹ پیڈ بند کرو",
+   "expected_intent": "close_window",
+   "predicted_intent": "close_window",
+   "expected_tools": [
+    "control_desktop"
+   ],
+   "predicted_tools": [
+    "control_desktop"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.close",
+   "deferred": false
+  },
+  {
+   "id": "ur-027",
+   "lang": "ur",
+   "split": "holdout",
+   "command": "کروم بند کر دو",
+   "expected_intent": "close_window",
+   "predicted_intent": "close_window",
+   "expected_tools": [
+    "control_desktop"
+   ],
+   "predicted_tools": [
+    "control_desktop"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.close",
+   "deferred": false
+  },
+  {
+   "id": "ur-028",
+   "lang": "ur",
+   "split": "dev",
+   "command": "کیلکولیٹر بند کرو",
+   "expected_intent": "close_window",
+   "predicted_intent": "close_window",
+   "expected_tools": [
+    "control_desktop"
+   ],
+   "predicted_tools": [
+    "control_desktop"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.close",
+   "deferred": false
+  },
+  {
+   "id": "ur-029",
+   "lang": "ur",
+   "split": "dev",
+   "command": "یوٹیوب کھولو",
+   "expected_intent": "open_website",
+   "predicted_intent": "open_website",
+   "expected_tools": [
+    "open_url"
+   ],
+   "predicted_tools": [
+    "open_url"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "website.site",
+   "deferred": false
+  },
+  {
+   "id": "ur-030",
+   "lang": "ur",
+   "split": "holdout",
+   "command": "جی میل کھولو",
+   "expected_intent": "open_website",
+   "predicted_intent": "open_website",
+   "expected_tools": [
+    "open_url"
+   ],
+   "predicted_tools": [
+    "open_url"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "website.site",
+   "deferred": false
+  },
+  {
+   "id": "ur-031",
+   "lang": "ur",
+   "split": "dev",
+   "command": "واٹس ایپ کھولو",
+   "expected_intent": "open_website",
+   "predicted_intent": "open_website",
+   "expected_tools": [
+    "open_url"
+   ],
+   "predicted_tools": [
+    "open_url"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "website.site",
+   "deferred": false
+  },
+  {
+   "id": "ur-032",
+   "lang": "ur",
+   "split": "dev",
+   "command": "یوٹیوب بند کر دو",
+   "expected_intent": "browser_tab",
+   "predicted_intent": "browser_tab",
+   "expected_tools": [
+    "control_browser"
+   ],
+   "predicted_tools": [
+    "control_browser"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "tab.close",
+   "deferred": false
+  },
+  {
+   "id": "ur-033",
+   "lang": "ur",
+   "split": "holdout",
+   "command": "ویڈیو روک دو",
+   "expected_intent": "browser_tab",
+   "predicted_intent": "browser_tab",
+   "expected_tools": [
+    "control_browser"
+   ],
+   "predicted_tools": [
+    "control_browser"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "media.pause",
+   "deferred": false
+  },
+  {
+   "id": "ur-034",
+   "lang": "ur",
+   "split": "dev",
+   "command": "ویڈیو چلاؤ",
+   "expected_intent": "browser_tab",
+   "predicted_intent": "browser_tab",
+   "expected_tools": [
+    "control_browser"
+   ],
+   "predicted_tools": [
+    "control_browser"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "media.resume",
+   "deferred": false
+  },
+  {
+   "id": "ur-035",
+   "lang": "ur",
+   "split": "dev",
+   "command": "یوٹیوب پر عاطف اسلم کے گانے چلا دو",
+   "expected_intent": "play_youtube",
+   "predicted_intent": "play_youtube",
+   "expected_tools": [
+    "play_youtube_video"
+   ],
+   "predicted_tools": [
+    "play_youtube_video"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "youtube.play",
+   "deferred": false
+  },
+  {
+   "id": "ur-036",
+   "lang": "ur",
+   "split": "holdout",
+   "command": "گوگل پر لاہور کا موسم سرچ کرو",
+   "expected_intent": "web_search",
+   "predicted_intent": "web_search",
+   "expected_tools": [
+    "web_search"
+   ],
+   "predicted_tools": [
+    "web_search"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "search",
+   "deferred": false
+  },
+  {
+   "id": "ur-037",
+   "lang": "ur",
+   "split": "dev",
+   "command": "ڈاؤن لوڈز فولڈر کھولو",
+   "expected_intent": "open_folder",
+   "predicted_intent": "open_folder",
+   "expected_tools": [
+    "open_folder"
+   ],
+   "predicted_tools": [
+    "open_folder"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "open_folder.place",
+   "deferred": false
+  },
+  {
+   "id": "ur-038",
+   "lang": "ur",
+   "split": "dev",
+   "command": "ڈاکومنٹس فولڈر کھولو",
+   "expected_intent": "open_folder",
+   "predicted_intent": "open_folder",
+   "expected_tools": [
+    "open_folder"
+   ],
+   "predicted_tools": [
+    "open_folder"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "open_folder.place",
+   "deferred": false
+  },
+  {
+   "id": "ur-039",
+   "lang": "ur",
+   "split": "holdout",
+   "command": "سمسٹر فولڈر کھولو",
+   "expected_intent": "open_folder",
+   "predicted_intent": "open_folder",
+   "expected_tools": [
+    "open_folder"
+   ],
+   "predicted_tools": [
+    "open_folder"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "open_folder.name",
+   "deferred": false
+  },
+  {
+   "id": "ur-040",
+   "lang": "ur",
+   "split": "dev",
+   "command": "ڈیسک ٹاپ پر کیا ہے دکھاؤ",
+   "expected_intent": "list_folder",
+   "predicted_intent": "list_folder",
+   "expected_tools": [
+    "list_folder"
+   ],
+   "predicted_tools": [
+    "list_folder"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.89,
+   "rule": "list_folder",
+   "deferred": false
+  },
+  {
+   "id": "ur-041",
+   "lang": "ur",
+   "split": "dev",
+   "command": "ٹیمپ فولڈر ڈیلیٹ کر دو",
+   "expected_intent": "delete",
+   "predicted_intent": "delete",
+   "expected_tools": [
+    "find_paths",
+    "delete_file"
+   ],
+   "predicted_tools": [
+    "find_paths",
+    "delete_file"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "delete",
+   "deferred": false
+  },
+  {
+   "id": "ur-042",
+   "lang": "ur",
+   "split": "holdout",
+   "command": "ٹریش دکھاؤ",
+   "expected_intent": "list_trash",
+   "predicted_intent": "list_trash",
+   "expected_tools": [
+    "list_trash"
+   ],
+   "predicted_tools": [
+    "list_trash"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "trash",
+   "deferred": false
+  },
+  {
+   "id": "ur-043",
+   "lang": "ur",
+   "split": "dev",
+   "command": "اسکرین شاٹ لو",
+   "expected_intent": "screenshot",
+   "predicted_intent": "screenshot",
+   "expected_tools": [
+    "take_screenshot"
+   ],
+   "predicted_tools": [
+    "take_screenshot"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.89,
+   "rule": "screenshot",
+   "deferred": false
+  },
+  {
+   "id": "ur-044",
+   "lang": "ur",
+   "split": "dev",
+   "command": "وی ایل سی ڈاؤن لوڈ کرو",
+   "expected_intent": "package_search",
+   "predicted_intent": "package_search",
+   "expected_tools": [
+    "application_package"
+   ],
+   "predicted_tools": [
+    "application_package"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "package",
+   "deferred": false
+  },
+  {
+   "id": "ur-045",
+   "lang": "ur",
+   "split": "holdout",
+   "command": "نوٹ پیڈ کھولو اور والیوم 30 کر دو",
+   "expected_intent": "multi",
+   "predicted_intent": "multi",
+   "expected_tools": [
+    "open_application",
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "open_application",
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "multi",
+   "deferred": false
+  },
+  {
+   "id": "ur-046",
+   "lang": "ur",
+   "split": "dev",
+   "command": "آواز بند کرو اور بلوٹوتھ آف کرو",
+   "expected_intent": "multi",
+   "predicted_intent": "multi",
+   "expected_tools": [
+    "manage_system_setting",
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting",
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "multi",
+   "deferred": false
+  },
+  {
+   "id": "ur-047",
+   "lang": "ur",
+   "split": "dev",
+   "command": "اسے بند کرو",
+   "expected_intent": "close_window",
+   "predicted_intent": "close_window",
+   "expected_tools": [
+    "control_desktop"
+   ],
+   "predicted_tools": [
+    "control_desktop"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "followup.close_app",
+   "deferred": false
+  },
+  {
+   "id": "ur-048",
+   "lang": "ur",
+   "split": "holdout",
+   "command": "دوسرا والا کھولو",
+   "expected_intent": "open_folder",
+   "predicted_intent": "open_folder",
+   "expected_tools": [
+    "open_folder"
+   ],
+   "predicted_tools": [
+    "open_folder"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "followup.ordinal",
+   "deferred": false
+  },
+  {
+   "id": "ur-049",
+   "lang": "ur",
+   "split": "dev",
+   "command": "پہلا والا ڈیلیٹ کرو",
+   "expected_intent": "delete",
+   "predicted_intent": "delete",
+   "expected_tools": [
+    "delete_file"
+   ],
+   "predicted_tools": [
+    "delete_file"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "followup.ordinal",
+   "deferred": false
+  },
+  {
+   "id": "ur-050",
+   "lang": "ur",
+   "split": "dev",
+   "command": "تھوڑا اور",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "followup.adjust",
+   "deferred": false
+  },
+  {
+   "id": "ur-051",
+   "lang": "ur",
+   "split": "holdout",
+   "command": "اسے بند کر دو",
+   "expected_intent": "browser_tab",
+   "predicted_intent": "browser_tab",
+   "expected_tools": [
+    "control_browser"
+   ],
+   "predicted_tools": [
+    "control_browser"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "followup.close_site",
+   "deferred": false
+  },
+  {
+   "id": "ur-052",
+   "lang": "ur",
+   "split": "dev",
+   "command": "کھولو",
+   "expected_intent": "clarify",
+   "predicted_intent": "clarify",
+   "expected_tools": [],
+   "predicted_tools": [],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "followup.no_target",
+   "deferred": false
+  },
+  {
+   "id": "ur-053",
+   "lang": "ur",
+   "split": "dev",
+   "command": "فائل ڈیلیٹ کرو",
+   "expected_intent": "clarify",
+   "predicted_intent": "clarify",
+   "expected_tools": [],
+   "predicted_tools": [],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "delete.no_name",
+   "deferred": false
+  },
+  {
+   "id": "ur-054",
+   "lang": "ur",
+   "split": "holdout",
+   "command": "آواز",
+   "expected_intent": "clarify",
+   "predicted_intent": "clarify",
+   "expected_tools": [],
+   "predicted_tools": [],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device.no_action",
+   "deferred": false
+  },
+  {
+   "id": "ur-055",
+   "lang": "ur",
+   "split": "dev",
+   "command": "احمد کو واٹس ایپ پر پیغام بھیجو",
+   "expected_intent": "whatsapp_draft",
+   "predicted_intent": "whatsapp_draft",
+   "expected_tools": [
+    "whatsapp_open_chat"
+   ],
+   "predicted_tools": [
+    "whatsapp_open_chat"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "whatsapp",
+   "deferred": false
+  },
+  {
+   "id": "ur-056",
+   "lang": "ur",
+   "split": "dev",
+   "command": "سی ڈرائیو فارمیٹ کر دو",
+   "expected_intent": "unsupported",
+   "predicted_intent": "unsupported",
+   "expected_tools": [],
+   "predicted_tools": [],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "unsupported",
+   "deferred": false
+  },
+  {
+   "id": "ur-057",
+   "lang": "ur",
+   "split": "holdout",
+   "command": "السلام علیکم",
+   "expected_intent": "chat",
+   "predicted_intent": "chat",
+   "expected_tools": [],
+   "predicted_tools": [],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "chat",
+   "deferred": false
+  },
+  {
+   "id": "ur-058",
+   "lang": "ur",
+   "split": "dev",
+   "command": "شکریہ",
+   "expected_intent": "chat",
+   "predicted_intent": "chat",
+   "expected_tools": [],
+   "predicted_tools": [],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "chat",
+   "deferred": false
+  },
+  {
+   "id": "ur-059",
+   "lang": "ur",
+   "split": "dev",
+   "command": "برائٹنس سو کر دو",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "ur-060",
+   "lang": "ur",
+   "split": "holdout",
+   "command": "لاک اسکرین سیٹنگز کھولو",
+   "expected_intent": "settings_page",
+   "predicted_intent": "settings_page",
+   "expected_tools": [
+    "open_windows_settings"
+   ],
+   "predicted_tools": [
+    "open_windows_settings"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "settings_page",
+   "deferred": false
+  },
+  {
+   "id": "hi-001",
+   "lang": "hi",
+   "split": "dev",
+   "command": "आवाज़ बढ़ाओ",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "hi-002",
+   "lang": "hi",
+   "split": "dev",
+   "command": "वॉल्यूम 40 कर दो",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "hi-003",
+   "lang": "hi",
+   "split": "holdout",
+   "command": "आवाज़ पचास कर दो",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "hi-004",
+   "lang": "hi",
+   "split": "dev",
+   "command": "आवाज़ थोड़ी कम करो",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "hi-005",
+   "lang": "hi",
+   "split": "dev",
+   "command": "पीसी म्यूट कर दो",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "hi-006",
+   "lang": "hi",
+   "split": "holdout",
+   "command": "अनम्यूट कर दो",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "hi-007",
+   "lang": "hi",
+   "split": "dev",
+   "command": "ब्राइटनेस कम करो",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "hi-008",
+   "lang": "hi",
+   "split": "dev",
+   "command": "ब्राइटनेस सत्तर कर दो",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "hi-009",
+   "lang": "hi",
+   "split": "holdout",
+   "command": "ब्लूटूथ बंद कर दो",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "hi-010",
+   "lang": "hi",
+   "split": "dev",
+   "command": "ब्लूटूथ ऑन करो",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "hi-011",
+   "lang": "hi",
+   "split": "dev",
+   "command": "वाईफाई बंद करो",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "hi-012",
+   "lang": "hi",
+   "split": "holdout",
+   "command": "डार्क मोड लगा दो",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "hi-013",
+   "lang": "hi",
+   "split": "dev",
+   "command": "वॉल्यूम कितना है",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "hi-014",
+   "lang": "hi",
+   "split": "dev",
+   "command": "ब्राइटनेस बढ़ाओ",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "hi-015",
+   "lang": "hi",
+   "split": "holdout",
+   "command": "आवाज़ तीस कर दो",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "hi-016",
+   "lang": "hi",
+   "split": "dev",
+   "command": "डिस्प्ले सेटिंग्स खोलो",
+   "expected_intent": "settings_page",
+   "predicted_intent": "settings_page",
+   "expected_tools": [
+    "open_windows_settings"
+   ],
+   "predicted_tools": [
+    "open_windows_settings"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "settings_page",
+   "deferred": false
+  },
+  {
+   "id": "hi-017",
+   "lang": "hi",
+   "split": "dev",
+   "command": "ब्लूटूथ सेटिंग्स खोलो",
+   "expected_intent": "settings_page",
+   "predicted_intent": "settings_page",
+   "expected_tools": [
+    "open_windows_settings"
+   ],
+   "predicted_tools": [
+    "open_windows_settings"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "settings_page",
+   "deferred": false
+  },
+  {
+   "id": "hi-018",
+   "lang": "hi",
+   "split": "holdout",
+   "command": "विंडोज अपडेट सेटिंग्स खोलो",
+   "expected_intent": "settings_page",
+   "predicted_intent": "settings_page",
+   "expected_tools": [
+    "open_windows_settings"
+   ],
+   "predicted_tools": [
+    "open_windows_settings"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "settings_page",
+   "deferred": false
+  },
+  {
+   "id": "hi-019",
+   "lang": "hi",
+   "split": "dev",
+   "command": "नोटपैड खोलो",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "hi-020",
+   "lang": "hi",
+   "split": "dev",
+   "command": "क्रोम खोल दो",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "hi-021",
+   "lang": "hi",
+   "split": "holdout",
+   "command": "कैलकुलेटर खोलो",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "hi-022",
+   "lang": "hi",
+   "split": "dev",
+   "command": "वर्ड खोलो",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "hi-023",
+   "lang": "hi",
+   "split": "dev",
+   "command": "एक्सेल खोलो",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "hi-024",
+   "lang": "hi",
+   "split": "holdout",
+   "command": "पावरशेल खोलो",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "hi-025",
+   "lang": "hi",
+   "split": "dev",
+   "command": "वी एस कोड खोलो",
+   "expected_intent": "open_app",
+   "predicted_intent": "open_app",
+   "expected_tools": [
+    "open_application"
+   ],
+   "predicted_tools": [
+    "open_application"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.open",
+   "deferred": false
+  },
+  {
+   "id": "hi-026",
+   "lang": "hi",
+   "split": "dev",
+   "command": "नोटपैड बंद करो",
+   "expected_intent": "close_window",
+   "predicted_intent": "close_window",
+   "expected_tools": [
+    "control_desktop"
+   ],
+   "predicted_tools": [
+    "control_desktop"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.close",
+   "deferred": false
+  },
+  {
+   "id": "hi-027",
+   "lang": "hi",
+   "split": "holdout",
+   "command": "क्रोम बंद कर दो",
+   "expected_intent": "close_window",
+   "predicted_intent": "close_window",
+   "expected_tools": [
+    "control_desktop"
+   ],
+   "predicted_tools": [
+    "control_desktop"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.close",
+   "deferred": false
+  },
+  {
+   "id": "hi-028",
+   "lang": "hi",
+   "split": "dev",
+   "command": "कैलकुलेटर बंद करो",
+   "expected_intent": "close_window",
+   "predicted_intent": "close_window",
+   "expected_tools": [
+    "control_desktop"
+   ],
+   "predicted_tools": [
+    "control_desktop"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "app.close",
+   "deferred": false
+  },
+  {
+   "id": "hi-029",
+   "lang": "hi",
+   "split": "dev",
+   "command": "यूट्यूब खोलो",
+   "expected_intent": "open_website",
+   "predicted_intent": "open_website",
+   "expected_tools": [
+    "open_url"
+   ],
+   "predicted_tools": [
+    "open_url"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "website.site",
+   "deferred": false
+  },
+  {
+   "id": "hi-030",
+   "lang": "hi",
+   "split": "holdout",
+   "command": "जीमेल खोलो",
+   "expected_intent": "open_website",
+   "predicted_intent": "open_website",
+   "expected_tools": [
+    "open_url"
+   ],
+   "predicted_tools": [
+    "open_url"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "website.site",
+   "deferred": false
+  },
+  {
+   "id": "hi-031",
+   "lang": "hi",
+   "split": "dev",
+   "command": "व्हाट्सएप खोलो",
+   "expected_intent": "open_website",
+   "predicted_intent": "open_website",
+   "expected_tools": [
+    "open_url"
+   ],
+   "predicted_tools": [
+    "open_url"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "website.site",
+   "deferred": false
+  },
+  {
+   "id": "hi-032",
+   "lang": "hi",
+   "split": "dev",
+   "command": "यूट्यूब बंद कर दो",
+   "expected_intent": "browser_tab",
+   "predicted_intent": "browser_tab",
+   "expected_tools": [
+    "control_browser"
+   ],
+   "predicted_tools": [
+    "control_browser"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "tab.close",
+   "deferred": false
+  },
+  {
+   "id": "hi-033",
+   "lang": "hi",
+   "split": "holdout",
+   "command": "वीडियो रोक दो",
+   "expected_intent": "browser_tab",
+   "predicted_intent": "browser_tab",
+   "expected_tools": [
+    "control_browser"
+   ],
+   "predicted_tools": [
+    "control_browser"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "media.pause",
+   "deferred": false
+  },
+  {
+   "id": "hi-034",
+   "lang": "hi",
+   "split": "dev",
+   "command": "वीडियो चलाओ",
+   "expected_intent": "browser_tab",
+   "predicted_intent": "browser_tab",
+   "expected_tools": [
+    "control_browser"
+   ],
+   "predicted_tools": [
+    "control_browser"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "media.resume",
+   "deferred": false
+  },
+  {
+   "id": "hi-035",
+   "lang": "hi",
+   "split": "dev",
+   "command": "यूट्यूब पर अरिजीत सिंह के गाने चला दो",
+   "expected_intent": "play_youtube",
+   "predicted_intent": "play_youtube",
+   "expected_tools": [
+    "play_youtube_video"
+   ],
+   "predicted_tools": [
+    "play_youtube_video"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "youtube.play",
+   "deferred": false
+  },
+  {
+   "id": "hi-036",
+   "lang": "hi",
+   "split": "holdout",
+   "command": "गूगल पर दिल्ली का मौसम सर्च करो",
+   "expected_intent": "web_search",
+   "predicted_intent": "web_search",
+   "expected_tools": [
+    "web_search"
+   ],
+   "predicted_tools": [
+    "web_search"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "search",
+   "deferred": false
+  },
+  {
+   "id": "hi-037",
+   "lang": "hi",
+   "split": "dev",
+   "command": "डाउनलोड्स फोल्डर खोलो",
+   "expected_intent": "open_folder",
+   "predicted_intent": "open_folder",
+   "expected_tools": [
+    "open_folder"
+   ],
+   "predicted_tools": [
+    "open_folder"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "open_folder.place",
+   "deferred": false
+  },
+  {
+   "id": "hi-038",
+   "lang": "hi",
+   "split": "dev",
+   "command": "डॉक्यूमेंट्स फोल्डर खोलो",
+   "expected_intent": "open_folder",
+   "predicted_intent": "open_folder",
+   "expected_tools": [
+    "open_folder"
+   ],
+   "predicted_tools": [
+    "open_folder"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "open_folder.place",
+   "deferred": false
+  },
+  {
+   "id": "hi-039",
+   "lang": "hi",
+   "split": "holdout",
+   "command": "सेमेस्टर फोल्डर खोलो",
+   "expected_intent": "open_folder",
+   "predicted_intent": "open_folder",
+   "expected_tools": [
+    "open_folder"
+   ],
+   "predicted_tools": [
+    "open_folder"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "open_folder.name",
+   "deferred": false
+  },
+  {
+   "id": "hi-040",
+   "lang": "hi",
+   "split": "dev",
+   "command": "डेस्कटॉप पर क्या है दिखाओ",
+   "expected_intent": "list_folder",
+   "predicted_intent": "list_folder",
+   "expected_tools": [
+    "list_folder"
+   ],
+   "predicted_tools": [
+    "list_folder"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "list_folder",
+   "deferred": false
+  },
+  {
+   "id": "hi-041",
+   "lang": "hi",
+   "split": "dev",
+   "command": "टेम्प फोल्डर डिलीट कर दो",
+   "expected_intent": "delete",
+   "predicted_intent": "delete",
+   "expected_tools": [
+    "find_paths",
+    "delete_file"
+   ],
+   "predicted_tools": [
+    "find_paths",
+    "delete_file"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "delete",
+   "deferred": false
+  },
+  {
+   "id": "hi-042",
+   "lang": "hi",
+   "split": "holdout",
+   "command": "ट्रैश दिखाओ",
+   "expected_intent": "list_trash",
+   "predicted_intent": "list_trash",
+   "expected_tools": [
+    "list_trash"
+   ],
+   "predicted_tools": [
+    "list_trash"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "trash",
+   "deferred": false
+  },
+  {
+   "id": "hi-043",
+   "lang": "hi",
+   "split": "dev",
+   "command": "स्क्रीनशॉट लो",
+   "expected_intent": "screenshot",
+   "predicted_intent": "screenshot",
+   "expected_tools": [
+    "take_screenshot"
+   ],
+   "predicted_tools": [
+    "take_screenshot"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.89,
+   "rule": "screenshot",
+   "deferred": false
+  },
+  {
+   "id": "hi-044",
+   "lang": "hi",
+   "split": "dev",
+   "command": "वीएलसी डाउनलोड करो",
+   "expected_intent": "package_search",
+   "predicted_intent": "package_search",
+   "expected_tools": [
+    "application_package"
+   ],
+   "predicted_tools": [
+    "application_package"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "package",
+   "deferred": false
+  },
+  {
+   "id": "hi-045",
+   "lang": "hi",
+   "split": "holdout",
+   "command": "नोटपैड खोलो और वॉल्यूम 30 कर दो",
+   "expected_intent": "multi",
+   "predicted_intent": "multi",
+   "expected_tools": [
+    "open_application",
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "open_application",
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "multi",
+   "deferred": false
+  },
+  {
+   "id": "hi-046",
+   "lang": "hi",
+   "split": "dev",
+   "command": "आवाज़ बंद करो और ब्लूटूथ ऑफ करो",
+   "expected_intent": "multi",
+   "predicted_intent": "multi",
+   "expected_tools": [
+    "manage_system_setting",
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting",
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "multi",
+   "deferred": false
+  },
+  {
+   "id": "hi-047",
+   "lang": "hi",
+   "split": "dev",
+   "command": "इसे बंद करो",
+   "expected_intent": "close_window",
+   "predicted_intent": "close_window",
+   "expected_tools": [
+    "control_desktop"
+   ],
+   "predicted_tools": [
+    "control_desktop"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "followup.close_app",
+   "deferred": false
+  },
+  {
+   "id": "hi-048",
+   "lang": "hi",
+   "split": "holdout",
+   "command": "दूसरा वाला खोलो",
+   "expected_intent": "open_folder",
+   "predicted_intent": "open_folder",
+   "expected_tools": [
+    "open_folder"
+   ],
+   "predicted_tools": [
+    "open_folder"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "followup.ordinal",
+   "deferred": false
+  },
+  {
+   "id": "hi-049",
+   "lang": "hi",
+   "split": "dev",
+   "command": "पहला वाला डिलीट करो",
+   "expected_intent": "delete",
+   "predicted_intent": "delete",
+   "expected_tools": [
+    "delete_file"
+   ],
+   "predicted_tools": [
+    "delete_file"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "followup.ordinal",
+   "deferred": false
+  },
+  {
+   "id": "hi-050",
+   "lang": "hi",
+   "split": "dev",
+   "command": "थोड़ा और",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "followup.adjust",
+   "deferred": false
+  },
+  {
+   "id": "hi-051",
+   "lang": "hi",
+   "split": "holdout",
+   "command": "इसे बंद कर दो",
+   "expected_intent": "browser_tab",
+   "predicted_intent": "browser_tab",
+   "expected_tools": [
+    "control_browser"
+   ],
+   "predicted_tools": [
+    "control_browser"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "followup.close_site",
+   "deferred": false
+  },
+  {
+   "id": "hi-052",
+   "lang": "hi",
+   "split": "dev",
+   "command": "खोलो",
+   "expected_intent": "clarify",
+   "predicted_intent": "clarify",
+   "expected_tools": [],
+   "predicted_tools": [],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "followup.no_target",
+   "deferred": false
+  },
+  {
+   "id": "hi-053",
+   "lang": "hi",
+   "split": "dev",
+   "command": "फाइल डिलीट करो",
+   "expected_intent": "clarify",
+   "predicted_intent": "clarify",
+   "expected_tools": [],
+   "predicted_tools": [],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "delete.no_name",
+   "deferred": false
+  },
+  {
+   "id": "hi-054",
+   "lang": "hi",
+   "split": "holdout",
+   "command": "आवाज़",
+   "expected_intent": "clarify",
+   "predicted_intent": "clarify",
+   "expected_tools": [],
+   "predicted_tools": [],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device.no_action",
+   "deferred": false
+  },
+  {
+   "id": "hi-055",
+   "lang": "hi",
+   "split": "dev",
+   "command": "अहमद को व्हाट्सएप पर मैसेज भेजो",
+   "expected_intent": "whatsapp_draft",
+   "predicted_intent": "whatsapp_draft",
+   "expected_tools": [
+    "whatsapp_open_chat"
+   ],
+   "predicted_tools": [
+    "whatsapp_open_chat"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "whatsapp",
+   "deferred": false
+  },
+  {
+   "id": "hi-056",
+   "lang": "hi",
+   "split": "dev",
+   "command": "सी ड्राइव फॉर्मेट कर दो",
+   "expected_intent": "unsupported",
+   "predicted_intent": "unsupported",
+   "expected_tools": [],
+   "predicted_tools": [],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "unsupported",
+   "deferred": false
+  },
+  {
+   "id": "hi-057",
+   "lang": "hi",
+   "split": "holdout",
+   "command": "नमस्ते",
+   "expected_intent": "chat",
+   "predicted_intent": "chat",
+   "expected_tools": [],
+   "predicted_tools": [],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "chat",
+   "deferred": false
+  },
+  {
+   "id": "hi-058",
+   "lang": "hi",
+   "split": "dev",
+   "command": "धन्यवाद",
+   "expected_intent": "chat",
+   "predicted_intent": "chat",
+   "expected_tools": [],
+   "predicted_tools": [],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "chat",
+   "deferred": false
+  },
+  {
+   "id": "hi-059",
+   "lang": "hi",
+   "split": "dev",
+   "command": "ब्राइटनेस सौ कर दो",
+   "expected_intent": "system_setting",
+   "predicted_intent": "system_setting",
+   "expected_tools": [
+    "manage_system_setting"
+   ],
+   "predicted_tools": [
+    "manage_system_setting"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "device",
+   "deferred": false
+  },
+  {
+   "id": "hi-060",
+   "lang": "hi",
+   "split": "holdout",
+   "command": "लॉक स्क्रीन सेटिंग्स खोलो",
+   "expected_intent": "settings_page",
+   "predicted_intent": "settings_page",
+   "expected_tools": [
+    "open_windows_settings"
+   ],
+   "predicted_tools": [
+    "open_windows_settings"
+   ],
+   "intent_tool": true,
+   "exact_args": true,
+   "invented": 0,
+   "bypass": false,
+   "valid": true,
+   "language_ok": true,
+   "errors": [],
+   "source": "local",
+   "confidence": 0.95,
+   "rule": "settings_page",
+   "deferred": false
+  }
+ ]
+}

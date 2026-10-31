@@ -9,6 +9,7 @@ export function spokenReply(task: TaskOut, language: string): string {
     case 'awaiting_approval': return text('Please review and confirm on screen.', 'اجازت چاہیے۔ اسکرین پر دیکھیں۔', 'अनुमति चाहिए। स्क्रीन पर देखें।');
     case 'awaiting_input': return text('Please clarify the target. See the choices on screen.', 'کون سا؟ نام یا راستہ بتائیں۔', 'कौन सा? नाम या रास्ता बताएं।');
     case 'waiting_retry': return text('Service limit reached. Please wait.', 'سروس کی حد آ گئی۔ تھوڑا انتظار کریں۔', 'सर्विस की सीमा आ गई। थोड़ा इंतजार करें।');
+    case 'partially_completed': return text('Only part of it was done. See what is left on screen.', 'کام کا کچھ حصہ ہوا۔ باقی اسکرین پر دیکھیں۔', 'काम का कुछ हिस्सा हुआ। बाकी स्क्रीन पर देखें।');
     case 'failed': return text('Could not finish. See the reason on screen.', 'کام نہیں ہوا۔ وجہ اسکرین پر ہے۔', 'काम नहीं हुआ। वजह स्क्रीन पर है।');
     default: return text('Stopped.', 'روک دیا۔', 'रोक दिया।');
   }

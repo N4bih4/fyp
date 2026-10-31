@@ -88,6 +88,28 @@ def supervise() -> int:
     return 1
 
 
+def ensure_backend(timeout: float = 45) -> bool:
+    """Start the supervised backend if needed and wait until it serves the UI. Shared by the
+    browser launcher and the desktop shell (desktop/shell.py)."""
+    if ready():
+        return True
+    if port_busy():
+        return False
+    LOGS.mkdir(exist_ok=True)
+    flags = 0
+    if os.name == "nt":
+        flags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+    with (LOGS / "launcher.log").open("a", encoding="utf-8") as log:
+        subprocess.Popen([str(python_path()), str(Path(__file__).resolve()), "--supervise"], cwd=ROOT,
+                         stdout=log, stderr=log, stdin=subprocess.DEVNULL, creationflags=flags)
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if ready():
+            return True
+        time.sleep(1)
+    return False
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--supervise", action="store_true")
@@ -98,29 +120,14 @@ def main() -> int:
     if not (ROOT / "frontend" / "dist" / "index.html").is_file():
         print("Frontend build nahi mila. frontend folder mein npm.cmd run build chalayein.")
         return 1
-    if ready():
+    if ensure_backend():
         print("Agent X AI ready: " + URL)
         if not args.no_browser:
             webbrowser.open(ui_url())
         return 0
-    if port_busy():
+    if port_busy() and not ready():
         print("Port 8000 par koi purana ya doosra server chal raha hai. Use band karke dobara launcher kholein.")
         return 1
-    LOGS.mkdir(exist_ok=True)
-    flags = 0
-    if os.name == "nt":
-        flags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
-    with (LOGS / "launcher.log").open("a", encoding="utf-8") as log:
-        subprocess.Popen([str(python_path()), str(Path(__file__).resolve()), "--supervise"], cwd=ROOT,
-                         stdout=log, stderr=log, stdin=subprocess.DEVNULL, creationflags=flags)
-    deadline = time.monotonic() + 45
-    while time.monotonic() < deadline:
-        if ready():
-            print("Agent X AI ready: " + URL)
-            if not args.no_browser:
-                webbrowser.open(ui_url())
-            return 0
-        time.sleep(1)
     print("Backend start nahi ho saka. logs/backend.log aur logs/launcher.log check karein.")
     return 1
 

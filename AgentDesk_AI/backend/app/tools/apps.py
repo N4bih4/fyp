@@ -5,6 +5,7 @@ import platform
 import json
 import os
 import re
+import time
 import shutil
 import webbrowser
 from difflib import SequenceMatcher
@@ -16,6 +17,7 @@ import httpx
 from pydantic import BaseModel, Field, field_validator
 
 from . import platform as _platform
+from ..verification import BROWSER_PROCESSES, MAIL_PROCESSES, ProbeUnavailable, current, failed_result, verdict, wait_until, window_check
 from .base import BaseTool, RiskLevel, ToolContext, ToolResult, Verification
 
 # Known executables per platform. Windows entries rely on PATH/CreateProcess
@@ -128,6 +130,31 @@ _DARWIN_APP_PATHS = {
     "calc": ["/System/Applications/Calculator.app"],
 }
 
+
+
+# Process and title hints used by verify() to find the real window after a launch.
+_APP_PROCESSES: dict[str, set[str]] = {
+    "calc": {"calculatorapp.exe", "calculator.exe", "calc.exe"}, "notepad": {"notepad.exe"},
+    "chrome": {"chrome.exe"}, "explorer": {"explorer.exe"}, "word": {"winword.exe"}, "excel": {"excel.exe"},
+    "powerpoint": {"powerpnt.exe"}, "visual studio code": {"code.exe"}, "microsoft edge": {"msedge.exe"},
+    "powershell": {"powershell.exe", "pwsh.exe", "windowsterminal.exe"}, "antigravity": {"antigravity.exe", "agy.exe"},
+    "intellij": {"idea64.exe", "idea.exe"}, "cursor": {"cursor.exe"},
+}
+_APP_TITLES: dict[str, list[str]] = {
+    "calc": ["calculator"], "visual studio code": ["visual studio code"], "explorer": ["file explorer", "home", "this pc"],
+    "word": ["word"], "excel": ["excel"], "powerpoint": ["powerpoint"], "microsoft edge": ["edge"],
+    "powershell": ["powershell"], "chrome": ["google chrome"], "notepad": ["notepad"],
+}
+_SITE_TITLES = {"youtube.com": ["youtube"], "mail.google.com": ["gmail", "inbox"], "web.whatsapp.com": ["whatsapp"],
+                "chatgpt.com": ["chatgpt"], "drive.google.com": ["google drive", "my drive"]}
+
+
+def _site_title_hints(url: str) -> list[str]:
+    host = (urlsplit(url).hostname or "").casefold().removeprefix("www.")
+    if host in _SITE_TITLES:
+        return _SITE_TITLES[host]
+    label = host.split(".")[-2] if host.count(".") >= 1 else host
+    return [label] if label else []
 
 class OpenApplicationArgs(BaseModel):
     app_name: str = Field(description="Application to launch, e.g. 'chrome', 'notepad'")
@@ -422,13 +449,23 @@ class OpenApplicationTool(BaseTool):
         return ToolResult(success=True, output={"app": app, "pid": proc.pid, "launched": True})
 
     def verify(self, args: BaseModel, result: ToolResult) -> Verification:
-        # Process launch is best-effort to verify; we only know Popen succeeded.
-        launched = bool(result.success and result.output.get("launched"))
-        return Verification(
-            passed=launched,
-            checks=[f"process start reported: {launched}"],
-            details="Running state of GUI apps cannot be fully verified from here.",
-        )
+        if not result.success:
+            return failed_result(result)
+        out = result.output or {}
+        app = str(out.get("app") or OpenApplicationArgs.model_validate(args.model_dump()).app_name).casefold()
+        if out.get("url"):  # ChatGPT fallback opens a website
+            seen, windows = window_check(title_contains=["chatgpt"], processes=BROWSER_PROCESSES)
+            return verdict([("browser window shows ChatGPT", seen)], windows)
+        if app == "gmail":
+            seen, windows = window_check(title_contains=["gmail", "inbox"], processes={"chrome.exe"})
+            return verdict([("Chrome window shows Gmail", seen)], windows)
+        pid = out.get("pid")
+        alive = bool(pid) and current().process_alive(int(pid))
+        titles = _APP_TITLES.get(app, [app])
+        processes = _APP_PROCESSES.get(app, {f"{app.replace(' ', '')}.exe"})
+        seen, windows = window_check(title_contains=titles, processes=processes, match="any")
+        return verdict([("app window is open", seen)], {"pid": pid, "pid_alive": alive, **windows},
+                       details=None if seen else "The app did not show a window in time.")
 
 
 class OpenUrlArgs(BaseModel):
@@ -532,6 +569,7 @@ def _find_youtube_video(query: str) -> tuple[str, str] | None:
 
 class OpenUrlTool(BaseTool):
     name = "open_url"
+    isolation = "thread"  # may open the tab through the extension socket held by the server
     description = "Open an http(s) website in the default browser or explicitly requested Chrome."
     risk_level = RiskLevel.LOW
     args_schema = OpenUrlArgs
@@ -544,14 +582,15 @@ class OpenUrlTool(BaseTool):
             return ToolResult(success=False, error=str(exc))
         if a.browser == "chrome":
             from ..browser_bridge import bridge
-            if bridge.clients:
+            if bridge.clients and bridge.supports("open"):
                 result = bridge.request("open", url=a.url, browser="chrome")
                 if result.get("success") and isinstance(result.get("tab_id"), int):
                     return ToolResult(success=True, output=result)
-                error = result.get("error", "Browser did not confirm the requested tab.")
-                if "Unsupported browser command" in error:
-                    error = "Browser extension update load karni hai: chrome://extensions par Agent X Browser Bridge ka Reload dabayein. Phir command dobara dein."
-                return ToolResult(success=False, error=error)
+                return ToolResult(success=False, error=result.get("error", "Browser did not confirm the requested tab."))
+            if bridge.clients:
+                # Extension older than 1.1 cannot open tabs: launch Chrome, then confirm through the
+                # extension's inspect that the tab really appeared in the connected profile.
+                return self._open_and_find_tab(a.url)
             try:
                 executable = OpenApplicationTool(self.ctx)._find_executable("chrome")
                 if not executable:
@@ -578,6 +617,55 @@ class OpenUrlTool(BaseTool):
         if not launched:
             return ToolResult(success=False, error="The system reported that no browser could handle the URL")
         return ToolResult(success=True, output={"url": a.url, "launched": True})
+
+    def _open_and_find_tab(self, url: str, wait_seconds: float = 6.0) -> ToolResult:
+        from ..browser_bridge import bridge
+
+        executable = OpenApplicationTool(self.ctx)._find_executable("chrome")
+        if not executable:
+            return ToolResult(success=False, error="Chrome is not installed or its executable was not found.")
+        try:
+            _platform.launch_program(str(executable), [url])
+        except OSError as exc:
+            return ToolResult(success=False, error=f"Could not open Chrome: {exc}")
+        deadline = time.monotonic() + wait_seconds
+        while time.monotonic() < deadline:
+            observed = bridge.request("inspect")
+            tabs = [t for t in observed.get("tabs", []) if isinstance(t, dict) and _same_url(str(t.get("url", "")), url)]
+            if tabs:
+                return ToolResult(success=True, output={"url": url, "browser": "chrome", "tab_id": tabs[0].get("id"),
+                                                        "launched": True, "via": "chrome+inspect (extension < 1.1)"})
+            time.sleep(0.4)
+        return ToolResult(success=False, error=(
+            "Chrome opened, but the connected browser profile did not show the tab. Reload Agent X Browser Bridge "
+            "once at chrome://extensions (version 1.1+ then updates itself)."))
+
+    def verify(self, args: BaseModel, result: ToolResult) -> Verification:
+        if not result.success:
+            return failed_result(result)
+        out = result.output or {}
+        if isinstance(out.get("tab_id"), int):
+            # The browser extension (a separate process) created/activated this tab and reported its URL.
+            from ..browser_bridge import bridge
+
+            tabs = bridge.request("inspect")
+            ids = {t.get("id") for t in tabs.get("tabs", [])} if tabs.get("success") else set()
+            return verdict([("extension reports the tab open", out["tab_id"] in ids)],
+                           {"tab_id": out["tab_id"], "tabs_seen": len(ids)})
+        url = out.get("url") or OpenUrlArgs.model_validate(args.model_dump()).url
+        seen, windows = window_check(title_contains=_site_title_hints(url), processes=BROWSER_PROCESSES)
+        return verdict([("browser window shows the site", seen)], {"url": url, **windows})
+
+
+
+def _same_url(a: str, b: str) -> bool:
+    def norm(u: str) -> str:
+        parts = urlsplit(u)
+        return f"{parts.scheme.lower()}://{(parts.hostname or '').lower()}{parts.path or '/'}{'?' + parts.query if parts.query else ''}"
+    try:
+        return norm(a) == norm(b)
+    except ValueError:
+        return False
 
 
 class WebSearchArgs(BaseModel):
@@ -638,6 +726,31 @@ class WebSearchTool(BaseTool):
         if not launched:
             return ToolResult(success=False, error="The system reported that no browser could handle the search")
         return ToolResult(success=True, output={"query": query, "url": url, "launched": True})
+
+    def verify(self, args: BaseModel, result: ToolResult) -> Verification:
+        if not result.success:
+            return failed_result(result)
+        query = str(result.output.get("query") or "")
+        hints = [w for w in re.findall(r"\w+", query) if len(w) > 2][:3] + ["search"]
+        seen, windows = window_check(title_contains=hints, processes=BROWSER_PROCESSES)
+        return verdict([("browser window shows the search", seen)], {"url": result.output.get("url"), **windows})
+
+
+def _nudge_youtube_playback(video_id: str, wait_seconds: float = 4.0) -> bool:
+    """If the browser extension is connected, press play on the new tab (autoplay is often blocked)."""
+    from ..browser_bridge import bridge
+
+    if not (bridge.clients and bridge.supports("resume")):
+        return False
+    deadline = time.monotonic() + wait_seconds
+    while time.monotonic() < deadline:
+        tabs = bridge.request("inspect").get("tabs", [])
+        match = [t for t in tabs if isinstance(t, dict) and f"v={video_id}" in str(t.get("url", ""))]
+        if match:
+            reply = bridge.request("resume", tab_id=match[0]["id"], expected_url=match[0]["url"])
+            return bool(reply.get("success"))
+        time.sleep(0.5)
+    return False
 
 
 class PlayYouTubeVideoArgs(BaseModel):
@@ -717,6 +830,7 @@ class PlayYouTubeVideoTool(BaseTool):
             return ToolResult(success=False, error=f"Could not open the selected YouTube video: {exc}")
         if not opened:
             return ToolResult(success=False, error="No browser could open the selected YouTube video")
+        nudged = _nudge_youtube_playback(video_id)
         return ToolResult(
             success=True,
             output={
@@ -726,9 +840,36 @@ class PlayYouTubeVideoTool(BaseTool):
                 "video_selected": True,
                 "opened_window": reused_title,
                 "playback_confirmed": False,
-                "message": "Opened the closest matching video; playback depends on YouTube and browser autoplay settings.",
+                "play_requested_via_extension": nudged,
+                "message": "Opened the closest matching video; playback is checked next.",
             },
         )
+
+    def verify(self, args: BaseModel, result: ToolResult) -> Verification:
+        """Search results: the YouTube window is enough. A chosen video: Windows must report it playing."""
+        if not result.success:
+            return failed_result(result)
+        if not result.output.get("video_selected"):
+            seen, windows = window_check(title_contains=["youtube"], processes=BROWSER_PROCESSES)
+            return verdict([("browser window shows YouTube results", seen)], {"url": result.output.get("results_url"), **windows})
+        title = str(result.output.get("title") or "")
+        words = [w.casefold() for w in re.findall(r"\w{4,}", title)][:4]
+
+        def playing():
+            state = current().media_session()
+            if state and state["status"] == "playing" and (not words or any(w in state["title"].casefold() for w in words)
+                                                            or "youtube" in state["title"].casefold()):
+                return state
+            return None
+        try:
+            ok, state = wait_until(playing, timeout=2 * current().poll_timeout, interval=0.5)
+        except ProbeUnavailable as exc:
+            seen, windows = window_check(title_contains=["youtube"], processes=BROWSER_PROCESSES)
+            return Verification(passed=False, checks=[f"YouTube window open: {seen}", "playback not readable"],
+                                evidence=windows, details=str(exc))
+        return verdict([("Windows reports the video playing", bool(ok))],
+                       {"url": result.output.get("url"), "media_session": state if ok else None},
+                       details=None if ok else "The video opened but did not start (autoplay may be blocked). Press Play once.")
 
 
 class ComposeEmailArgs(BaseModel):
@@ -782,6 +923,14 @@ class ComposeEmailTool(BaseTool):
                 "message": "Draft opened for review; it has not been sent.",
             },
         )
+
+    def verify(self, args: BaseModel, result: ToolResult) -> Verification:
+        if not result.success:
+            return failed_result(result)
+        a = ComposeEmailArgs.model_validate(args.model_dump())
+        hints = [h for h in (a.subject[:40], "new message", "compose", "untitled - message") if h]
+        seen, windows = window_check(title_contains=hints, processes=MAIL_PROCESSES | BROWSER_PROCESSES)
+        return verdict([("a draft window is open (not sent)", seen)], {"to": a.to, **windows})
 
 
 def app_tools(ctx: ToolContext | None = None) -> list[BaseTool]:

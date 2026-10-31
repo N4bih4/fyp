@@ -1,9 +1,18 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { spokenReply, isSpeechEcho, afterInterruption, finishOnce } from './voice';
+import { ActionPreview } from './components/ActionPreview';
+import { Onboarding } from './components/Onboarding';
+import { Orb } from './components/Orb';
+import { Transcript } from './components/Transcript';
+import { MemoryPage } from './pages/MemoryPage';
+import { SettingsPage } from './pages/SettingsPage';
+import { deriveVoiceState } from './voiceState';
 import {
   api,
   type ActionOut,
   type ConfigStatus,
+  type Preferences,
+  type PreferencesUpdate,
   type RiskLevel,
   type TaskOut,
   type UsageOut,
@@ -77,7 +86,7 @@ function statusClasses(status: string): string {
     return 'bg-red-100 text-red-800 border-red-300';
   if (status === 'running' || status === 'executing')
     return 'bg-blue-100 text-blue-800 border-blue-300';
-  if (status === 'pending' || status === 'awaiting_approval' || status === 'planned')
+  if (status === 'pending' || status === 'awaiting_approval' || status === 'planned' || status === 'partially_completed' || status === 'paused')
     return 'bg-amber-100 text-amber-800 border-amber-300';
   return 'bg-slate-100 text-slate-700 border-slate-300';
 }
@@ -264,7 +273,14 @@ export default function App() {
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
-  const [showSettings, setShowSettings] = useState(false);
+  const [view, setView] = useState<'assistant' | 'memory' | 'settings'>('assistant');
+  const [prefs, setPrefs] = useState<Preferences | null>(null);
+  const [heard, setHeard] = useState('');
+  const [speaking, setSpeaking] = useState(false);
+  const [lastReply, setLastReply] = useState<string | null>(null);
+  const listenModeRef = useRef<Preferences['listen_mode']>('push_to_talk');
+  const commandInputRef = useRef<HTMLInputElement | null>(null);
+  const toggleVoiceRef = useRef<() => void>(() => {});
   const [voiceLanguage, setVoiceLanguage] = useState('ur-PK');
   const [listening, setListening] = useState(false);
   const [handsFree, setHandsFree] = useState(false);
@@ -332,6 +348,25 @@ export default function App() {
       setHistoryError(errMsg(e));
     }
   }, []);
+
+  useEffect(() => {
+    void api.preferences().then((p) => {
+      setPrefs(p);
+      setVoiceLanguage(p.persona.language);
+    }).catch(() => setPrefs(null));
+  }, []);
+  listenModeRef.current = prefs?.listen_mode ?? 'push_to_talk';
+
+  const savePreferences = async (patch: PreferencesUpdate) => {
+    try {
+      const next = await api.savePreferences(patch);
+      setPrefs(next);
+      if (patch.persona) setVoiceLanguage(next.persona.language);
+    } catch (e) {
+      setBanner(errMsg(e));
+      throw e;
+    }
+  };
 
   useEffect(() => {
     void loadConfig();
@@ -481,10 +516,16 @@ export default function App() {
       return;
     }
 
+    if (listenModeRef.current === 'off') {
+      setVoiceMessage('Listen mode is Off (Settings). Type your command instead.');
+      return;
+    }
     handsFreeRef.current = true;
     setHandsFree(true);
     voiceNetworkErrorsRef.current = 0;
-    setVoiceMessage('Hands-free is on. Speak commands at any time; they will run one by one.');
+    setVoiceMessage(listenModeRef.current === 'push_to_talk'
+      ? 'Listening for one command…'
+      : 'Hands-free is on. Speak commands at any time; they will run one by one.');
 
     drainVoiceQueueRef.current = () => {
       if (
@@ -518,6 +559,7 @@ export default function App() {
         const heard = Array.from({ length: event.results.length - event.resultIndex }, (_, offset) => event.results[event.resultIndex + offset][0].transcript.trim()).filter(Boolean).join(' ');
         // Ignore the assistant's own short reply if the microphone hears it.
         if (voiceSpeakingRef.current && isSpeechEcho(heard, spokenTextRef.current)) return;
+        if (heard) setHeard([voiceCommandRef.current, heard].filter(Boolean).join(' '));
         if (heard && voiceSpeakingRef.current) {
           interruptedSpeechRef.current = true;
           voiceSpeakingRef.current = false;
@@ -535,6 +577,7 @@ export default function App() {
         interruptedSpeechRef.current = false;
         if (!nextText) return;
         voiceCommandRef.current = [voiceCommandRef.current, nextText].filter(Boolean).join(' ').trim();
+        setHeard(voiceCommandRef.current);
         setVoiceMessage(`Heard: ${voiceCommandRef.current}. Finish speaking or pause briefly to send.`);
         if (voiceDebounceRef.current !== null) window.clearTimeout(voiceDebounceRef.current);
         voiceDebounceRef.current = window.setTimeout(() => {
@@ -543,12 +586,21 @@ export default function App() {
           voiceCommandRef.current = '';
           if (!transcript || !handsFreeRef.current) return;
           voiceQueueRef.current.push(transcript);
+          setHeard('');
           setVoiceMessage(
             voiceTaskActiveRef.current
               ? `Queued: ${transcript}. ${voiceQueueRef.current.length} command(s) waiting.`
               : `Starting: ${transcript}`,
           );
           drainVoiceQueueRef.current();
+          if (listenModeRef.current === 'push_to_talk') {
+            // One command per press: the microphone turns off once the command is sent.
+            handsFreeRef.current = false;
+            setHandsFree(false);
+            recognitionRef.current?.abort();
+            recognitionRef.current = null;
+            setListening(false);
+          }
         }, 2200);
       };
       recognition.onerror = (event) => {
@@ -581,7 +633,7 @@ export default function App() {
       try {
         recognition.start();
         setListening(true);
-        setVoiceMessage('Hands-free is on. Listening… Speak a command.');
+        setVoiceMessage(listenModeRef.current === 'push_to_talk' ? 'Listening… say one command.' : 'Hands-free is on. Listening… Speak a command.');
       } catch (error) {
         recognitionRef.current = null;
         setListening(false);
@@ -591,13 +643,20 @@ export default function App() {
     startListeningRef.current();
   };
 
+  toggleVoiceRef.current = toggleVoiceInput;
+  // While a dialog is open, the page behind it can't be focused or read (aria-modal alone is not enforced).
+  const modalOpen = activeTask?.status === 'awaiting_approval' || (prefs !== null && !prefs.onboarded);
+  const inertWhenModal = (modalOpen ? { inert: 'true' } : {}) as Record<string, string>;  // React 18 drops inert=""
+  const micSupported = typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
+  const voiceState = deriveVoiceState({ listening: listening || handsFree, heard, submitting, speaking, task: activeTask, error: Boolean(banner) });
+
   useEffect(() => {
     if (!activeTask) return;
-    if (!['awaiting_input', 'awaiting_approval', 'waiting_retry', 'completed', 'failed', 'rejected', 'cancelled'].includes(activeTask.status)) return;
+    if (!['awaiting_input', 'awaiting_approval', 'waiting_retry', 'completed', 'partially_completed', 'failed', 'rejected', 'cancelled'].includes(activeTask.status)) return;
     const stateKey = `${activeTask.id}:${activeTask.status}`;
     if (spokenTaskStates.current.has(stateKey)) return;
     spokenTaskStates.current.add(stateKey);
-    const isTerminal = ['completed', 'failed', 'rejected', 'cancelled'].includes(activeTask.status);
+    const isTerminal = ['completed', 'partially_completed', 'failed', 'rejected', 'cancelled'].includes(activeTask.status);
     const finishVoiceTask = () => {
       if ((isTerminal || activeTask.status === 'awaiting_input' || activeTask.status === 'awaiting_approval' || activeTask.status === 'waiting_retry') && voiceTaskActiveRef.current) {
         voiceWaitingForTaskRef.current = false;
@@ -606,19 +665,22 @@ export default function App() {
       }
       startListeningRef.current();
     };
-    if (!('speechSynthesis' in window)) {
+    const message = spokenReply(activeTask, voiceLanguage);
+    setLastReply(activeTask.plan_note && activeTask.status === 'completed' ? activeTask.plan_note : message);
+    if (!('speechSynthesis' in window) || prefs?.persona.speak_replies === false) {
       if (handsFreeRef.current) finishVoiceTask();
       return;
     }
 
-    const message = spokenReply(activeTask, voiceLanguage);
     const utterance = new SpeechSynthesisUtterance(message);
     utterance.lang = voiceLanguage;
     const epoch = ++speechEpochRef.current;
     window.speechSynthesis.cancel();
     spokenTextRef.current = message;
     voiceSpeakingRef.current = true;
+    setSpeaking(true);
     const finish = finishOnce(() => {
+      setSpeaking(false);
       if (epoch !== speechEpochRef.current) return;
       voiceSpeakingRef.current = false;
       if (handsFreeRef.current) finishVoiceTask();
@@ -627,8 +689,33 @@ export default function App() {
     utterance.onend = finish;
     utterance.onerror = finish;
     if (handsFreeRef.current) startListeningRef.current();
-    window.speechSynthesis.speak(utterance);
-  }, [activeTask, voiceLanguage]);
+    try {
+      window.speechSynthesis.speak(utterance);
+    } catch {
+      // A broken audio device must never take the UI down; the reply is still on screen.
+      finish();
+    }
+  }, [activeTask, voiceLanguage, prefs?.persona.speak_replies]);
+
+  // Keyboard: Ctrl+Space = microphone, Alt+1/2/3 = Assistant/Memory/Settings, "/" = command box.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const typing = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement;
+      if (e.ctrlKey && e.code === 'Space') {
+        e.preventDefault();
+        toggleVoiceRef.current();
+      } else if (e.altKey && ['1', '2', '3'].includes(e.key)) {
+        e.preventDefault();
+        setView((['assistant', 'memory', 'settings'] as const)[Number(e.key) - 1]);
+      } else if (e.key === '/' && !typing) {
+        e.preventDefault();
+        setView('assistant');
+        window.setTimeout(() => commandInputRef.current?.focus(), 0);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   useEffect(
     () => () => {
@@ -656,30 +743,32 @@ export default function App() {
   return (
     <div className="min-h-screen">
       {activeTask?.status === 'awaiting_approval' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-          <section role="dialog" aria-modal="true" aria-labelledby="confirmation-title" className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl max-h-[85vh] overflow-y-auto">
-            <h2 id="confirmation-title" className="text-xl font-semibold">Shall I do this?</h2>
-            <p className="mt-2 text-sm text-slate-600">Review the exact action and location. Deletion can affect important files. Say haan kar do or cancel, or use the buttons.</p>
-            {activeTask.actions.filter(a => a.status === 'pending').map(a => (
-              <div key={a.id} className="mt-3 rounded-lg border p-3">
-                <p className="font-semibold">{prettyStatus(a.tool_name)}</p>
-                <ArgsSummary args={a.args} />
-              </div>
-            ))}
-            <form className="mt-4 flex gap-2" onSubmit={submitCommand}>
-              <input aria-label="Confirmation or corrected path" autoFocus value={command} onChange={e => setCommand(e.target.value)} className="min-w-0 flex-1 rounded border p-2" placeholder="Yes, no, or a corrected path..." />
-              <button disabled={busy} className="rounded bg-blue-700 px-3 text-white">Reply</button>
-            </form>
-            <div className="mt-4 flex flex-wrap gap-3">
-              <button disabled={busy} onClick={() => void mutate('confirm', () => approveThenRun(activeTask.id, activeTask.actions.filter(a => a.status === 'pending').map(a => a.id)))} className="rounded-lg bg-emerald-700 px-4 py-2 text-white">Yes, do it</button>
-              <button disabled={busy} onClick={() => void mutate('cancel', () => api.cancel(activeTask.id))} className="rounded-lg border px-4 py-2">Cancel</button>
-              <button disabled={busy} onClick={toggleVoiceInput} className="rounded-lg border px-4 py-2">{handsFree ? 'Stop microphone' : 'Use microphone'}</button>
-            </div>
-          </section>
-        </div>
+        <ActionPreview
+          task={activeTask}
+          busy={busy}
+          reply={command}
+          onReplyChange={setCommand}
+          onReplySubmit={submitCommand}
+          onApprove={(ids) => void mutate('confirm', () => approveThenRun(activeTask.id, ids))}
+          onReject={() => void mutate('reject-all', () => api.reject(activeTask.id))}
+          micLabel={handsFree ? 'Stop microphone' : 'Answer by voice'}
+          onMic={prefs?.listen_mode === 'off' ? undefined : toggleVoiceInput}
+        />
+      )}
+      {prefs && !prefs.onboarded && (
+        <Onboarding
+          persona={prefs.persona}
+          micSupported={micSupported}
+          onFinish={(language, startVoice) => {
+            setVoiceLanguage(language);
+            void savePreferences({ onboarded: true, persona: { ...prefs.persona, language } }).catch(() => {});
+            if (startVoice) toggleVoiceInput();
+            else window.setTimeout(() => commandInputRef.current?.focus(), 0);
+          }}
+        />
       )}
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur">
+      <header {...inertWhenModal} className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-3">
             <div
@@ -689,7 +778,7 @@ export default function App() {
               AX
             </div>
             <div>
-              <h1 className="text-lg font-bold leading-tight text-slate-900">Agent X AI</h1>
+              <h1 className="text-lg font-bold leading-tight text-slate-900">{prefs?.persona.name ?? 'Agent X'}</h1>
               <p className="text-xs text-slate-500">Natural-language Windows desktop assistant</p>
             </div>
           </div>
@@ -716,19 +805,33 @@ export default function App() {
                 {config.platform}
               </Badge>
             )}
-            <button
-              type="button"
-              onClick={() => setShowSettings((s) => !s)}
-              aria-expanded={showSettings}
-              className="rounded-md bg-white px-3 py-1.5 text-sm font-medium text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-slate-50"
-            >
-              {showSettings ? 'Hide settings' : 'Settings'}
-            </button>
+<nav aria-label="Pages" className="flex gap-1">
+              {(['assistant', 'memory', 'settings'] as const).map((name, i) => (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => setView(name)}
+                  aria-current={view === name ? 'page' : undefined}
+                  title={`Alt+${i + 1}`}
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium ring-1 ring-inset ${view === name ? 'bg-blue-700 text-white ring-blue-700' : 'bg-white text-slate-700 ring-slate-300 hover:bg-slate-50'}`}
+                >
+                  {name[0].toUpperCase() + name.slice(1)}
+                </button>
+              ))}
+            </nav>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[1fr_320px]">
+      {view !== 'assistant' && (
+        <main {...inertWhenModal} className="mx-auto max-w-3xl px-4 py-6">
+          {banner && <p role="alert" className="mb-4 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800">{banner}</p>}
+          {view === 'settings' && prefs && <SettingsPage prefs={prefs} config={config} usage={usage} onSave={savePreferences} />}
+          {view === 'memory' && prefs && <MemoryPage memoryEnabled={prefs.memory_enabled} onToggle={(on) => void savePreferences({ memory_enabled: on }).catch(() => {})} />}
+          {!prefs && <p className="text-sm text-slate-500">Loading preferences…</p>}
+        </main>
+      )}
+      <main {...inertWhenModal} hidden={view !== 'assistant'} className={`mx-auto max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[1fr_320px] ${view === 'assistant' ? 'grid' : 'hidden'}`}>
         {/* Main column */}
         <div className="flex min-w-0 flex-col gap-6">
           {banner && (
@@ -749,6 +852,16 @@ export default function App() {
 
           {/* Command input */}
           <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex flex-col items-center gap-3 sm:flex-row sm:items-start">
+              <Orb
+                state={voiceState}
+                color={prefs?.persona.orb_color}
+                name={prefs?.persona.name}
+                onActivate={prefs?.listen_mode === 'off' ? () => commandInputRef.current?.focus() : toggleVoiceInput}
+                activateHint={prefs?.listen_mode === 'off' ? 'Press to type a command' : handsFree ? 'Press to stop listening' : 'Press or Ctrl+Space to speak'}
+              />
+              <Transcript heard={heard} lastCommand={activeTask?.command} reply={lastReply} name={prefs?.persona.name ?? 'Agent X'} />
+            </div>
             <h2 className="text-base font-semibold text-slate-900">New command</h2>
             <p className="mt-1 text-sm text-slate-500">
               Talk to it like Gemini: open Chrome/YouTube, close a tab or app, create or zip
@@ -761,6 +874,7 @@ export default function App() {
               </label>
               <input
                 id="command-input"
+                ref={commandInputRef}
                 type="text"
                 value={command}
                 onChange={(e) => setCommand(e.target.value)}
@@ -783,16 +897,18 @@ export default function App() {
                 <option value="hi-IN">Hindi</option>
                 <option value="en-US">English</option>
               </select>
+              {prefs?.listen_mode !== 'off' && (<>
               <button
                 type="button"
                 onClick={toggleVoiceInput}
                 disabled={submitting && !handsFree}
                 aria-pressed={handsFree}
+                aria-keyshortcuts="Control+Space"
                 className={`rounded-lg px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50 ${
                   listening ? 'bg-red-600 hover:bg-red-700' : 'bg-indigo-600 hover:bg-indigo-700'
                 }`}
               >
-                {handsFree ? (listening ? 'Stop hands-free' : 'Hands-free on') : '🎙 Start hands-free'}
+                {handsFree ? (listening ? 'Stop listening' : 'Listening on') : prefs?.listen_mode === 'hands_free' ? '🎙 Start hands-free' : '🎙 Speak'}
               </button>
               <button
                 type="button"
@@ -807,6 +923,7 @@ export default function App() {
               >
                 Stop speaking
               </button>
+              </>)}
               <button
                 type="submit"
                 disabled={submitting || command.trim().length === 0}
@@ -849,6 +966,8 @@ export default function App() {
                   <p className="mt-1 font-mono text-xs text-slate-400">id: {activeTask.id}</p>
                 </div>
                 <span
+                  data-testid="task-status"
+                  data-status={activeTask.status}
                   className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${statusClasses(activeTask.status)}`}
                 >
                   {(activeTask.status === 'executing' ||
@@ -869,13 +988,16 @@ export default function App() {
                 <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg bg-blue-50 p-3 text-sm text-blue-900" role="status">
                   <Spinner label="Running…" />
                   <button type="button" onClick={() => void pauseRun()} className="rounded-md bg-white px-3 py-1.5 font-medium ring-1 ring-inset ring-blue-300 hover:bg-blue-100">
-                    Pause after current action
+                    Pause
                   </button>
                 </div>
               )}
               {activeTask.status === 'paused' && (
                 <div className="mt-3 rounded-lg bg-amber-50 p-4 text-sm" role="status">
-                  <p>Task paused. The remaining approved actions have not run.</p>
+                  <p>
+                    Task paused. The remaining approved actions have not run.
+                    {activeTask.actions.some((a) => a.status === 'paused') && ' A download was stopped part-way; Resume continues it from where it stopped.'}
+                  </p>
                   <button type="button" disabled={busy} onClick={() => void mutate('resume', () => api.run(activeTask.id))} className="mt-2 rounded bg-blue-700 px-4 py-2 text-white disabled:opacity-50">Resume task</button>
                 </div>
               )}
@@ -1019,86 +1141,6 @@ export default function App() {
 
         {/* Sidebar */}
         <aside className="flex min-w-0 flex-col gap-6">
-          {showSettings && (
-            <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="text-base font-semibold text-slate-900">Settings</h2>
-              {configError && (
-                <p role="alert" className="mt-2 text-sm text-red-600">
-                  {configError}
-                </p>
-              )}
-              {config ? (
-                <dl className="mt-3 grid grid-cols-1 gap-3 text-sm">
-                  <div>
-                    <dt className="font-medium text-slate-500">AI provider</dt>
-                    <dd className="text-slate-800">{config.ai_provider}</dd>
-                  </div>
-                  <div>
-                    <dt className="font-medium text-slate-500">Backup API</dt>
-                    <dd>{config.fallback_configured ? config.fallback_provider : 'Not configured'}</dd>
-                  </div>
-                  <div>
-                    <dt className="font-medium text-slate-500">Local agent</dt>
-                    <dd>PC commands run locally. {config.cloud_mode === 'automatic' ? 'Unmatched requests may use cloud AI.' : 'Use AI: or research for cloud reasoning.'}</dd>
-                  </div>
-                  <div>
-                    <dt className="font-medium text-slate-500">Browser tab controls</dt>
-                    <dd>{config.browser_connected ? 'Browser connected' : 'Browser extension setup required'}</dd>
-                    <a className="text-blue-600 underline" href="/browser-extension/setup.html" target="_blank" rel="noreferrer">Chrome / Edge setup</a>
-                  </div>
-                  <div>
-                    <dt className="font-medium text-slate-500">AI model</dt>
-                    <dd className="font-mono text-xs text-slate-800">{config.ai_model}</dd>
-                  </div>
-                  <div>
-                    <dt className="font-medium text-slate-500">AI configured</dt>
-                    <dd className="text-slate-800">{config.ai_configured ? 'Yes' : 'No'}</dd>
-                  </div>
-                  <div>
-                    <dt className="font-medium text-slate-500">Mode</dt>
-                    <dd className="text-slate-800">
-                      {config.mock_mode ? 'Mock (safe testing)' : 'Live'}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="font-medium text-slate-500">Allowed directories</dt>
-                    <dd>
-                      {config.allowed_directories.length === 0 ? (
-                        <span className="text-slate-400">none configured</span>
-                      ) : (
-                        <ul className="list-disc pl-5 font-mono text-xs text-slate-700">
-                          {config.allowed_directories.map((d) => (
-                            <li key={d} className="break-all">{d}</li>
-                          ))}
-                        </ul>
-                      )}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="font-medium text-slate-500">Approved applications</dt>
-                    <dd>
-                      {config.approved_applications.length === 0 ? (
-                        <span className="text-slate-400">none configured</span>
-                      ) : (
-                        <ul className="list-disc pl-5 text-slate-700">
-                          {config.approved_applications.map((a) => (
-                            <li key={a}>{a}</li>
-                          ))}
-                        </ul>
-                      )}
-                    </dd>
-                  </div>
-                </dl>
-              ) : (
-                !configError && <p className="mt-2 text-sm text-slate-500">Loading…</p>
-              )}
-              <p className="mt-4 rounded-lg bg-slate-50 p-3 text-xs text-slate-500">
-                Secrets such as API keys are configured in the backend <code>.env</code> file and
-                are never stored in, or sent to, the frontend.
-              </p>
-            </section>
-          )}
-
           <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold text-slate-900">Task history</h2>

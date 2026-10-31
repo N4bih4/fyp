@@ -174,12 +174,15 @@ A timed-out tool is reported as failed with `output.timed_out = true`; it may
 still be running, so verify the real state before retrying.
 
 ### `POST /tasks/{task_id}/cancel`
-Cancel a task that is not yet finished. Finished tasks are returned unchanged.
+Cancel a task that is not yet finished. An interruptible running step is stopped at once (a partial download is
+deleted); other steps finish first. Finished tasks are returned unchanged.
 
 ### `POST /tasks/{task_id}/pause`
-Ask a running task to pause. It stops before the **next** action (status `paused`); an action already
-running cannot be interrupted safely and finishes first. Resume with `POST /tasks/{task_id}/run`
-(approvals that expired while paused will refuse to run). `409` unless the task is `executing`.
+
+Stops an interruptible running step (download, WinGet, read-only tools) at once by killing its worker; other steps finish first. Resume with `POST /tasks/{task_id}/run`, which re-verifies the last verified step before continuing.
+
+Ask a running task to pause (status `paused`). Non-interruptible steps (file changes, settings) finish first and the
+task stops before the next action. `409` unless the task is `executing`.
 
 ### `POST /tasks/{task_id}/rollback`
 Undo completed actions that have a checkpoint (`actions[].rollback_status = "available"`), newest first.
@@ -198,6 +201,43 @@ Conversational answer to a task in `awaiting_approval` or `awaiting_input`.
 `409` if the task is not waiting for a reply. A plain "yes" approves exactly the one pending action on
 screen. With several pending actions it approves them only if none is high-risk; otherwise the task
 stays `awaiting_approval` and each high-risk action must be approved individually.
+
+## Pilot metrics
+
+### `GET /metrics/tasks.csv`
+Optional `days` (1-365). CSV, one row per finished task: `task_id, created_at, finished_at, duration_s, status, language,
+command_chars, source, actions, tools, max_risk, approvals_required, approval_wait_s, verified_actions, failed_actions,
+stopped, error_kind`. Never contains command text, paths, arguments, results, phone numbers or e-mail addresses.
+With `PILOT_METRICS=1` the same row is also appended automatically to `%LOCALAPPDATA%\AgentDesk\pilot\task_metrics.csv`
+when a task finishes.
+
+## Preferences and memory (Phase 17)
+
+All require the bearer token. Preferences never contain API keys; unknown fields are rejected with 422.
+
+### `GET /preferences`
+`{persona: {name, language, style, speak_replies, orb_color}, listen_mode: push_to_talk|hands_free|off,
+provider_mode: auto|local_only, risk_policy: standard|strict, memory_enabled, onboarded, conversation_cutoff}`.
+
+### `PUT /preferences`
+Partial update with the same fields (except `conversation_cutoff`). `risk_policy` can only be `standard`
+(server policy) or `strict` (every action, including low risk, waits for approval); nothing looser exists.
+`provider_mode: local_only` means the cloud planner is never called.
+
+### `GET /memory`
+`{enabled, items: [{id, kind: fact|preference|alias, text, created_at, updated_at}], recent_turns: [...], conversation_cutoff}`.
+
+### `POST /memory`
+Body `{kind, text}` (text 1-500 chars). Text that looks like a password, PIN or API key is rejected with 422.
+
+### `PUT /memory/{item_id}`
+Replace kind and text. 404 if missing.
+
+### `DELETE /memory/{item_id}`
+Delete one item. 404 if missing.
+
+### `POST /memory/forget-conversation`
+Earlier commands stay in task history but are no longer used as conversation memory.
 
 ## Browser bridge
 

@@ -24,6 +24,8 @@ PACKAGE_DIR = "AgentDesk-AI"
 # (source root, glob, optional exclude substrings)
 INCLUDE = [
     (REPO, "START_AGENT_X.cmd", ()),
+    (REPO, "START_AGENT_X_DESKTOP.cmd", ()),
+    (PROJECT / "desktop", "*.py", ()),
     (PROJECT / "packaging", "INSTALL.cmd", ()),
     (PROJECT / "packaging", "install.ps1", ()),
     (PROJECT / "packaging", "README-INSTALL.txt", ()),
@@ -33,6 +35,7 @@ INCLUDE = [
     (PROJECT / "backend", "run_server.py", ()),
     (PROJECT / "backend", "requirements.txt", ()),
     (PROJECT / "backend", "requirements.lock.txt", ()),
+    (PROJECT / "backend", "requirements-desktop.txt", ()),
     (PROJECT / "browser-extension", "*.js", ()),
     (PROJECT / "browser-extension", "*.json", ()),
     (PROJECT / "browser-extension", "*.html", ()),

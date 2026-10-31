@@ -44,3 +44,41 @@ Official APIs used:
 - https://developer.chrome.com/docs/extensions/reference/api/tabs
 - https://developer.chrome.com/docs/extensions/reference/api/scripting
 - https://developer.chrome.com/docs/extensions/how-to/web-platform/websockets
+
+
+## Updates without a manual Reload (extension 1.1+)
+
+On connect the extension sends its version and capabilities. If the backend ships a newer
+`browser-extension/manifest.json`, it sends `reload` and the extension calls `chrome.runtime.reload()`,
+which loads the updated files of the unpacked install. `GET /browser/status` shows `version`,
+`expected_version` and `outdated`.
+
+An extension older than 1.1 cannot be reloaded remotely and has no `open` command. For those,
+"open X in Chrome" launches Chrome and then confirms through the extension's `inspect` that the tab really
+appeared in the connected profile (verified, not assumed). Reload once at chrome://extensions to get 1.1;
+later updates load themselves.
+
+Fixed in 1.1: "open" failed with "Browser did not confirm the requested tab" because `https://site` was
+compared with the browser's normalised `https://site/`; closing a tab that was still loading failed with
+"Tab changed since inspection" because a loading tab has only `pendingUrl`. Both now compare normalised URLs.
+
+## Real-browser test notes
+
+`frontend/e2e/extension_real.test.mjs` runs the real unpacked extension in real Chromium (new headless mode,
+`--load-extension`) against a real backend on port 8000, pairs it through the real setup page and drives it
+through the task API: list tabs, open Gmail in Chrome (extension `open`), close that exact tab. Every step must
+be verified by the backend verifier. Each run writes `docs/live_runs/<date>-browser-extension.json`.
+
+```
+cd frontend
+npm run build
+npm run test:browser      # needs port 8000 free; stop the normal app first
+```
+
+Recorded run (container, Chromium 153 headless): pair + handshake (1.1.0, not outdated) -> list tabs (verified,
+2 tabs) -> open Gmail via extension (verified: tab id seen by re-inspect) -> close tab (verified: extension
+confirmed close and the tab is gone). The container has no internet, so the Gmail tab shows an error page;
+tab creation, identity and closing are real.
+
+Still to check by hand in your own Chrome/Edge profile (not covered by the automated run): YouTube pause/resume
+on a playing video, autoplay blocking, two profiles connected at once, and the 1.0 -> 1.1 upgrade path.
