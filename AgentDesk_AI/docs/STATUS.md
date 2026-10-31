@@ -6,6 +6,42 @@ Older evidence: `FEATURE_AUDIT.md`, `audit/FEATURE_TRACEABILITY_MATRIX.md`,
 
 ## Session log
 
+### 2026-10-31 — Session 7: Phases 19-20 PILOT, RELEASE, REPORT
+
+**Done**
+- **Pilot task metrics** (`app/metrics.py`): with `PILOT_METRICS=1` every task that finishes (or stops as "not understood")
+  appends one row to `%LOCALAPPDATA%\AgentDesk\pilot\task_metrics.csv`; `GET /metrics/tasks.csv?days=N` returns the same
+  rows from the database. Rows: timings, status, language, command length, source, tools, max risk, approvals and wait,
+  verified/failed actions, stop reason, error category. No command text, paths, arguments, numbers or addresses (tested).
+- **Automated pilot** (`scripts/pilot_run.py`): extracts the release zip, starts that copy with everything redirected to a
+  scratch folder, and runs checklist A (checksum, manifest, forbidden files), B (create/approve/verify/undo,
+  write/overwrite/undo, high-risk delete refused by voice then approved and undone, cancel), D (no network → clear error;
+  planted key in no log or response) and F (history after restart) by plain-language commands. Report + metrics CSV in
+  `docs/pilot/`.
+- **Top issues fixed** (`docs/pilot/FINDINGS.md`): (1) write/overwrite/undo was impossible by command without cloud AI —
+  the Phase 15 local matcher is now a fallback after the older parser (confident, fully valid plans only; no cloud change),
+  plus "overwrite X with Y" (high risk) and "first version" no longer read as an ordinal; (2) not-understood commands were
+  missing from metrics; (3) Windows-only errors now categorised `unsupported_platform`.
+- **Release 0.2.0**: `packaging/build_release.py` → `dist-release/AgentDesk-AI-0.2.0-win.zip` (124 files, git-ignored;
+  SHA-256 `bb82612561c0077593bbac154445a055254984e33b9ec416c5629ba73af5bb9e`). Includes desktop shell and docs.
+- **Traceability matrix**: new "Release 0.2.0 — measured results" table (R-01..R-43), measured-only, each row with the
+  command that produced it and what is not measured.
+- `scripts/latency_check.py` (server part of the latency target). `docs/USER_GUIDE.md`, `docs/DEMO_SCRIPT.md`.
+
+**Tested how**
+- `pytest tests -q` → **717 passed, 3 skipped, 0 failed**. Gate G3 PASS (99.3% / 99.3%, 0, 0). `npm run build` pass.
+- Automated pilot on 0.1.0: 12 PASS / 0 FAIL / 8 NOT RUN → after fixes on 0.2.0: **13 PASS / 0 FAIL / 7 NOT RUN**.
+- Latency (server only, 30 local commands): p50 0.036 s, p90 0.054 s, 30/30 under 2.5 s.
+
+**Not done (needs you)**
+- **The pilot on a second Windows PC by a person** (`docs/audit/PILOT_CHECKLIST.md`, sections A install, C devices,
+  E browser profile, F voice) and the 5-person usability test. Turn on `PILOT_METRICS=1` in `backend\.env` for it.
+- **Windows installer/exe**: the release zip + INSTALL.cmd is built; the PyInstaller exe must be built on Windows
+  (`backend\build_windows.ps1`) and it does not include the desktop shell yet.
+- Static/dependency scans not re-run for 0.2.0; new pins (rapidfuzz, pywinauto, pywebview, pystray) unverified on Windows.
+- Open decision 1 (full switch of live commands to the Phase 15 planner + Groq structured output) is still yours; only the
+  local fallback was added.
+
 ### 2026-10-31 — Session 6: Phase 18 INTEGRATIONS
 
 **Done**
