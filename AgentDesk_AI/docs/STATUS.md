@@ -6,6 +6,32 @@ Older evidence: `FEATURE_AUDIT.md`, `audit/FEATURE_TRACEABILITY_MATRIX.md`,
 
 ## Session log
 
+### 2026-10-31 — Session 2: Phase 13 STABILISE
+
+**Done**
+- `backend/app/ai/groq_client.py` — `GroqClient`: one client for chat, STT (`whisper-large-v3-turbo` -> `whisper-large-v3`) and TTS (`canopylabs/orpheus-v1-english`, WAV).
+  Explicit per-request timeout; 429 / 5xx / connection errors retried with exponential backoff (1 s, 2 s, +10% jitter) honouring `Retry-After`, max 2 retries; a Retry-After above 15 s is not waited out (raises `AIRateLimitError`). Timeouts, auth (401/403) and unknown model (404) are never retried. Thread-safe `UsageCounter` per kind (calls, succeeded, failed, retries, rate_limited, tokens, audio seconds, TTS chars). One `groq_call` log event per attempt with kind/model/status/HTTP status/duration only — no prompt, transcript, spoken text or key; error text goes through `redact`. STT passes `language` and `prompt` (known names). `get_groq_client()` gives one shared instance.
+  Note: the brief said `backend/ai/`; the package is `backend/app/ai/`, so the file lives there.
+- New settings: `GROQ_STT_MODEL`, `GROQ_STT_FALLBACK_MODEL`, `GROQ_TTS_MODEL`, `GROQ_TTS_VOICE` (`config.py`, `.env.example`).
+- `backend/scripts/live_check.py` — runs every registered tool once (29 tools) in a temp sandbox that is the only allowed/discovery directory, calls `validate_args -> execute -> verify`, then an **independent** check of real state (disk content, zip members, trash records, PNG header, PID alive...). PASS only when tool, `verify()` and the independent check all agree. Categories: `sandbox` + `read` (default), `gui` (`--gui`), `network` (`--network`). Never runs setters, clicks/typing, tab closing or WinGet download. Statuses PASS / FAIL / BLOCKED (missing prerequisite) / SKIP. Exit 1 on any FAIL or on a registered tool without a probe.
+- Existing `GroqProvider` not yet switched to `GroqClient` (Phase 14 builds the planner on it).
+
+**Tested how (Linux cloud container, Python 3.13, Node 22)**
+- Backend: `python -m pytest tests -q` -> **552 passed, 3 skipped, 0 failed**. Skips: 2 new live Groq smoke tests + old opt-in Groq test (no `GROQ_API_KEY` here).
+- New: `tests/test_groq_client.py` (16, fake SDK: backoff timings, Retry-After, long Retry-After, 5xx retry, no retry on auth/timeout, real `groq.RateLimitError`, STT language/prompt + fallback, TTS, usage, log redaction), `tests/test_groq_client_live.py` (chat + TTS->STT round trip, skipped without key), `tests/test_live_check.py` (4: probe for every tool, no dangerous probe, sandbox probes really pass, missing probe = FAIL).
+- Frontend: `npm ci && npm run build` (tsc + vite) -> pass. `node --test voice.test.mjs` -> 4/4. Extension: `test_controls.cjs`, `test_pairing.cjs` -> pass.
+- `python scripts/live_check.py --gui --network` -> **29 tools reported: 15 PASS, 0 FAIL, 14 BLOCKED, 0 SKIP**. All 15 file tools PASS with disk evidence. BLOCKED because this is headless Linux: system setting read, desktop inspect, WinGet, Settings, all GUI launches; browser extension not connected to the script process; no direct DNS for the download.
+
+**What is left**
+- Run `python scripts/live_check.py --gui --network` on the Windows PC and paste the table here (the 14 BLOCKED rows need it).
+- Run the live smoke test with a real key: `$env:GROQ_API_KEY=...; python -m pytest tests/test_groq_client_live.py -v`.
+- `control_browser` probe can only reach the extension through the running server; add an `--api` mode later.
+
+**Known issues**
+- GUI probes verify "launch requested / PID alive", not the visible window (Phase 17 verifiers).
+- Probe timeout uses a thread that cannot be killed (same limit as R-08; Phase 17 worker process).
+- Push to GitHub is failing with 403 (Claude GitHub App access to `N4bih4/fyp`); commits are local until access is fixed.
+
 ### 2026-10-31 — Session 1: baseline and plan (no code changed)
 
 **Done**
