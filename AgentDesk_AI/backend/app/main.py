@@ -351,16 +351,15 @@ def reply_task(task_id: str, payload: TaskReply, db: Session = Depends(get_db)) 
         no = {"no", "cancel", "cancel it", "stop", "don't", "do not", "nahi", "nahin", "nahi karo", "नहीं", "नहीं करो", "रहने दो", "نہیں", "نہیں کرو", "رہنے دو"}
         if message in yes and task.status == "awaiting_approval":
             pending = [a for a in task.actions if a.status == ActionStatus.PENDING]
-            # A bare "yes" confirms exactly the one proposal on screen. With several
-            # pending actions, high-risk ones must be approved individually.
-            if len(pending) == 1:
-                ids = [pending[0].id]
-            elif any(a.risk == "high" for a in pending):
-                task.plan_note = "Kai actions pending hain aur kam az kam ek high-risk hai. Har action ko alag Approve karein."
+            # Rule 3: a spoken/typed "yes" may approve low/medium risk only. High risk
+            # (delete, overwrite, download, input) needs the on-screen Approve click.
+            if any(a.risk == "high" for a in pending):
+                task.plan_note = ("High-risk action: on-screen Approve button dabayein. Voice/typed 'haan' sirf "
+                                  "medium-risk actions approve karta hai. (High risk needs a click on Approve.)")
                 db.commit()
+                log_event("voice_approval_refused_high_risk", task_id=task.id, count=len(pending))
                 return executor.task_out(task)
-            else:
-                ids = None
+            ids = [a.id for a in pending]
             approved = executor.approve_task(db, task_id, ids)
             if approved.status != TaskStatus.APPROVED:
                 return executor.task_out(approved)

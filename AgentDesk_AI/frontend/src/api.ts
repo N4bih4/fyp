@@ -92,6 +92,44 @@ export interface UsageOut {
   resets_at_utc: string;
 }
 
+export type ListenMode = 'push_to_talk' | 'hands_free' | 'off';
+export type OrbColor = 'indigo' | 'emerald' | 'rose' | 'amber' | 'slate';
+
+export interface Persona {
+  name: string;
+  language: 'ur-PK' | 'en-US' | 'en-GB' | 'hi-IN';
+  style: 'friendly' | 'brief' | 'formal';
+  speak_replies: boolean;
+  orb_color: OrbColor;
+}
+
+export interface Preferences {
+  persona: Persona;
+  listen_mode: ListenMode;
+  provider_mode: 'auto' | 'local_only';
+  risk_policy: 'standard' | 'strict';
+  memory_enabled: boolean;
+  onboarded: boolean;
+  conversation_cutoff?: string | null;
+}
+
+export type PreferencesUpdate = Partial<Omit<Preferences, 'conversation_cutoff'>>;
+
+export interface MemoryItem {
+  id: string;
+  kind: 'fact' | 'preference' | 'alias';
+  text: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MemoryOut {
+  enabled: boolean;
+  items: MemoryItem[];
+  recent_turns: { task_id: string; command: string; status: TaskStatus; created_at: string }[];
+  conversation_cutoff?: string | null;
+}
+
 export interface HealthOut {
   status: string;
   version: string;
@@ -151,6 +189,18 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 export const api = {
   usage: () => request<UsageOut>('/usage'),
+
+  preferences: () => request<Preferences>('/preferences'),
+  savePreferences: (patch: PreferencesUpdate) =>
+    request<Preferences>('/preferences', { method: 'PUT', body: JSON.stringify(patch) }),
+
+  memory: () => request<MemoryOut>('/memory'),
+  addMemory: (kind: MemoryItem['kind'], text: string) =>
+    request<MemoryItem>('/memory', { method: 'POST', body: JSON.stringify({ kind, text }) }),
+  editMemory: (id: string, kind: MemoryItem['kind'], text: string) =>
+    request<MemoryItem>(`/memory/${id}`, { method: 'PUT', body: JSON.stringify({ kind, text }) }),
+  deleteMemory: (id: string) => request<{ deleted: string }>(`/memory/${id}`, { method: 'DELETE' }),
+  forgetConversation: () => request<Preferences>('/memory/forget-conversation', { method: 'POST' }),
 
   pause: (id: string) => request<TaskOut>(`/tasks/${id}/pause`, { method: 'POST' }),
 

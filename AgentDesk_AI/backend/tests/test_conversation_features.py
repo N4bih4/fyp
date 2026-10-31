@@ -28,16 +28,27 @@ def test_search_preserves_unicode_names(ctx, tmp_path):
 
 @pytest.mark.parametrize("answer", ["yes", "haan kar do", "\u0939\u093e\u0901 \u0915\u0930 \u0926\u094b", "\u06c1\u0627\u06ba \u06a9\u0631 \u062f\u0648"])
 def test_conversation_approval_is_bound_to_task(client, answer):
+    """Rule 3: a spoken/typed yes approves medium risk; high risk needs the Approve click."""
     home = Path(os.environ["AGENTDESK_MOCK_HOME"])
+    name = f"Conv{abs(hash(answer)) % 100000}"
+    folder = home / "Documents" / name
+    task = client.post("/tasks", json={"command": f"create a folder called {name} in Documents"}).json()
+    assert task["status"] == "awaiting_approval" and task["actions"][0]["risk"] == "medium"
+    response = client.post(f"/tasks/{task['id']}/reply", json={"message": answer})
+    assert response.status_code == 200 and response.json()["status"] == "completed"
+    assert folder.is_dir()
+    assert client.post(f"/tasks/{task['id']}/reply", json={"message": "yes"}).status_code == 409
+
     target = home / "conversation-delete.txt"
     target.write_text("temporary")
     task = client.post("/tasks", json={"command": f"Delete the file {target}"}).json()
-    assert task["status"] == "awaiting_approval"
-    response = client.post(f"/tasks/{task['id']}/reply", json={"message": answer})
-    assert response.status_code == 200
-    assert response.json()["status"] == "completed"
+    assert task["status"] == "awaiting_approval" and task["actions"][0]["risk"] == "high"
+    refused = client.post(f"/tasks/{task['id']}/reply", json={"message": answer}).json()
+    assert refused["status"] == "awaiting_approval" and "click" in refused["plan_note"]
+    assert target.exists(), "a voice yes must not delete"
+    approved = client.post(f"/tasks/{task['id']}/approve", json={"action_ids": [task["actions"][0]["id"]]}).json()
+    assert client.post(f"/tasks/{approved['id']}/run").json()["status"] == "completed"
     assert not target.exists()
-    assert client.post(f"/tasks/{task['id']}/reply", json={"message": "yes"}).status_code == 409
 
 
 def test_cancel_does_not_delete(client):
