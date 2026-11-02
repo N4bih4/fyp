@@ -46,8 +46,13 @@ class CloudBrain:
         return self._post("/cloud/plan", json={"command": command, "memory": memory or [], "desktop": desktop or {},
                                                "language_hint": language_hint}).json()
 
-    def chat(self, messages: list[dict[str, str]], fast: bool = False) -> str:
-        return self._post("/cloud/chat", json={"messages": messages, "fast": fast}).json()["content"]
+    def chat(self, messages: list[dict[str, str]], fast: bool = False, max_tokens: int | None = None, effort: str | None = None) -> str:
+        body: dict = {"messages": messages, "fast": fast}
+        if max_tokens:
+            body["max_tokens"] = max_tokens
+        if effort:
+            body["effort"] = effort
+        return self._post("/cloud/chat", json=body).json()["content"]
 
     def transcribe(self, audio: bytes, filename: str = "speech.wav", language: str | None = None,
                    prompt: str | None = None) -> str:

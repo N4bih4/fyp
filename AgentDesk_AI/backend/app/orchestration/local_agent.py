@@ -204,7 +204,8 @@ def prepare_local_request(db, task, registry):
     routed = switch_followup(spoken, recent) or canonical_command(spoken)
     from ..ai.browser_commands import youtube_followup
     from ..ai.device_commands import device_plan
-    media = youtube_followup(routed, recent) or browser_plan(routed) or device_plan(routed)
+    from ..ai.document_commands import document_followup, document_plan
+    media = document_followup(spoken, recent) or document_plan(routed) or youtube_followup(routed, recent) or browser_plan(routed) or device_plan(routed)
     if media is not None:
         return media
     pieces = re.split(r"\s+(?:and|aur|और|اور)\s+", routed, flags=re.IGNORECASE)

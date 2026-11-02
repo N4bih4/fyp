@@ -335,11 +335,16 @@ def _run_and_verify(tool, parsed_args, settings: Settings, action_id: str | None
         verification = (Verification.model_validate(outcome.verification) if outcome.verification
                         else Verification(passed=False, checks=[], details=result.error))
         return result, verification, None
-    result = _run_with_timeout(tool, parsed_args, limit)
-    if result.success:
-        verification = tool.verify(parsed_args, result)
-    else:
-        verification = Verification(passed=False, checks=[], details=result.error)
+    from .. import progress
+    token = progress.bind(action_id)         # a long tool in this process can report progress and notice a cancel
+    try:
+        result = _run_with_timeout(tool, parsed_args, limit)
+        if result.success:
+            verification = tool.verify(parsed_args, result)
+        else:
+            verification = Verification(passed=False, checks=[], details=result.error)
+    finally:
+        progress.unbind(token, action_id)
     return result, verification, ("timeout" if (result.output or {}).get("timed_out") else None)
 
 
@@ -347,7 +352,7 @@ def _run_with_timeout(tool, parsed_args, timeout_seconds: int) -> ToolResult:
     limit = timeout_seconds
     # No `with` block: its exit would wait for the worker and defeat the timeout.
     pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-    future = pool.submit(tool.execute, parsed_args)
+    future = pool.submit(contextvars.copy_context().run, tool.execute, parsed_args)      # the progress binding follows the tool into its thread
     try:
         return future.result(timeout=limit)
     except concurrent.futures.TimeoutError:
@@ -1127,6 +1132,8 @@ def _stop_running(task: Task, registry: ToolRegistry | None, reason: str) -> lis
     from . import worker
 
     running = [a for a in task.actions if a.status == ActionStatus.RUNNING]
+    from .. import progress
+    progress.request_cancel([a.id for a in running])       # a long tool in the server process stops at its next step
     if registry is not None:
         running = [a for a in running if registry.get(a.tool_name).interruptible]
     return worker.request_stop([a.id for a in running], reason)

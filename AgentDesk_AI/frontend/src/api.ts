@@ -315,6 +315,7 @@ export const api = {
   run: (id: string) => request<TaskOut>(`/tasks/${id}/run`, { method: 'POST' }),
 
   cancel: (id: string) => request<TaskOut>(`/tasks/${id}/cancel`, { method: 'POST' }),
+  progress: (id: string) => request<{ status: string; lines: { text: string; step: number | null; of: number | null }[] }>(`/tasks/${id}/progress`),
 };
 
 // ---------------------------------------------------------------- M2 voice endpoints

@@ -72,6 +72,8 @@ TRIGGERS: dict[str, str] = {
     "open_terminal": r"terminal|command prompt|cmd\b|powershell|console|shell|ٹرمینل|کمانڈ پرامپٹ|टर्मिनल|कमांड प्रॉम्प्ट",
     "run_terminal_command": r"terminal|command prompt|cmd\b|powershell|shell|console|\bgit\b|pytest|npm|pip\b|python|run (?:the |my )?tests?|dir\b|"
                             r"\bcd\b|go to (?:the )?.+ folder|list (?:the )?files|run (?:a |the )?command|ٹرمینل|कमांड|ٹیسٹ|टेस्ट|टर्मिनल",
+    "make_document": r"research|report|notes|study plan|plan for|plan my|document|docx|pdf|word file|essay|summari[sz]e .* (?:pdfs?|files?|documents?)|"
+                     r"file bana|report likh|tahqeeq|تحقیق|رپورٹ|नोट्स|रिपोर्ट",
     "device_control": r"lock|sleep|restart|reboot|shut ?down|power|awake|battery|charging|airplane|aeroplane|flight mode|do not disturb|dnd|night ?light|unlock|"
                       r"cancel|لاک|ری ?اسٹارٹ|بیٹری|लॉक|रीस्टार्ट|बैटरी",
     "explorer_view": r"sort|view|details|icons|tiles|hidden|properties|search (?:this folder|here)|file explorer|explorer|ترتیب|छिपी|क्रमबद्ध",

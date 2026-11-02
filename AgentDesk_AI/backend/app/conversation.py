@@ -48,9 +48,10 @@ class _GroqChat:
     def __init__(self, client, settings: Settings) -> None:
         self.client, self.settings = client, settings
 
-    def complete(self, messages, *, fast=False, max_tokens=350) -> str:
+    def complete(self, messages, *, fast=False, max_tokens=350, effort: str | None = None) -> str:
         model = "openai/gpt-oss-20b" if fast else None  # small model: enough for short answers and for summarising given text
-        out = self.client.chat(messages, model=model or None, temperature=0.3, max_tokens=max_tokens)
+        extra = {"reasoning_effort": effort} if effort else {}      # gpt-oss spends max_tokens on hidden reasoning first: a long text needs "low"
+        out = self.client.chat(messages, model=model or None, temperature=0.3, max_tokens=max_tokens, **extra)
         return (out.get("content") or "").strip()
 
 

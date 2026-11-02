@@ -6,6 +6,13 @@ Older evidence: `FEATURE_AUDIT.md`, `audit/FEATURE_TRACEABILITY_MATRIX.md`,
 
 ## Session log
 
+### 2026-11-02 — Session 33: F6 (work documents: research, plans, notes)
+
+- `make_document` (`tools/documents.py`): research / plan / notes -> .docx, .md or .pdf (Edge prints the PDF in its own profile) in Documents\AgentDesk, opened, "Your file is ready". The AI only writes section prose from fenced untrusted text; the Sources list is pages really read; `[n]` citations to missing sources are removed; every document carries an AI-written label; a plan says no outside sources. A broad topic asks ONE question first (no approval for it); the reply is recognised by `ai/document_commands.py`. Progress lines + Stop (`app/progress.py`, `GET /tasks/{id}/progress`, `ProgressLines` in the task panel; the executor binds the action id into the tool's thread and a cancel stops it at the next step).
+- Found: the Render cloud brain's `/cloud/chat` is capped at 400 tokens (and 8000 chars per message), so a long section came back empty; long text now uses this PC's own Groq key (with `reasoning_effort=low`), and `/cloud/chat` accepts `max_tokens` / `effort` (needs a Render redeploy). The small model translated "water cycle" into Urdu as "washerman's cycle": non-English documents use the large model. Wikipedia pages return 403 to the generic page fetcher.
+- Live (`scripts/document_live.py`, real fetcher + real Groq + real writers, temp folder): 7/7 (Word 13.9 s, Markdown 15.9 s, PDF 12.8 s, plan 5.7 s, Urdu 9.7 s, notes 5.4 s, broad topic asks). Search providers NOT exercised: they need a contact e-mail / Tavily key that is not set on this PC. Only "brief" run live. Docs: `docs/WORK_DOCUMENTS.md`, `scripts/check_f6.ps1`.
+- Tests: `tests/test_f6_documents.py` (34). Full suite: `docs/eval/f6_pytest.txt`.
+
 ### 2026-11-02 — Session 32: F5 (full device control)
 
 - `device_control` (lock, sleep, restart / shutdown with Windows' 10 s timer and a spoken "cancel", keep awake, battery, airplane mode that restores exactly what was on, Do Not Disturb, night light through the Settings page) and `explorer_view` (sort, view mode, hidden files, Properties, search in the front File Explorer window, read back from the folder view / registry / the dialog that must appear). Spoken forms in `ai/device_commands.py`. Docs: `docs/DEVICE_CONTROL.md`.

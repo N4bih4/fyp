@@ -315,6 +315,16 @@ def get_task(task_id: str, db: Session = Depends(get_db)) -> TaskOut:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
+@app.get("/tasks/{task_id}/progress")
+def task_progress(task_id: str, db: Session = Depends(get_db)) -> dict:
+    """What a long task is doing right now (short lines from the tool), for the task panel and the spoken progress."""
+    from . import progress
+    task = db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(404, "Task not found")
+    return {"status": task.status, "lines": [line for action in task.actions for line in progress.lines(action.id)]}
+
+
 @app.post("/tasks/{task_id}/approve", response_model=TaskOut)
 def approve_task(task_id: str, payload: ApprovalRequest, db: Session = Depends(get_db)) -> TaskOut:
     try:

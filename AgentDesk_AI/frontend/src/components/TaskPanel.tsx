@@ -1,6 +1,7 @@
 import { api, type TaskOut } from '../api';
 import { errMsg, prettyStatus, statusClasses } from '../taskFormat';
 import { ActionCard } from './ActionCard';
+import { ProgressLines } from './ProgressLines';
 import { Spinner } from './Spinner';
 
 interface Props {
@@ -66,6 +67,10 @@ export function TaskPanel({ task, busy, busyAction, transitional, mutate, approv
           <button type="button" onClick={() => void pauseRun()} className="rounded-md bg-white px-3 py-1.5 font-medium ring-1 ring-inset ring-blue-300 hover:bg-blue-100">
             Pause
           </button>
+          <button type="button" onClick={() => void mutate('cancel', () => api.cancel(task.id))} className="rounded-md bg-white px-3 py-1.5 font-medium ring-1 ring-inset ring-red-300 text-red-700 hover:bg-red-50" data-testid="stop-task">
+            Stop
+          </button>
+          <div className="w-full"><ProgressLines taskId={task.id} running /></div>
         </div>
       )}
       {task.status === 'paused' && (

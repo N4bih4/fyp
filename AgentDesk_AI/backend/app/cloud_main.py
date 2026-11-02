@@ -149,6 +149,8 @@ def plan(req: PlanRequest) -> dict[str, Any]:
 class ChatRequest(BaseModel):
     messages: list[dict[str, str]] = Field(min_length=1, max_length=24)
     fast: bool = False
+    max_tokens: int | None = Field(default=None, ge=50, le=2000)      # a document section needs more than a spoken answer's 400
+    effort: str | None = Field(default=None, pattern="^(low|medium|high)$")
 
 
 @app.post("/cloud/chat")
@@ -156,10 +158,11 @@ def chat(req: ChatRequest) -> dict[str, Any]:
     from .ai.groq_client import get_groq_client
 
     for m in req.messages:
-        if m.get("role") not in {"system", "user", "assistant"} or len(m.get("content", "")) > 8000:
+        if m.get("role") not in {"system", "user", "assistant"} or len(m.get("content", "")) > 16000:
             return JSONResponse({"detail": "Invalid message"}, status_code=422)  # type: ignore[return-value]
     model = "openai/gpt-oss-20b" if req.fast else CHAT_MODEL
-    out = get_groq_client().chat(req.messages, model=model, temperature=0.4, max_tokens=400)
+    extra = {"reasoning_effort": req.effort} if req.effort else {}
+    out = get_groq_client().chat(req.messages, model=model, temperature=0.4, max_tokens=req.max_tokens or 400, **extra)
     return {"content": out["content"], "model": out["model"]}
 
 
