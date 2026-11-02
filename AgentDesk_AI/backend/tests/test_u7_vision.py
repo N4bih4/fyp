@@ -410,3 +410,20 @@ def test_the_pictures_before_an_action_are_kept_only_briefly(db, world):
         rig(images=[picture("Start"), picture("Game")], ocr=[MENU, [line("Game")]], vision=[Choice(1, "click")])
         run("click Start")
     assert len(screen_mod._before) <= screen_mod._REMEMBERED
+
+
+def test_the_screen_setting_can_switch_layer_three_off(db, world):
+    update_preferences(db, PreferencesUpdate(screen_vision=False))
+    screen, model = rig(images=[picture("Start")], ocr=[MENU], vision=[Choice(1, "click")])
+    _, _, result, _ = run("click Start")
+    assert not result.success and "look at app windows" in result.error and screen.grabs == 0 and model.seen == []
+    update_preferences(db, PreferencesUpdate(screen_vision=True))
+    _, _, result, _ = run("click Start")
+    assert result.success or "cloud answers" not in (result.error or "")
+
+
+def test_the_terminal_window_setting(db):
+    from app.tools import terminal
+    update_preferences(db, PreferencesUpdate(terminal_window=False))
+    assert terminal.ensure_view(object()) is None
+    assert update_preferences(db, PreferencesUpdate(terminal_window=True)).terminal_window is True

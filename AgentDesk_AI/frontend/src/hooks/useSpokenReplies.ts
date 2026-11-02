@@ -116,7 +116,7 @@ export function useSpokenReplies({ voice: v, activeTask, prefs, voiceLanguage, b
     }
 
     const utterance = new SpeechSynthesisUtterance(message);
-    utterance.lang = voiceLanguage;
+    utterance.lang = voiceLanguage === 'auto' ? 'en-US' : voiceLanguage;
     utterance.onend = finish;
     utterance.onerror = finish;
     try {

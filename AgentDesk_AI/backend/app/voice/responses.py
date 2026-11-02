@@ -197,7 +197,7 @@ def line_for_task(task: dict[str, Any], language: str = "en", personality: "str 
         return line("needs_approval", language, personality, summary=_approval_summary(language))
     if status == "awaiting_input":
         note = " ".join(str(task.get("plan_note") or "").split())
-        if 0 < len(note) <= 110:  # a long note is a screen message, not something to read out
+        if 0 < len(note) <= 140:  # a long note is a screen message, not something to read out
             return line("clarify", language, personality, question=note)
         if re.search(r"(?m)^\s*1[.)]", str(task.get("plan_note") or "")):  # a numbered list of candidates on screen
             return line("clarify_generic", language, personality)

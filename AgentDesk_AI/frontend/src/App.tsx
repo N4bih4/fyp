@@ -21,7 +21,7 @@ import { deriveVoiceState } from './voiceState';
 export default function App() {
   const [banner, setBanner] = useState<string | null>(null);
   const [view, setView] = useState<View>('assistant');
-  const [voiceLanguage, setVoiceLanguage] = useState('ur-PK');
+  const [voiceLanguage, setVoiceLanguage] = useState('auto');
   const commandInputRef = useRef<HTMLInputElement | null>(null);
   const toggleVoiceRef = useRef<() => void>(() => {});
   const commandFailedRef = useRef<() => void>(() => {});

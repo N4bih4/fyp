@@ -146,7 +146,7 @@ export function useVoiceInput({ voice: v, prefs, voiceLanguage, setCommand, setB
           v.setVoiceMessage('Ji, sun raha hoon. Agli command batayein.');
         };
       }
-      recognition.lang = voiceLanguage;
+      recognition.lang = voiceLanguage === 'auto' ? 'en-US' : voiceLanguage;
       recognition.continuous = true;
       recognition.interimResults = true;
       recognition.onresult = (event) => {

@@ -145,7 +145,10 @@ def chunks(body: ChunksIn) -> dict:
 
 @router.post("/tts")
 def tts(body: TtsIn) -> Response:
-    choice = VoiceChoice(language=body.language, gender=body.gender, voice_en=body.voice_en,
+    from .langdetect import detect, normalise
+    seen = detect(body.text)
+    language = {"en": "en", "hi": "hi-IN", "ur": "ur-PK"}.get(seen or "", None) or ("en" if body.language == "auto" else body.language)
+    choice = VoiceChoice(language=language, gender=body.gender, voice_en=body.voice_en,
                          voice_ur=body.voice_ur, voice_hi=body.voice_hi, direction=body.direction)
     try:
         clip = get_chain().synthesize(body.text, choice)
@@ -191,7 +194,9 @@ def spoken_line(body: LineIn, db: Session = Depends(get_db)) -> dict:
     """The phrase to speak. A task is turned into its closing line; "Done" appears only for verified tasks."""
     who = responses.Voiceprint(body.personality, body.user_name, body.formality, body.humour)
     if body.task is not None:
-        text = _with_anything_else(db, body.task, responses.line_for_task(body.task, body.language, who), body.language)
+        from .langdetect import reply_language
+        language = reply_language(str(body.task.get("command") or ""), body.language)   # answer in the language the sentence was in
+        text = _with_anything_else(db, body.task, responses.line_for_task(body.task, language, who), language)
     elif body.tool:
         text = responses.acknowledge_line(body.tool, body.args, body.language, who)
     elif body.event in responses._T:
@@ -222,6 +227,8 @@ async def stt(audio: UploadFile = File(...), language: str | None = Form(default
     if client is None:
         raise HTTPException(503, "No speech service is configured (set GROQ_API_KEYS or CLOUD_BRAIN_URL).")
     name = audio.filename or "speech.wav"
+    if not get_settings().stt_force_language or language in ("auto", ""):
+        language = None     # Whisper detects the language of each sentence; a locked setting must not turn English speech into Urdu text
     prompt = _vocabulary_prompt(prompt)
     try:
         if hasattr(client, "transcribe") and client.__class__.__name__ == "CloudBrain":

@@ -99,7 +99,7 @@ export type OrbColor = 'indigo' | 'emerald' | 'rose' | 'amber' | 'slate';
 
 export interface Persona {
   name: string;
-  language: 'ur-PK' | 'en-US' | 'en-GB' | 'hi-IN';
+  language: 'auto' | 'ur-PK' | 'en-US' | 'en-GB' | 'hi-IN';
   style: 'friendly' | 'brief' | 'formal';
   speak_replies: boolean;
   orb_color: OrbColor;
@@ -159,6 +159,8 @@ export interface Preferences {
   speech_volume: number;
   daily_greeting: boolean;
   cloud_answers: boolean | null;
+  screen_vision?: boolean;
+  terminal_window?: boolean;
   conversation_cutoff?: string | null;
 }
 

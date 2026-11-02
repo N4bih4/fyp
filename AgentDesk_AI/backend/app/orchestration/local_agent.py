@@ -309,5 +309,6 @@ def prepare_local_request(db, task, registry):
             return _action("control_desktop", {"target_window": matches[0], "steps": [{"action": "close_window"}]})
         return Plan(note="Exact window title ke saath 'close window ...' kahein:\n" + "\n".join(matches or titles))
     if re.match(r"^(?:create|copy|move|rename|delete|open|close|volume|brightness|bluetooth|folder|file)\b", raw, re.IGNORECASE):
-        return Plan(note="Local agent ko command clear nahi hui. App ka exact naam, file/folder ka path, ya setting ki value batayein. Mushkil reasoning ke liye 'AI:' se request shuru kar sakti hain.")
+        from ..nlu import clarify
+        return Plan(note=clarify.question(raw))
     return None

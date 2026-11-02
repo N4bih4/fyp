@@ -256,7 +256,9 @@ def test_a_non_conversation_intent_is_discarded_and_the_old_path_runs_as_before(
     assert planner.calls == 1 and seen == ["agent"] and status == TaskStatus.FAILED and tools == []
 
 
-def test_local_only_and_explicit_cloud_mode_never_ask_the_planner(client, reg, structured, cloud_chat):
+def test_local_only_never_asks_the_planner_and_explicit_mode_asks_it_only_as_the_last_try(client, reg, structured, cloud_chat):
+    """Changed in the "never give up" fix: in explicit-cloud mode a command nothing local understood is no longer answered with a generic
+    refusal; with cloud answers on, the planner gets one try (with the last turns). Local-only still never calls it."""
     planner = structured(NLUPlan(intent="chat", confidence=0.9))
     from app.database import SessionLocal
     client.put("/preferences", json={"provider_mode": "local_only"})
@@ -265,10 +267,12 @@ def test_local_only_and_explicit_cloud_mode_never_ask_the_planner(client, reg, s
             executor.start_task(db, "zindagi ka matlab samjhao dost", None, reg, _legacy())
     finally:
         client.put("/preferences", json={"provider_mode": "auto"})
+    assert planner.calls == 0
+    client.put("/preferences", json={"cloud_answers": False})
     with SessionLocal() as db:
         executor.start_task(db, "zindagi ka matlab samjhao dost 2", None, reg,
                             Settings(groq_api_key="k", ai_provider="groq", ai_cloud_mode="explicit"))
-    assert planner.calls == 0
+    assert planner.calls == 0          # cloud answers off: the picture of the conversation stays on this PC
 
 
 def test_without_a_cloud_key_the_planner_is_not_asked(client, reg, structured, cloud_chat):

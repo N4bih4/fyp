@@ -14,6 +14,7 @@ interface OnboardingProps {
 }
 
 const EXAMPLE: Record<Persona['language'], string> = {
+  auto: 'Create a folder called Demo in Documents',
   'ur-PK': 'Documents mein Demo naam ka folder banao',
   'hi-IN': 'Documents mein Demo naam ka folder banao',
   'en-US': 'Create a folder called Demo in Documents',
@@ -104,6 +105,7 @@ export function Onboarding({ persona, catalog, micSupported, memoryEnabled, clou
             <label htmlFor="onboarding-language" className="mt-4 block text-sm font-medium">Language you will speak</label>
             <select id="onboarding-language" value={draft.language} onChange={(e) => setDraft({ ...draft, language: e.target.value as Persona['language'] })}
               className="mt-1 w-full rounded border p-2">
+              <option value="auto">Auto (detect)</option>
               <option value="ur-PK">Urdu / Roman Urdu</option>
               <option value="hi-IN">Hindi</option>
               <option value="en-US">English</option>

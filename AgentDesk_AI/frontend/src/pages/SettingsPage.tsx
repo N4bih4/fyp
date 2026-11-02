@@ -102,6 +102,7 @@ export function SettingsPage({ prefs, config, usage, onSave }: SettingsPageProps
           <label className="text-sm">Speaking language
             <select value={persona.language} onChange={(e) => setPersona({ ...persona, language: e.target.value as Persona['language'] })}
               className="mt-1 w-full rounded border p-2">
+              <option value="auto">Auto (reply in the language I speak)</option>
               <option value="ur-PK">Urdu / Roman Urdu</option>
               <option value="hi-IN">Hindi</option>
               <option value="en-US">English (US)</option>
@@ -168,6 +169,16 @@ export function SettingsPage({ prefs, config, usage, onSave }: SettingsPageProps
           Web search: Wikipedia {config?.search?.wikipedia ? 'ready' : 'off (needs WIKIPEDIA_CONTACT_EMAIL in backend/.env)'}; Tavily{' '}
           {config?.search?.tavily ? 'ready' : 'off (needs a key: see docs/SEARCH_SETUP.md)'}.
         </p>
+        <label className="mt-3 flex items-start gap-2 text-sm">
+          <input type="checkbox" className="mt-1" checked={prefs.screen_vision !== false} data-testid="screen-vision"
+            onChange={(e) => void save({ screen_vision: e.target.checked }, 'Saved.')} />
+          <span>Let the assistant look at app windows. <span className="block text-slate-500">Only for apps it cannot read otherwise (games, custom-drawn programs). A picture of that one window goes to the cloud AI, so it also needs the cloud setting above. Shells and password managers are never looked at.</span></span>
+        </label>
+        <label className="mt-3 flex items-start gap-2 text-sm">
+          <input type="checkbox" className="mt-1" checked={prefs.terminal_window !== false} data-testid="terminal-window"
+            onChange={(e) => void save({ terminal_window: e.target.checked }, 'Saved.')} />
+          <span>Show a live terminal window when it runs commands. <span className="block text-slate-500">Off: commands still run and are read back, just without the window.</span></span>
+        </label>
         <label className="mt-3 flex items-center gap-2 text-sm">
           <input type="checkbox" checked={prefs.daily_greeting} data-testid="daily-greeting"
             onChange={(e) => void save({ daily_greeting: e.target.checked }, 'Greeting setting saved.')} />

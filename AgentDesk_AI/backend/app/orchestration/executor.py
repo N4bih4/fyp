@@ -706,6 +706,33 @@ def start_task(
     return task
 
 
+def _planner_or_question(db: Session, task: Task, command: str, registry: ToolRegistry, settings: Settings, auto_approve: bool) -> Task:
+    """Nothing local could plan this command. Never answer "say it again" before the planner has seen it WITH the last turns; if it is still
+    unsure, ask ONE specific question naming the best guess. The picture of the conversation goes to the cloud only with cloud answers on."""
+    from ..nlu import clarify
+    from ..preferences import get_preferences
+    from ..voice.langdetect import reply_language
+    from . import conversation_flow, planner_mode
+    from .context import recent_memory
+
+    prefs = get_preferences(db)
+    lang = reply_language(command, prefs.persona.language)
+    planned = None
+    if prefs.cloud_answers is True:
+        planned = planner_mode.fallback_plan(command, registry, settings, recent_memory(db, task), lang)
+    if planned is not None:
+        routed = conversation_flow.route_by_intent(db, task, planned, command, registry, settings, auto_approve=auto_approve)
+        if routed is not None:
+            return routed
+        if planned.actions or planned.note:
+            task.agent_state_json = json.dumps({"provider": "local", "matcher": "planner_fallback"})
+            task = plan_task(db, task, registry, settings, auto_approve=auto_approve, preplanned=planned)
+            if task.status == TaskStatus.APPROVED:
+                return run_task(db, task.id, registry, settings)
+            return task
+    return plan_task(db, task, registry, settings, preplanned=Plan(note=clarify.question(command, prefs.persona.language)))
+
+
 def _start_task(
     db: Session, command: str, idempotency_key: str | None,
     registry: ToolRegistry, settings: Settings,
@@ -759,7 +786,7 @@ def _start_task(
         if get_preferences(db).provider_mode == "local_only":
             return plan_task(db, task, registry, settings, preplanned=Plan(note="Local-only mode is on (Settings): cloud AI is not used. Say the app/file name and the action, or switch Provider to Auto."))
         if settings.ai_cloud_mode != "automatic" and not command.strip().casefold().startswith(("ai:", "research ", "explain ")):
-            return plan_task(db, task, registry, settings, preplanned=Plan(note="Local agent ko yeh command clear nahi hui. App/file ka naam aur operation batayein. Detailed AI reasoning ke liye 'AI:' ya 'research' se request shuru karein."))
+            return _planner_or_question(db, task, command, registry, settings, auto_approve)
     structured = planner_mode.structured_plan(command, registry, settings)
     if structured is None and planner_mode.mode(settings) != "structured":
         structured = planner_mode.routing_plan(command, registry, settings)  # legacy / shadow: routing intents only

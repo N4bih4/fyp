@@ -116,7 +116,8 @@ export class SpeechPlayer {
     return new Promise((resolve) => {
       if (!('speechSynthesis' in window) || !text) return resolve('fallback');
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = this.getOptions().language;
+      const lang = this.getOptions().language;
+      utterance.lang = lang === 'auto' ? 'en-US' : lang;
       utterance.onstart = () => onStart?.();
       utterance.onend = () => resolve(epoch === this.epoch ? 'fallback' : 'stopped');
       utterance.onerror = () => resolve('fallback');

@@ -63,7 +63,7 @@ def compare(legacy: Plan, candidate: Plan | None) -> dict[str, Any]:
     }
 
 
-def _planner_plan(command: str, registry, settings, llm_only: bool = False):
+def _planner_plan(command: str, registry, settings, llm_only: bool = False, memory=None, language: str | None = None):
     """Run the strict planner. Returns (legacy Plan | None, info dict). Never raises."""
     from ..nlu.planner import PlannerContext, planner_from_settings
 
@@ -73,7 +73,10 @@ def _planner_plan(command: str, registry, settings, llm_only: bool = False):
         planner = planner_from_settings(settings)
         if llm_only and hasattr(planner, "llm") and planner.llm is not None:
             planner = planner.llm
-        result = planner.plan(PlannerContext(command=command, registry=registry))
+        ctx = PlannerContext(command=command, registry=registry, language_hint=language)
+        if memory is not None:
+            ctx.memory = memory
+        result = planner.plan(ctx)
     except AIError as exc:
         info["error"] = type(exc).__name__
         info["latency_ms"] = (time.perf_counter() - started) * 1000
@@ -103,6 +106,20 @@ def structured_plan(command: str, registry, settings) -> Plan | None:
         return None
     if plan.actions:
         plan.note = plan.note or "Planner (strict JSON) ne plan tayyar kiya."
+    return plan
+
+
+def fallback_plan(command: str, registry, settings, memory, language: str | None = None) -> Plan | None:
+    """The last try before the assistant asks: the planner with the last turns as context. None = it could not (no key, rate limit, invalid plan)."""
+    global _routing_blocked_until
+    if not _enabled(settings) or time.monotonic() < _routing_blocked_until:
+        return None
+    plan, info = _planner_plan(command, registry, settings, memory=memory, language=language)
+    if plan is None:
+        if info.get("error") not in ("validation", "empty", "unresolved_reference"):
+            _routing_blocked_until = time.monotonic() + 60.0
+        return None
+    _routing_blocked_until = 0.0
     return plan
 
 

@@ -113,6 +113,14 @@ def ensure_view(transcript: Transcript) -> int | None:
     """Open (once) the visible window that follows the transcript. Returns its PID, None when it cannot or must not be shown."""
     if os.environ.get("AGENTDESK_TERMINAL_VIEW", "1") == "0" or os.name != "nt":
         return None
+    try:
+        from ..database import SessionLocal
+        from ..preferences import get_preferences
+        with SessionLocal() as db:
+            if not get_preferences(db).terminal_window:
+                return None
+    except Exception:  # noqa: BLE001 - no database (a tool test): the default is to show it
+        pass
     state = load_state()
     pid = state.get("view_pid")
     if pid:

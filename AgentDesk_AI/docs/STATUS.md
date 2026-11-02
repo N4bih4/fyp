@@ -6,6 +6,13 @@ Older evidence: `FEATURE_AUDIT.md`, `audit/FEATURE_TRACEABILITY_MATRIX.md`,
 
 ## Session log
 
+### 2026-11-02 — Session 29: U8 settings/docs + "play music on YouTube" bug fix (start of F1)
+
+- U8: settings `screen_vision`, `terminal_window`; user guide section 6b; demo script part 2; `docs/FINAL_REPORT_U8.md`. Clean folder + new venv install of the committed code imports fine (same PC, not a second PC).
+- Bug (language box Urdu, English sentence "I say you can play music on YouTube not only open the URL" -> Urdu "samajh nahi aaya"): (1) `voice/langdetect.py`: the reply and the TTS voice follow the sentence's own language; persona language gains `auto` (new default); Whisper is no longer forced to the language box (`STT_FORCE_LANGUAGE=true` restores it). (2) `executor._planner_or_question`: a command nothing local understood now goes to the planner (only with cloud answers on) before giving up. (3) `orchestration/context.py`: the last 10 tasks are passed to the planner as conversation memory; prompt rule 10 for corrections. (4) `nlu/clarify.py`: if still unsure, ONE specific question in the user's language ("Do you want me to play something on YouTube? Which song or artist?"); the generic line stays for empty/noise only.
+- Tests: `tests/test_bug_youtube_correction.py` (14). Full suite 2931 passed, 1 failed (`test_phase16_worker` kill test: known flaky, passes alone), 4 skipped.
+- NOT done (F1 rest): 300-sentence test set, `correction`/`follow_up`/`end_task` as planner intents, planner run against real Groq for this sentence, spoken run.
+
 ### 2026-11-02 — Session 28: Upgrade U7 (vision fallback, layer 3): `screen_act`
 
 - New `app/vision/` (boxes, Windows OCR, numbered overlay, Groq/Gemini vision model) and `tools/screen.py` (`screen_act`): screenshot + OCR/UIA boxes + numbered picture; the model names a box id only; click at the detected box centre; verified by photographing again. Details: `docs/VISION.md`.

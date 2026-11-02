@@ -140,7 +140,8 @@ def _cloud_allowed() -> bool:
     from ..database import SessionLocal
     from ..preferences import get_preferences
     with SessionLocal() as db:
-        return get_preferences(db).cloud_answers is True
+        prefs = get_preferences(db)
+        return prefs.cloud_answers is True and prefs.screen_vision
 
 
 class ScreenActTool(BaseTool):
@@ -170,7 +171,7 @@ class ScreenActTool(BaseTool):
         timings: dict[str, int] = {}
         started = time.perf_counter()
         if not _cloud_allowed():
-            return ToolResult(success=False, error="Looking at the screen sends a picture of that window to the cloud AI. Turn on cloud answers in Settings first.")
+            return ToolResult(success=False, error="Looking at the screen sends a picture of that window to the cloud AI. Turn on cloud answers and 'Let the assistant look at app windows' in Settings first.")
         service, screen = get_service(), get_screen()
         try:
             window = service.window(a.window)

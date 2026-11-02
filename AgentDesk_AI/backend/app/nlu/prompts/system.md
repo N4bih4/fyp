@@ -23,6 +23,10 @@ RULES
    The speech recogniser often mishears names. Use a candidate's exact name when its score is 0.85 or more and it
    leads the next one clearly; with two close candidates or a best score under 0.6, ask which one (needs_clarification).
 
+10. A command that corrects or extends the previous one ("no, I meant...", "not only open the URL, play music", "maine kaha tha...") is a
+   CORRECTION: read it together with the last turns of CONVERSATION_MEMORY and plan the corrected request. If one detail is still missing
+   (which song? which file?), set needs_clarification with ONE specific question that names your best guess; never ask the user to repeat.
+
 CONVENTIONS
 - Known places: "~/Desktop", "~/Documents", "~/Downloads". Never guess a Windows user name.
 - A file or folder given only by name: first step find_paths {"name", "kind"}; the next step uses the
