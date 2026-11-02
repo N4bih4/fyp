@@ -164,6 +164,17 @@ export interface Preferences {
   conversation_cutoff?: string | null;
 }
 
+export interface TaskSessionState {
+  open: boolean;
+  dictation?: boolean;
+  goal?: string;
+  current_app?: string | null;
+  current_folder?: string | null;
+  awaiting?: string | null;
+  idle_ask_in?: number;
+  steps_done?: { key: string; tool: string; ok: boolean; verified: boolean }[];
+}
+
 export type PreferencesUpdate = Partial<Omit<Preferences, 'conversation_cutoff'>>;
 
 export interface MemoryItem {
@@ -363,7 +374,9 @@ export const voiceApi = {
   line: async (body: { task?: TaskOut; tool?: string; args?: Record<string, unknown>; event?: string; language: string; personality?: string; user_name?: string; formality?: number; humour?: number }) =>
     ((await (await voiceFetch('/voice/line', jsonInit(body))).json()) as { text: string }).text,
   /** What the conversation is about right now; `open` is false once the user said "that's all" or stayed silent. */
-  session: async () => (await (await voiceFetch('/voice/session', { method: 'GET' })).json()) as { open: boolean; dictation?: boolean; goal?: string; current_app?: string | null; awaiting?: string | null },
+  session: async () => (await (await voiceFetch('/voice/session', { method: 'GET' })).json()) as TaskSessionState,
+  /** Silence in an open task: the server decides if it is long enough; it answers wait / ask (speak "Shall I end this task?") / ended. */
+  sessionIdle: async (language: string) => (await (await voiceFetch('/voice/session/idle?language=' + encodeURIComponent(language), jsonInit({}))).json()) as { action: 'wait' | 'ask' | 'ended' | 'none'; text: string; open: boolean; retry_in?: number },
   closeSession: () => voiceFetch('/voice/session/close', jsonInit({})).catch(() => undefined),
   /** The acknowledgement for a command, from the local fast path (no network, nothing executed); text is null when none is safe. */
   ack: async (body: { command: string; language: string; personality?: string; user_name?: string; formality?: number; humour?: number }) =>

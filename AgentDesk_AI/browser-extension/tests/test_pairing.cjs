@@ -21,7 +21,7 @@ function load({ stored = {}, fetchImpl } = {}) {
     URL, WebSocket: FakeSocket,
     navigator: { userAgent: 'Chrome/130' },
     fetch: async (url, options) => { fetches.push({ url, options }); return fetchImpl ? fetchImpl(url, options) : { ok: true, json: async () => ({ token: 'bridge-token' }) }; },
-    setInterval: () => 0, clearInterval() {},
+    setInterval: () => 0, clearInterval() {}, setTimeout: (fn, ms) => { const t = setTimeout(fn, ms); t.unref && t.unref(); return t; }, clearTimeout,
     chrome: {
       runtime: { id: 'ext-id', onInstalled: event, onStartup: event, onMessage: { addListener: fn => listeners.push(fn) } },
       storage: { local: {

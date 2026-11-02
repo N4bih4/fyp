@@ -1,0 +1,359 @@
+........................................................................ [  2%]
+................................................................sss..... [  4%]
+........................................................................ [  7%]
+........................................................................ [  9%]
+........................................................................ [ 12%]
+........................................................................ [ 14%]
+........................................................................ [ 16%]
+........................................................................ [ 19%]
+........................................................................ [ 21%]
+........................................................................ [ 24%]
+........................................................................ [ 26%]
+........................................................................ [ 29%]
+........................................................................ [ 31%]
+........................................................................ [ 33%]
+........................................................................ [ 36%]
+........................................................................ [ 38%]
+........................................................................ [ 41%]
+........................................................................ [ 43%]
+........................................................................ [ 45%]
+................F....................................................... [ 48%]
+...............s........................................................ [ 50%]
+........................................................................ [ 53%]
+..............................F......................................... [ 55%]
+........................................................................ [ 58%]
+........................................................................ [ 60%]
+........................................................................ [ 62%]
+........................................................................ [ 65%]
+........................................................................ [ 67%]
+........................................................................ [ 70%]
+........................................................................ [ 72%]
+........................................................................ [ 75%]
+........................................................................ [ 77%]
+........................................................................ [ 79%]
+........................................................................ [ 82%]
+........................................................................ [ 84%]
+........................................................................ [ 87%]
+........................................................................ [ 89%]
+........................................................................ [ 91%]
+........................................................................ [ 94%]
+.........................F.............................................. [ 96%]
+........................................................................ [ 99%]
+F......................                                                  [100%]
+================================== FAILURES ===================================
+_________________ test_timed_out_task_is_stopped_and_reported _________________
+
+db = <sqlalchemy.orm.session.Session object at 0x000001EEF81601D0>
+tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-HP/pytest-448/test_timed_out_task_is_stopped0')
+
+    def test_timed_out_task_is_stopped_and_reported(db, tmp_path):
+        from tests.helpers.slow_tool import SlowTool
+    
+        ctx = ToolContext(allowed_directories=[tmp_path])
+        registry = ToolRegistry(ctx)
+        registry._tools["slow_test_tool"] = SlowTool(ctx)
+        task = executor.create_task(db, "slow")
+        plan = Plan(actions=[PlanAction(tool="slow_test_tool", args={
+            "seconds": 30, "marker": str(tmp_path / "marker"), "child_pid_file": str(tmp_path / "child.pid")})])
+        task = executor.plan_task(db, task, registry, Settings(), preplanned=plan)
+        started = time.monotonic()
+        task = executor.run_task(db, task.id, registry, Settings(tool_isolation="process", tool_timeout_seconds=2))
+        assert time.monotonic() - started < 15
+        assert task.status == TaskStatus.FAILED
+        assert "Stopped after 2s" in task.actions[0].error
+        import psutil
+>       child = int((tmp_path / "child.pid").read_text())
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_phase16_download_control.py:163: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\HP\AppData\Local\Programs\Python\Python312\Lib\pathlib.py:1027: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-HP/pytest-448/test_timed_out_task_is_stopped0/child.pid')
+mode = 'r', buffering = -1, encoding = 'locale', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\HP\\AppData\\Local\\Temp\\pytest-of-HP\\pytest-448\\test_timed_out_task_is_stopped0\\child.pid'
+
+C:\Users\HP\AppData\Local\Programs\Python\Python312\Lib\pathlib.py:1013: FileNotFoundError
+------------------------------ Captured log call ------------------------------
+INFO     agentdesk:logging_setup.py:85 action_start
+WARNING  agentdesk:logging_setup.py:85 tool_worker_stopped
+WARNING  agentdesk:logging_setup.py:85 action_end
+__________ test_kill_during_execution_then_restart_reports_honestly ___________
+
+    @contextlib.contextmanager
+    def map_httpcore_exceptions() -> typing.Iterator[None]:
+        global HTTPCORE_EXC_MAP
+        if len(HTTPCORE_EXC_MAP) == 0:
+            HTTPCORE_EXC_MAP = _load_httpcore_exceptions()
+        try:
+>           yield
+
+.venv\Lib\site-packages\httpx\_transports\default.py:101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\httpx\_transports\default.py:250: in handle_request
+    resp = self._pool.handle_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpcore\_sync\connection_pool.py:256: in handle_request
+    raise exc from None
+.venv\Lib\site-packages\httpcore\_sync\connection_pool.py:236: in handle_request
+    response = connection.handle_request(
+.venv\Lib\site-packages\httpcore\_sync\connection.py:103: in handle_request
+    return self._connection.handle_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpcore\_sync\http11.py:136: in handle_request
+    raise exc
+.venv\Lib\site-packages\httpcore\_sync\http11.py:106: in handle_request
+    ) = self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpcore\_sync\http11.py:177: in _receive_response_headers
+    event = self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpcore\_sync\http11.py:217: in _receive_event
+    data = self._network_stream.read(
+.venv\Lib\site-packages\httpcore\_backends\sync.py:126: in read
+    with map_exceptions(exc_map):
+         ^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\HP\AppData\Local\Programs\Python\Python312\Lib\contextlib.py:158: in __exit__
+    self.gen.throw(value)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+map = {<class 'TimeoutError'>: <class 'httpcore.ReadTimeout'>, <class 'OSError'>: <class 'httpcore.ReadError'>}
+
+    @contextlib.contextmanager
+    def map_exceptions(map: ExceptionMapping) -> typing.Iterator[None]:
+        try:
+            yield
+        except Exception as exc:  # noqa: PIE786
+            for from_exc, to_exc in map.items():
+                if isinstance(exc, from_exc):
+>                   raise to_exc(exc) from exc
+E                   httpcore.ReadTimeout: timed out
+
+.venv\Lib\site-packages\httpcore\_exceptions.py:14: ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-HP/pytest-448/test_kill_during_execution_the0')
+
+    def test_kill_during_execution_then_restart_reports_honestly(tmp_path):
+        home = tmp_path / "home"
+        (home / "Documents").mkdir(parents=True)
+        db_file = tmp_path / "kill.db"
+        env = {**os.environ, "DATABASE_URL": f"sqlite:///{db_file}", "AI_PROVIDER": "mock",
+               "AGENTDESK_ALLOWED_DIRECTORIES": str(home), "AGENTDESK_TEST_DIR": str(home), "AGENTDESK_MOCK_HOME": str(home),
+               "AGENTDESK_REQUIRE_API_TOKEN": "0", "AGENTDESK_LOG_DIR": str(tmp_path / "logs"), "TOOL_TIMEOUT_SECONDS": "300"}
+        port = _free_port()
+        server = subprocess.Popen([sys.executable, str(BACKEND / "tests" / "helpers" / "slow_server.py"), str(port)], cwd=BACKEND, env=env,
+                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        restarted = None
+        try:
+            _wait_ready(port)
+            base = f"http://127.0.0.1:{port}"
+>           task = httpx.post(f"{base}/tasks", json={"command": "Create a folder called killed in Documents"}, timeout=10).json()
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_phase9_reliability.py:305: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\httpx\_api.py:304: in post
+    return request(
+.venv\Lib\site-packages\httpx\_api.py:109: in request
+    return client.request(
+.venv\Lib\site-packages\httpx\_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:914: in send
+    response = self._send_handling_auth(
+.venv\Lib\site-packages\httpx\_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+.venv\Lib\site-packages\httpx\_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_transports\default.py:249: in handle_request
+    with map_httpcore_exceptions():
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\HP\AppData\Local\Programs\Python\Python312\Lib\contextlib.py:158: in __exit__
+    self.gen.throw(value)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    @contextlib.contextmanager
+    def map_httpcore_exceptions() -> typing.Iterator[None]:
+        global HTTPCORE_EXC_MAP
+        if len(HTTPCORE_EXC_MAP) == 0:
+            HTTPCORE_EXC_MAP = _load_httpcore_exceptions()
+        try:
+            yield
+        except Exception as exc:
+            mapped_exc = None
+    
+            for from_exc, to_exc in HTTPCORE_EXC_MAP.items():
+                if not isinstance(exc, from_exc):
+                    continue
+                # We want to map to the most specific exception we can find.
+                # Eg if `exc` is an `httpcore.ReadTimeout`, we want to map to
+                # `httpx.ReadTimeout`, not just `httpx.TimeoutException`.
+                if mapped_exc is None or issubclass(to_exc, mapped_exc):
+                    mapped_exc = to_exc
+    
+            if mapped_exc is None:  # pragma: no cover
+                raise
+    
+            message = str(exc)
+>           raise mapped_exc(message) from exc
+E           httpx.ReadTimeout: timed out
+
+.venv\Lib\site-packages\httpx\_transports\default.py:118: ReadTimeout
+________ test_a_missing_send_button_is_reported_and_nothing_is_claimed ________
+
+db = <sqlalchemy.orm.session.Session object at 0x000001EEF992FFB0>
+chat = (<tests.test_u6_messages.Chat object at 0x000001EEF992FF50>, <app.tools.registry.ToolRegistry object at 0x000001EEF992D910>)
+
+    def test_a_missing_send_button_is_reported_and_nothing_is_claimed(db, chat):
+        c, registry = chat
+        original = c.open_link
+    
+        def no_button(uri):
+            original(uri)
+            c.world.windows[-1].controls[:] = [x for x in c.world.windows[-1].controls if x.name != "Send"]
+        import app.tools.messenger as m
+        m._platform.open_path_with_os = no_button
+        import time
+        real_monotonic = time.monotonic
+        ticks = iter(range(0, 100000, 3))
+        m.time.monotonic = lambda: next(ticks)
+        try:
+            say(db, registry, "message Ahmed on my way now")
+>           done = say(db, registry, "yes send it")
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_u6_messages.py:175: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_u6_messages.py:77: in say
+    task = executor.start_task(db, text, None, registry, SETTINGS)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\orchestration\executor.py:696: in start_task
+    task = _start_task(db, command, idempotency_key, registry, settings, auto_approve)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\orchestration\executor.py:753: in _start_task
+    writing = mail_flow.try_handle(db, task, command, registry, settings) or message_flow.try_handle(db, task, command, registry, settings)
+                                                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\orchestration\message_flow.py:123: in try_handle
+    return _continue(db, task, draft, command, text, registry, settings)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\orchestration\message_flow.py:203: in _continue
+    return _send_now(db, task, draft, registry, settings)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\orchestration\message_flow.py:228: in _send_now
+    task = executor.run_task(db, task.id, registry, settings)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\orchestration\executor.py:372: in run_task
+    task = _run_task(db, task_id, registry, settings)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\orchestration\executor.py:430: in _run_task
+    _execute_single_action(db, action, tool, parsed, settings)
+app\orchestration\executor.py:567: in _execute_single_action
+    result, verification, stop_reason = _run_and_verify(tool, parsed, settings, action.id)
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\orchestration\executor.py:338: in _run_and_verify
+    result = _run_with_timeout(tool, parsed_args, limit)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\orchestration\executor.py:352: in _run_with_timeout
+    return future.result(timeout=limit)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\HP\AppData\Local\Programs\Python\Python312\Lib\concurrent\futures\_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+C:\Users\HP\AppData\Local\Programs\Python\Python312\Lib\concurrent\futures\_base.py:401: in __get_result
+    raise self._exception
+C:\Users\HP\AppData\Local\Programs\Python\Python312\Lib\concurrent\futures\thread.py:59: in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\tools\messenger.py:138: in execute
+    window = self._wait_window(service, spec["window"])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\tools\messenger.py:153: in _wait_window
+    deadline = time.monotonic() + seconds
+               ^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+>   m.time.monotonic = lambda: next(ticks)
+                               ^^^^^^^^^^^
+E   StopIteration
+
+tests\test_u6_messages.py:172: StopIteration
+------------------------------ Captured log call ------------------------------
+INFO     agentdesk:logging_setup.py:85 task_approved
+INFO     agentdesk:logging_setup.py:85 action_start
+_ test_the_persistent_sapi_worker_speaks_fast_after_the_first_sentence_and_survives_odd_text _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001EE803AE420>
+
+    @pytest.mark.skipif(__import__("platform").system() != "Windows", reason="Windows SAPI")
+    def test_the_persistent_sapi_worker_speaks_fast_after_the_first_sentence_and_survives_odd_text(monkeypatch):
+        import time
+    
+        from app.voice import tts
+    
+        monkeypatch.setenv("AGENTDESK_SAPI_WORKER", "1")
+        worker = tts.SapiWorker()
+        try:
+            worker.warm()
+            t = time.perf_counter()
+            first = worker.speak("Done. It is empty.", "Female")
+            warm_ms = (time.perf_counter() - t) * 1000
+>           assert not tts.is_silent(first, "audio/wav") and warm_ms < 700  # the old one-shot PowerShell needed ~900 ms
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           assert (not False and 1346.071700041648 < 700)
+E            +  where False = <function is_silent at 0x000001EED8DA67A0>(b'RIFFB\x14\x02\x00WAVEfmt \x12\x00\x00\x00\x01\x00\x01\x00"V\x00\x00D\xac\x00\x00\x02\x00\x10\x00\x00\x00data\x1c\x14...00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00', 'audio/wav')
+E            +    where <function is_silent at 0x000001EED8DA67A0> = <module 'app.voice.tts' from 'F:\\uisoft\\fyp-nabiha\\AgentDesk_AI\\backend\\app\\voice\\tts.py'>.is_silent
+
+tests\test_voice_live_fixes.py:188: AssertionError
+============================== warnings summary ===============================
+tests/test_phase11_security.py::test_oversized_and_malformed_bodies_rejected_cleanly
+tests/test_phase11_security.py::test_oversized_and_malformed_bodies_rejected_cleanly
+  F:\uisoft\fyp-nabiha\AgentDesk_AI\backend\.venv\Lib\site-packages\httpx2\_models.py:424: DeprecationWarning: Use 'content=<...>' to upload raw bytes/text content.
+    headers, stream = encode_request(
+
+tests/test_u6_messages.py::test_a_missing_send_button_is_reported_and_nothing_is_claimed
+  F:\uisoft\fyp-nabiha\AgentDesk_AI\backend\.venv\Lib\site-packages\_pytest\threadexception.py:54: PytestUnhandledThreadExceptionWarning: Exception in thread groq-warm
+  
+  Traceback (most recent call last):
+    File "C:\Users\HP\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1075, in _bootstrap_inner
+      self.run()
+    File "C:\Users\HP\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1012, in run
+      self._target(*self._args, **self._kwargs)
+    File "F:\uisoft\fyp-nabiha\AgentDesk_AI\backend\app\ai\warm.py", line 33, in loop
+      if time.monotonic() - client.last_used < IDLE_STOP_SECONDS:
+         ^^^^^^^^^^^^^^^^
+    File "F:\uisoft\fyp-nabiha\AgentDesk_AI\backend\tests\test_u6_messages.py", line 172, in <lambda>
+      m.time.monotonic = lambda: next(ticks)
+                                 ^^^^^^^^^^^
+  StopIteration
+  
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_phase16_download_control.py::test_timed_out_task_is_stopped_and_reported
+FAILED tests/test_phase9_reliability.py::test_kill_during_execution_then_restart_reports_honestly
+FAILED tests/test_u6_messages.py::test_a_missing_send_button_is_reported_and_nothing_is_claimed
+FAILED tests/test_voice_live_fixes.py::test_the_persistent_sapi_worker_speaks_fast_after_the_first_sentence_and_survives_odd_text
+4 failed, 2967 passed, 4 skipped, 3 warnings in 857.71s (0:14:17)

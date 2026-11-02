@@ -42,7 +42,7 @@ def test_the_full_catalogue_request_is_over_the_limit_and_the_shortlist_is_far_u
         c = _context(item, registry)
         c.tools = shortlist_for(c)
         sizes.append(_tokens(build_messages(c), response_format(registry, c.tools)))
-    assert max(sizes) < 5000  # leaves room for the 900-token answer and the system prompt growing
+    assert max(sizes) < 5500  # F4: control_browser grew by 17 actions and 9 fields (was 5000); 5500 + the 900-token answer is still far under LIMIT = 8000
 
 
 @pytest.mark.parametrize("split", ["dev", "holdout"])

@@ -42,6 +42,11 @@ PHRASES: dict[str, set[str]] = {
               "नहीं", "बस", "बस इतना ही", "धन्यवाद", "शुक्रिया", "नहीं धन्यवाद", "نہیں", "بس", "بس اتنا ہی", "شکریہ", "نہیں شکریہ"},
     "more": {"yes", "yeah", "yep", "yes please", "sure", "haan", "han", "ji haan", "haan ji", "ji", "हाँ", "हां", "जी हाँ", "ہاں", "جی ہاں", "جی"},
 }
+# Said at ANY time they end the task (no "Anything else?" needed first); "no / thanks / nahi" only count after a question.
+END_ALWAYS = {"end task", "end the task", "end this task", "end it", "that's all", "thats all", "that's it", "thats it", "that is all", "task khatam",
+              "kaam khatam", "khatam", "khatam karo", "task khatam karo", "task end karo", "bas", "bas itna hi", "bas ho gaya", "bas khatam", "i'm done",
+              "im done", "we are done", "we're done", "ho gaya", "ختم", "کام ختم", "بس", "بس اتنا ہی", "बस", "बस इतना ही", "खत्म", "काम खत्म"}
+_END = {_PUNCT.sub(" ", p.casefold()).strip() for p in END_ALWAYS}
 _INDEX = {_PUNCT.sub(" ", p.casefold()).strip(): kind for kind, phrases in PHRASES.items() for p in phrases}
 
 SAYS: dict[str, dict[str, str]] = {
@@ -59,6 +64,14 @@ SAYS: dict[str, dict[str, str]] = {
                     "hi": "मैं इसे वापस नहीं कर सका: {why}"},
     "closed": {"en": "Okay, I'm here if you need me.", "roman_ur": "Theek hai, zaroorat ho to bata dena.", "ur": "ٹھیک ہے، ضرورت ہو تو بتا دینا۔",
                "hi": "ठीक है, ज़रूरत हो तो बता देना।"},
+    "ended": {"en": "Task ended. Anything else?", "roman_ur": "Task khatam. Aur kuch?", "ur": "ٹاسک ختم۔ اور کچھ؟", "hi": "टास्क खत्म। और कुछ?"},
+    "no_task": {"en": "No task is open. What would you like to do?", "roman_ur": "Koi task khula nahi hai. Kya karna hai?",
+                "ur": "کوئی ٹاسک کھلا نہیں ہے۔ کیا کرنا ہے؟", "hi": "कोई टास्क खुला नहीं है। क्या करना है?"},
+    "end_ask": {"en": "Shall I end this task?", "roman_ur": "Kya main yeh task khatam kar doon?", "ur": "کیا میں یہ ٹاسک ختم کر دوں؟", "hi": "क्या मैं यह टास्क खत्म कर दूँ?"},
+    "idle_ended": {"en": "I'll end this task now. Anything else later, just ask.", "roman_ur": "Main yeh task khatam kar raha hoon. Zaroorat ho to bata dena.",
+                   "ur": "میں یہ ٹاسک ختم کر رہا ہوں۔ ضرورت ہو تو بتا دینا۔", "hi": "मैं यह टास्क खत्म कर रहा हूँ। ज़रूरत हो तो बता देना।"},
+    "carry_on": {"en": "Okay, carrying on. What next?", "roman_ur": "Theek hai, jari rakhte hain. Aage kya?", "ur": "ٹھیک ہے، جاری رکھتے ہیں۔ آگے کیا؟",
+                 "hi": "ठीक है, जारी रखते हैं। आगे क्या?"},
     "more": {"en": "Sure, what next?", "roman_ur": "Ji, aur kya karna hai?", "ur": "جی، اور کیا کرنا ہے؟", "hi": "जी, और क्या करना है?"},
 }
 
@@ -68,6 +81,8 @@ def parse(command: str, awaiting_more: bool = False) -> str | None:
     text = _PUNCT.sub(" ", (command or "").casefold()).strip()
     text = _FILLER.sub("", text).strip()
     kind = _INDEX.get(text)
+    if text in _END:
+        return "end"
     if kind in ("close", "more") and not awaiting_more:
         return None
     return kind
@@ -103,12 +118,27 @@ def try_handle(db: Session, task: Task, command: str, registry: ToolRegistry, se
     from ..ai.browser_commands import browser_plan
     from . import executor
     state = sessions.current(db)
-    kind = parse(command, awaiting_more=bool(state and state.awaiting == "anything_else"))
+    kind = parse(command, awaiting_more=bool(state and state.awaiting in ("anything_else", "end_task")))
     if kind is None:
         return None
+    if state and state.awaiting == "end_task" and kind in ("more", "close", "end"):    # the answer to "Shall I end this task?"
+        lang = detect_language(command)
+        if kind == "close":                                                       # "no": the task goes on
+            state.awaiting = None
+            sessions._save(db, state)
+            sessions.touch(db)
+            return _done(db, task, _say("carry_on", lang))
+        sessions.close(db)
+        return _done(db, task, _say("ended", lang))
     if kind == "undo" and browser_plan(command) is not None:
         return None
     lang = detect_language(command)
+    if lang == "en":                       # one Roman Urdu word ("bas", "khatam") has no second marker for the older detector
+        from ..voice.langdetect import detect
+        lang = "roman_ur" if detect(command) == "roman" else "en"
+    if kind == "end":
+        was_open = sessions.close(db)
+        return _done(db, task, _say("ended" if was_open else "no_task", lang))
     if kind == "close":
         sessions.close(db)
         return _done(db, task, _say("closed", lang))

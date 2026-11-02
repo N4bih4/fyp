@@ -719,7 +719,8 @@ def _planner_or_question(db: Session, task: Task, command: str, registry: ToolRe
     lang = reply_language(command, prefs.persona.language)
     planned = None
     if prefs.cloud_answers is True:
-        planned = planner_mode.fallback_plan(command, registry, settings, recent_memory(db, task), lang)
+        from .session_context import planner_view
+        planned = planner_mode.fallback_plan(command, registry, settings, recent_memory(db, task), lang, desktop=planner_view(db))
     if planned is not None:
         routed = conversation_flow.route_by_intent(db, task, planned, command, registry, settings, auto_approve=auto_approve)
         if routed is not None:
@@ -755,6 +756,11 @@ def _start_task(
     spoken_about_the_conversation = session_commands.try_handle(db, task, command, registry, settings)
     if spoken_about_the_conversation is not None:
         return spoken_about_the_conversation   # "repeat that", "undo", "no, that's all": never planned as a command
+    from . import session_context
+    rewritten = session_context.rewrite(db, command)   # "make a folder here" / "go back" inside an open task: the task's own folder
+    if rewritten != command:
+        command, task.command = rewritten, rewritten[:2000]    # the parsers read task.command: what is shown and run is the full command
+        db.commit()
     handled = conversation_flow.try_conversation(db, task, command, registry, settings, auto_approve=auto_approve, before_local=True)
     if handled is not None:
         return handled

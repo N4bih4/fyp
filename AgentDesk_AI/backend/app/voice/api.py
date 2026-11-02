@@ -182,6 +182,23 @@ def task_session(db: Session = Depends(get_db)) -> dict:
     return {"open": True, **state.as_dict()} if state else {"open": False}
 
 
+@router.post("/session/idle")
+def idle_task_session(language: str = "en", db: Session = Depends(get_db)) -> dict:
+    """The page saw two minutes of silence in an open task. First call: the question to speak ("Shall I end this task?"). If the user stayed
+    silent again, the second call ends the task. `open` says whether the session is still open afterwards."""
+    from ..orchestration import session, session_commands
+    from .langdetect import normalise
+    lang = {"roman": "roman_ur"}.get(normalise(language), normalise(language))
+    result, left = session.idle(db)
+    if result == "wait":
+        return {"action": "wait", "text": "", "open": True, "retry_in": left}
+    if result == "ask":
+        return {"action": "ask", "text": session_commands._say("end_ask", lang), "open": True}
+    if result == "ended":
+        return {"action": "ended", "text": session_commands._say("idle_ended", lang), "open": False}
+    return {"action": "none", "text": "", "open": False}
+
+
 @router.post("/session/close")
 def close_task_session(db: Session = Depends(get_db)) -> dict:
     """The user stayed silent or said stop: return to idle."""

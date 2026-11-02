@@ -271,6 +271,9 @@ class ScreenActTool(BaseTool):
     @staticmethod
     def _act(screen: ScreenBackend, rect, box: Box, choice) -> None:
         x, y = box.center[0] + rect[0], box.center[1] + rect[1]     # the centre of the DETECTED box, back in screen coordinates
+        if choice.action in ("click", "double_click", "type"):
+            from .highlight import flash
+            flash((box.rect[0] + rect[0], box.rect[1] + rect[1], box.rect[2] + rect[0], box.rect[3] + rect[1]), box.text)
         if choice.action in ("click", "double_click"):
             screen.click(x, y, double=choice.action == "double_click")
         elif choice.action == "type":

@@ -99,6 +99,81 @@ def youtube_player_plan(raw):
         return Plan(actions=[PlanAction(tool="control_browser", args={"action": "switch", "target": _SITE_WORDS[(m.group(1) or m.group(2))]})])
     if re.fullmatch(r"(?:what(?:'s| is) )?(?:the )?(?:page|tab) title|read (?:me )?(?:the )?(?:page |tab )?title|what page is this|is page ka naam kya hai", text):
         return Plan(actions=[PlanAction(tool="control_browser", args={"action": "read", "target": "active"})])
+    return youtube_extra_plan(text) or web_page_plan(text, raw)
+
+
+_QUALITY = {"144": "tiny", "240": "small", "360": "medium", "480": "large", "720": "hd720", "1080": "hd1080", "1440": "hd1440", "2160": "hd2160", "4k": "hd2160"}
+
+
+def youtube_extra_plan(text):
+    """previous video, theatre, captions, quality, loop, skip the ad, like, subscribe, what is playing. Each names the video / youtube / a clear word."""
+    if re.fullmatch(r"(?:play |go to )?(?:the )?(?:previous|last) video|pichli video(?: chalao| chala do)?|previous video chalao", text):
+        return _bc("previous")
+    m = re.fullmatch(r"(?:turn |switch |put )?(on|off)? ?theat(?:re|er) mode(?: (on|off))?", text) or re.fullmatch(r"(exit|leave) theat(?:re|er) mode", text)
+    if m:
+        word = next((g for g in m.groups() if g), "on")
+        return _bc("theatre", enable=word not in ("off", "exit", "leave"))
+    m = re.fullmatch(r"(?:turn |switch |put )?(on|off) (?:the )?(?:captions|subtitles|closed captions|cc)|(?:captions|subtitles|cc) (on|off)|(?:show|hide) (?:the )?(?:captions|subtitles)", text)
+    if m:
+        word = next((g for g in m.groups() if g), "")
+        enable = word == "on" or (not word and text.startswith("show"))
+        return _bc("captions", enable=enable)
+    m = re.fullmatch(r"(?:set |change |make )?(?:the )?(?:video )?(?:quality|resolution)(?: to)? (auto|\d{3,4}p?|4k|automatic)|(auto|\d{3,4}p?|4k) quality", text) or \
+        re.fullmatch(r"(?:play (?:it |the video )?in|switch to) (\d{3,4})p?(?: quality)?", text)
+    if m:
+        word = next((g for g in m.groups() if g), "auto").rstrip("p")
+        level = "auto" if word in ("auto", "automatic") else _QUALITY.get(word)
+        if level:
+            return _bc("quality", quality=level)
+    if re.fullmatch(r"(?:turn |switch )?(on|off)? ?(?:the )?(?:video )?loop(?: (?:this |the )?video)?(?: (on|off))?|(?:repeat|loop) (?:this|the) video", text):
+        return _bc("loop", enable=not re.search(r"\boff\b", text))
+    if re.fullmatch(r"skip (?:the )?(?:ad|ads|advert|advertisement)|ad skip karo|ad skip kar do", text):
+        return _bc("skip_ad")
+    if re.fullmatch(r"(?:like|thumbs up) (?:this |the )?(?:video|youtube video)|like (?:it|this)|video (?:ko )?like (?:karo|kar do)", text):
+        return _bc("like")
+    if re.fullmatch(r"subscribe(?: to)?(?: this| the)?(?: channel)?|channel (?:ko )?subscribe (?:karo|kar do)", text):
+        return _bc("subscribe")
+    if re.fullmatch(r"what(?:'s| is) (?:playing|this video|this song)(?: on youtube| now)?|which (?:song|video) is this|(?:yeh|ye) kaun sa (?:gana|video) hai|kya chal raha hai", text):
+        return _bc("now_playing")
+    return None
+
+
+def _wc(action, **args):
+    return Plan(actions=[PlanAction(tool="control_browser", args={"action": action, "target": "active", **args})])
+
+
+def web_page_plan(text, raw=None):
+    """The page in front (any website): read it, follow a link by its words, fill a named field, pick a search result, scroll, bookmarks, history, reopen a tab."""
+    src = re.sub(r"\s+", " ", (raw or text).strip().rstrip("۔।.!?"))     # the original capitals: a fill keeps exactly what was said
+    if re.fullmatch(r"read (?:me )?(?:this |the )?(?:web ?)?page|what(?:'s| is) on (?:this|the) page|read (?:the )?page aloud|is page ko parho", text):
+        return _wc("read_page")
+    m = re.fullmatch(r"(?:click|press|tap|open) (?:the )?(?:link|button) (?:called |named |that says |saying )?[\"']?(.{2,80}?)[\"']?", src, re.I)
+    if m:
+        return _wc("click_link", name=m.group(1).strip())
+    m = re.fullmatch(r"(?:fill|type|enter|put) (.{1,300}?) (?:in|into) (?:the )?(.{2,60}?) (?:field|box|bar|input)", src, re.I)
+    if m:
+        return _wc("fill", field=m.group(2).strip(), text=m.group(1).strip().strip("\"'"))
+    m = re.fullmatch(r"(?:fill|set) (?:the )?(.{2,60}?) (?:field|box|bar|input) (?:with|to) (.{1,300})", src, re.I)
+    if m:
+        return _wc("fill", field=m.group(1).strip(), text=m.group(2).strip().strip("\"'"))
+    m = re.fullmatch(r"(?:open|click|go to|select) (?:search )?result (?:number )?(\d{1,2}) (?:on|in) (?:google|bing|duckduckgo|the search page)|(?:open|click) the (\w+) (?:google |bing )?(?:search )?result", text)
+    if m:
+        number = m.group(1) or str(_ORDINALS.get(m.group(2), ""))
+        if number.isdigit() and 1 <= int(number) <= 20:
+            return _wc("web_click_result", index=int(number))
+    if re.fullmatch(r"(?:read|list|what are) (?:me )?(?:the )?(?:google|bing|duckduckgo|web|page) search results", text):
+        return _wc("web_results")
+    m = re.fullmatch(r"scroll (down|up) (?:the|this) (?:web ?)?page|scroll (?:the|this) (?:web ?)?page (down|up)", text)
+    if m:
+        return _wc("web_scroll", amount=1 if "down" in (m.group(1) or m.group(2)) else -1)
+    m = re.fullmatch(r"(?:find|search|look for|open) (?:my )?bookmarks? (?:for |named |called |about )?(.{2,60})", text)
+    if m:
+        return _wc("bookmarks", query=m.group(1).strip())
+    m = re.fullmatch(r"(?:open |find |search )?(?:the )?(?:page|site|website) (?:i had|i visited|from my history|i was on) (?:about |for |on )?(.{2,60})|search (?:my )?history for (.{2,60})", text)
+    if m:
+        return _wc("history", query=(m.group(1) or m.group(2)).strip())
+    if re.fullmatch(r"reopen (?:the )?(?:last )?(?:closed )?tab|open (?:the )?(?:last )?closed tab again|undo close tab", text):
+        return _wc("reopen")
     return None
 
 

@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>Agent X Browser Bridge</title>
+<style>
+  body{font:14px/1.5 system-ui,sans-serif;width:320px;margin:0;padding:14px;color:#172033;background:#f8fafc}
+  h1{font-size:15px;margin:0 0 8px} .row{display:flex;justify-content:space-between;gap:10px;padding:3px 0;border-bottom:1px solid #e2e8f0}
+  .row span:first-child{color:#475569} .ok{color:#047857;font-weight:600} .bad{color:#b45309;font-weight:600}
+  button{margin-top:10px;padding:7px 12px;border:0;border-radius:6px;background:#1d4ed8;color:#fff;font:inherit;cursor:pointer}
+  #err{margin-top:8px;color:#b45309;overflow-wrap:anywhere} a{color:#1d4ed8}
+</style>
+<h1>Agent X Browser Bridge</h1>
+<div class="row"><span>Connection</span><span id="conn">...</span></div>
+<div class="row"><span>Channel</span><span id="via">...</span></div>
+<div class="row"><span>Paired</span><span id="paired">...</span></div>
+<div class="row"><span>Extension version</span><span id="version">...</span></div>
+<div class="row"><span>Browser</span><span id="browser">...</span></div>
+<div class="row"><span>Backend</span><span id="backend">...</span></div>
+<div class="row"><span>Last answer from the app</span><span id="pong">...</span></div>
+<div class="row"><span>Reconnect attempts</span><span id="attempts">...</span></div>
+<div id="err" role="status"></div>
+<button id="reconnect" type="button">Reconnect now</button>
+<p><a id="setup" href="http://127.0.0.1:8000/browser-extension/setup.html" target="_blank" rel="noreferrer">Setup / pairing page</a></p>
+<script src="popup.js"></script>
+</html>

@@ -31,3 +31,8 @@ logs/
 .venv-*/
 dist-release/
 .env.render
+
+# Local intent model: trained files and logs stay on the PC (rebuild with ml/retrain.ps1)
+ml/out/
+ml/*.log
+models/

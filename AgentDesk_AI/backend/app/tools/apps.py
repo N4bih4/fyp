@@ -11,7 +11,7 @@ import webbrowser
 from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Literal
-from urllib.parse import quote_plus, urlencode, urlsplit
+from urllib.parse import parse_qs, quote_plus, urlencode, urlsplit
 
 import httpx
 from pydantic import BaseModel, Field, field_validator
@@ -617,7 +617,7 @@ class OpenUrlTool(BaseTool):
                 if reused_title:
                     return ToolResult(
                         success=True,
-                        output={"url": a.url, "launched": True, "reused_window": reused_title},
+                        output={"url": a.url, "launched": True, "reused_window": reused_title, **self._start_if_video(a.url)},
                     )
         except Exception as exc:  # noqa: BLE001 - report navigation errors clearly
             return ToolResult(success=False, error=f"Could not navigate the existing YouTube window: {exc}")
@@ -627,7 +627,20 @@ class OpenUrlTool(BaseTool):
             return ToolResult(success=False, error=f"Could not open URL: {exc}")
         if not launched:
             return ToolResult(success=False, error="The system reported that no browser could handle the URL")
-        return ToolResult(success=True, output={"url": a.url, "launched": True})
+        return ToolResult(success=True, output={"url": a.url, "launched": True, **self._start_if_video(a.url)})
+
+    @staticmethod
+    def _start_if_video(url: str) -> dict:
+        """A YouTube watch / playlist link was opened: make sure it PLAYS (browsers often block autoplay). Returns what was observed."""
+        parts = urlsplit(url)
+        if not (parts.hostname or "").lower().removeprefix("www.").endswith("youtube.com") or parts.path not in ("/watch", "/playlist"):
+            return {}
+        video_id = (parse_qs(parts.query).get("v") or [""])[0]
+        try:
+            started = _nudge_youtube_playback(video_id)
+        except Exception:  # noqa: BLE001
+            started = False
+        return {"is_video": True, "playback_started": started}
 
     def _open_and_find_tab(self, url: str, wait_seconds: float = 6.0) -> ToolResult:
         from ..browser_bridge import bridge
@@ -665,6 +678,10 @@ class OpenUrlTool(BaseTool):
                            {"tab_id": out["tab_id"], "tabs_seen": len(ids)})
         url = out.get("url") or OpenUrlArgs.model_validate(args.model_dump()).url
         seen, windows = window_check(title_contains=_site_title_hints(url), processes=BROWSER_PROCESSES)
+        if out.get("is_video"):
+            started = bool(out.get("playback_started"))
+            return verdict([("browser window shows the site", seen), ("the video is playing", started)], {"url": url, **windows},
+                           details=None if started else "The page opened but the video did not start (browser autoplay rules?). Say resume or press Play once.")
         return verdict([("browser window shows the site", seen)], {"url": url, **windows})
 
 
@@ -751,7 +768,13 @@ def _nudge_youtube_playback(video_id: str, wait_seconds: float = 4.0) -> bool:
     """If the browser extension is connected, press play on the new tab (autoplay is often blocked)."""
     from ..browser_bridge import bridge
 
-    if not (bridge.clients and bridge.supports("resume")):
+    if not bridge.clients:
+        from . import yt_keys
+        try:
+            return bool(yt_keys.ensure_playing().get("playing"))      # no extension: Windows' media session, then the K key once
+        except Exception:  # noqa: BLE001
+            return False
+    if not bridge.supports("resume"):
         return False
     deadline = time.monotonic() + wait_seconds
     while time.monotonic() < deadline:
@@ -764,8 +787,65 @@ def _nudge_youtube_playback(video_id: str, wait_seconds: float = 4.0) -> bool:
     return False
 
 
+_extension_note = ""    # why the last "play through the extension" attempt fell back to the older way (shown in the result)
+
+
+def _helper_off_line(note: str, said: str) -> str | None:
+    """When the browser helper (extension) could not be used, say so plainly and name the slower method that ran."""
+    return f"{said} The browser helper is off, so I used a slower method." if note.startswith("the browser extension is not connected") else None
+
+
+def _play_through_extension(query: str, kind: str) -> dict | None:
+    global _extension_note
+    _extension_note = ""
+    return _play_through_extension_inner(query, kind)
+
+
+def _play_through_extension_inner(query: str, kind: str) -> dict | None:
+    global _extension_note
+    """Search YouTube in the connected browser, click the first real result (no ad, no Short, no channel) and wait until the player's clock moves.
+    Returns the output for the tool, or None when the extension cannot do it (the caller then uses the older way and says so)."""
+    from ..browser_bridge import bridge
+
+    if not (bridge.clients and bridge.supports("click_result") and bridge.supports("open")):
+        _extension_note = "the browser extension is not connected (or older than 1.2)"
+        return None
+    params = {"search_query": query}
+    if kind == "playlist":
+        params["sp"] = "EgIQAw%3D%3D"      # YouTube's "Playlist" filter
+    url = "https://www.youtube.com/results?" + urlencode(params, safe="%")
+    opened = bridge.request("open", url=url)
+    if not opened.get("success") or not isinstance(opened.get("tab_id"), int):
+        _extension_note = "the extension could not open the results page: " + str(opened.get("error") or "no answer")[:100]
+        return None
+    tab_id = opened["tab_id"]
+    deadline = time.monotonic() + 75     # YouTube can take half a minute to draw its results on a slow connection
+    found, tab_url = None, ""
+    while time.monotonic() < deadline:
+        tabs = [t for t in bridge.request("inspect").get("tabs", []) if isinstance(t, dict) and t.get("id") == tab_id]
+        tab_url = str(tabs[0].get("url", "")) if tabs else ""
+        if "/results" in tab_url:
+            reply = bridge.request("results", tab_id=tab_id, expected_url=tab_url, kind=kind)
+            if reply.get("success") and reply.get("results"):
+                found = reply
+                break
+        time.sleep(0.8)
+    if not found:
+        _extension_note = "no results were readable on the page within 75 s (slow connection, a consent page, or YouTube changed its markup)"
+        return None
+    clicked = bridge.request("click_result", tab_id=tab_id, expected_url=tab_url, index=1, kind=kind, wait=75)
+    if not clicked.get("success"):
+        _extension_note = "clicking the first result failed: " + str(clicked.get("error") or "no answer")[:100]
+        return None
+    return {"query": query, "title": str(clicked.get("clicked_title") or found["results"][0])[:120], "url": str(clicked.get("url") or ""),
+            "video_selected": True, "via": "extension", "kind": kind, "tab_id": tab_id,
+            "playback_confirmed": bool(clicked.get("playing")), "page_state": {k: clicked.get(k) for k in ("video_id", "time", "paused", "title")},
+            "message": "Played the first real result in the browser." if clicked.get("playing") else "Opened the first real result; the player did not start by itself."}
+
+
 class PlayYouTubeVideoArgs(BaseModel):
     query: str = Field(min_length=2, max_length=300, description="Specific song/video title and useful details")
+    kind: Literal["video", "playlist"] = Field(default="video", description="video (default) or a playlist / mix")
 
     @field_validator("query")
     @classmethod
@@ -784,6 +864,8 @@ class PlayYouTubeVideoTool(BaseTool):
         "If matching is ambiguous, show search results instead. Playback may be blocked by browser policy."
     )
     risk_level = RiskLevel.LOW
+    isolation = "thread"  # needs the extension socket held by the server process: in a worker process the page was only opened, never played
+    timeout_seconds = 150
     args_schema = PlayYouTubeVideoArgs
 
     def execute(self, args: BaseModel) -> ToolResult:
@@ -792,6 +874,12 @@ class PlayYouTubeVideoTool(BaseTool):
         except Exception as exc:  # noqa: BLE001 - invalid input is a normal tool failure
             return ToolResult(success=False, error=f"Invalid YouTube play request: {exc}")
         search_url = f"https://www.youtube.com/results?{urlencode({'search_query': a.query})}"
+        try:
+            via_extension = _play_through_extension(a.query, a.kind)
+        except Exception:  # noqa: BLE001 - the extension is optional; the older way below still works
+            via_extension = None
+        if via_extension is not None:
+            return ToolResult(success=True, output=via_extension)
         try:
             match = _find_youtube_video(a.query)
         except ValueError as exc:
@@ -829,6 +917,8 @@ class PlayYouTubeVideoTool(BaseTool):
                     "results_url": search_url,
                     "video_selected": False,
                     "message": "No single confident video match; opened YouTube results for you to choose.",
+                    "extension_note": _extension_note,
+                    **({"spoken": _helper_off_line(_extension_note, "I opened the YouTube results.")} if _helper_off_line(_extension_note, "x") else {}),
                 },
             )
 
@@ -853,6 +943,8 @@ class PlayYouTubeVideoTool(BaseTool):
                 "playback_confirmed": False,
                 "play_requested_via_extension": nudged,
                 "message": "Opened the closest matching video; playback is checked next.",
+                "extension_note": _extension_note,
+                **({"spoken": _helper_off_line(_extension_note, f"Playing {title[:60]}.")} if _helper_off_line(_extension_note, "x") else {}),
             },
         )
 
@@ -860,6 +952,14 @@ class PlayYouTubeVideoTool(BaseTool):
         """Search results: the YouTube window is enough. A chosen video: Windows must report it playing."""
         if not result.success:
             return failed_result(result)
+        if result.output.get("via") == "extension":
+            # The page itself reported the player running (its clock moved); a title in the browser window is the second witness.
+            words = [w.casefold() for w in re.findall(r"\w{4,}", str(result.output.get("title") or ""))][:3]
+            seen, windows = window_check(title_contains=words or ["youtube"], processes=BROWSER_PROCESSES)
+            playing = bool(result.output.get("playback_confirmed"))
+            # The page itself is the witness (its clock moved); the window title is extra evidence only (a hidden or test browser has no window to read).
+            return verdict([("the player's clock is moving", playing)], {"page": result.output.get("page_state"), "window_title_seen": seen, **windows},
+                           details=None if playing else "The video opened but did not start by itself (autoplay may be blocked). Press Play once.")
         if not result.output.get("video_selected"):
             seen, windows = window_check(title_contains=["youtube"], processes=BROWSER_PROCESSES)
             return verdict([("browser window shows YouTube results", seen)], {"url": result.output.get("results_url"), **windows})

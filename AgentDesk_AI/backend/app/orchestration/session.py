@@ -19,9 +19,11 @@ from sqlalchemy.orm import Session
 from ..models import Preference, Task, TaskStatus, utcnow
 
 KEY = "task_session"
-IDLE_SECONDS = 90
+IDLE_SECONDS = 600       # hard expiry (the window was closed or the page crashed); the soft limit below is what the user meets
+IDLE_ASK_SECONDS = 120   # two minutes without a word: the assistant asks "Shall I end this task?"
 MAX_STEPS = 20
 TERMINAL = {TaskStatus.COMPLETED, TaskStatus.PARTIALLY_COMPLETED, TaskStatus.FAILED, TaskStatus.REJECTED, TaskStatus.CANCELLED}
+_FOLDER_TOOLS = {"open_folder": "path", "list_folder": "path", "create_folder": "path"}
 _APP_TOOLS = {"open_application": "app_name", "open_url": "url", "open_folder": "path", "open_file": "path", "control_browser": "target"}
 
 
@@ -33,11 +35,14 @@ class TaskSession:
     steps_done: list[dict] = field(default_factory=list)
     current_app: str | None = None
     open_items: dict = field(default_factory=dict)
-    awaiting: str | None = None          # "anything_else" | None
+    awaiting: str | None = None          # "anything_else" | "end_task" | None
     last_task_id: str | None = None
+    current_folder: str | None = None    # the folder the last command opened / created in / listed: "make a folder here" means this one
 
     def as_dict(self) -> dict:
-        return asdict(self)
+        data = asdict(self)
+        data["idle_ask_in"] = max(0, IDLE_ASK_SECONDS - int((_now() - _parse(self.last_active)).total_seconds()))
+        return data
 
 
 def _now() -> datetime:
@@ -66,7 +71,7 @@ def current(db: Session) -> TaskSession | None:
 
 def _save(db: Session, session: TaskSession | None) -> None:
     row = db.get(Preference, KEY) or Preference(key=KEY)
-    row.value_json = json.dumps(session.as_dict() if session else {})
+    row.value_json = json.dumps(asdict(session) if session else {})
     db.add(row)
     db.commit()
 
@@ -76,6 +81,29 @@ def close(db: Session) -> bool:
     was_open = current(db) is not None
     _save(db, None)
     return was_open
+
+
+ASK_WAIT_SECONDS = 12     # after "Shall I end this task?" the user has this long to answer
+
+
+def idle(db: Session) -> tuple[str | None, int]:
+    """The page reports silence; the SERVER decides whether it is long enough (its own clock, not the page's).
+    ("wait", seconds_left) = not yet; ("ask", 0) = the session now asks "Shall I end this task?"; ("ended", 0) = it asked, nobody answered, closed;
+    (None, 0) = no session is open."""
+    session = current(db)
+    if session is None:
+        return None, 0
+    elapsed = int((_now() - _parse(session.last_active)).total_seconds())
+    needed = ASK_WAIT_SECONDS if session.awaiting == "end_task" else IDLE_ASK_SECONDS
+    if elapsed < needed:
+        return "wait", needed - elapsed
+    if session.awaiting == "end_task":
+        _save(db, None)
+        return "ended", 0
+    session.awaiting = "end_task"
+    session.last_active = _now().isoformat()
+    _save(db, session)
+    return "ask", 0
 
 
 def touch(db: Session) -> None:
@@ -98,6 +126,20 @@ def _target_of(task: Task) -> str | None:
     return None
 
 
+def _folder_of(task: Task) -> str | None:
+    """The folder a verified action worked in (a folder it opened or listed; for a new folder, the new folder itself)."""
+    for action in reversed(list(task.actions)):
+        key = _FOLDER_TOOLS.get(action.tool_name)
+        if key and action.status == "succeeded":
+            try:
+                value = json.loads(action.args_json or "{}").get(key)
+            except ValueError:
+                continue
+            if value:
+                return str(value)[:260]
+    return None
+
+
 def observe(db: Session, task: Task, *, ask_more: bool | None = None) -> TaskSession:
     """Update the session after a task changed state. Opens one if none is open."""
     from ..preferences import get_preferences
@@ -117,6 +159,9 @@ def observe(db: Session, task: Task, *, ask_more: bool | None = None) -> TaskSes
     target = _target_of(task)
     if target:
         session.current_app = target
+    folder = _folder_of(task)
+    if folder:
+        session.current_folder = folder
     session.last_task_id = task.id
     session.last_active = _now().isoformat()
     if task.status in (TaskStatus.AWAITING_INPUT, TaskStatus.AWAITING_APPROVAL):

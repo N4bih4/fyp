@@ -1,4 +1,4 @@
-import type { MutableRefObject } from 'react';
+import { useRef, type MutableRefObject } from 'react';
 import { authMessage, hasApiToken, voiceApi, type Preferences } from '../api';
 import { afterInterruption, isSpeechEcho } from '../voice';
 import { WhisperRecognition } from '../speech/whisperRecognition';
@@ -18,6 +18,7 @@ interface Params {
 
 /** Microphone side of the voice loop: start/stop listening, queue spoken commands, handle recogniser events. */
 export function useVoiceInput({ voice: v, prefs, voiceLanguage, setCommand, setBanner, submittingRef, runCommandRef }: Params) {
+  const idleTimerRef = useRef<number | null>(null);
   const stopHandsFree = (message: string) => {
     const queuedCount = v.voiceQueueRef.current.length;
     v.handsFreeRef.current = false;
@@ -45,7 +46,22 @@ export function useVoiceInput({ voice: v, prefs, voiceLanguage, setCommand, setB
     );
   };
 
+  /** After silence the server (its own clock) says whether to wait, to ask "Shall I end this task?" (then listen 15 s), or that the task ended. */
+  const scheduleIdle = (afterMs: number) => {
+    if (idleTimerRef.current !== null) window.clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = window.setTimeout(async () => {
+      idleTimerRef.current = null;
+      try {
+        const r = await voiceApi.sessionIdle(voiceLanguage);
+        if (r.action === 'wait') scheduleIdle(Math.max(1000, (r.retry_in ?? 10) * 1000 + 500));
+        else if (r.action === 'ask') { await v.playerRef.current?.speak(r.text); beginFollowUp(15000); }
+        else if (r.action === 'ended') { await v.playerRef.current?.speak(r.text); }
+      } catch { /* the page keeps working without it */ }
+    }, afterMs);
+  };
+
   const beginFollowUp = (ms?: number) => {
+    if (idleTimerRef.current !== null) { window.clearTimeout(idleTimerRef.current); idleTimerRef.current = null; }
     v.voiceTaskActiveRef.current = false;
     v.voiceWaitingForTaskRef.current = false;
     if (v.recognitionRef.current) return;
@@ -60,7 +76,7 @@ export function useVoiceInput({ voice: v, prefs, voiceLanguage, setCommand, setB
       v.recognitionRef.current?.abort();
       v.recognitionRef.current = null;
       v.setListening(false);
-      void voiceApi.closeSession();   // silence ends the conversation: back to idle
+      scheduleIdle(1000);   // the microphone closes, the TASK stays open: only two minutes of silence (asked first) or "end task" ends it
     }, ms ?? v.followUpMs);
   };
 

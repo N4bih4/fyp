@@ -12,7 +12,7 @@ _ROMAN = {
     "dikhao", "dikha", "batao", "bata", "sunao", "suna", "mujhe", "mujhay", "mera", "meri", "mere", "apna", "apni", "ko", "ka", "ki", "ke", "pe",
     "mein", "hai", "hain", "hoon", "tha", "nahi", "nahin", "haan", "han", "aur", "ya", "kya", "kaise", "kahan", "kab", "yeh", "ye", "woh", "wo",
     "isay", "isse", "usay", "gana", "gaana", "gane", "awaz", "aawaz", "kam", "zyada", "thora", "thoda", "barhao", "gharao", "dobara", "phir", "abhi", "bas",
-    "shukriya", "ruko", "agla", "pichla", "agle", "wala", "wali", "naam", "naya", "purana", "maine", "maene", "bol", "bolo", "likho", "padho", "dhoondo",
+    "shukriya", "ruko", "khatam", "agla", "pichla", "agle", "wala", "wali", "naam", "naya", "purana", "maine", "maene", "bol", "bolo", "likho", "padho", "dhoondo",
 }
 _EN = {"the", "a", "an", "and", "or", "to", "of", "in", "on", "for", "with", "is", "are", "can", "you", "please", "play", "open", "close", "i", "my", "me", "it",
        "that", "this", "not", "only", "also", "what", "how", "say", "said", "want", "make", "create", "show", "send", "find", "search", "music", "file", "folder"}

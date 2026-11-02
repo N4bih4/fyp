@@ -55,7 +55,8 @@ def test_conversation_phrases(text, kind):
     assert session_commands.parse(text) == kind
 
 
-@pytest.mark.parametrize("text", ["no", "that's all", "thanks", "bas shukriya", "yes", "haan", "शुक्रिया", "نہیں"])
+# "that's all" / "bas" now end a task at any time (F3, tests/test_f3_task_sessions.py); the polite no / thanks still need a question first
+@pytest.mark.parametrize("text", ["no", "thanks", "bas shukriya", "yes", "haan", "शुक्रिया", "نہیں"])
 def test_closing_words_only_count_after_anything_else(text):
     assert session_commands.parse(text) is None
     assert session_commands.parse(text, awaiting_more=True) in ("close", "more")

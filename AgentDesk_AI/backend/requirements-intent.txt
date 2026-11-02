@@ -1,0 +1,4 @@
+# Optional: run the local intent model (models/intent/) inside the app. Not needed by the cloud brain or by any other feature.
+numpy<2
+onnxruntime==1.20.1
+tokenizers>=0.20

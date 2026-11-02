@@ -7,6 +7,7 @@ import { Onboarding } from './components/Onboarding';
 import { Rail, type View } from './components/Rail';
 import { TaskHistory } from './components/TaskHistory';
 import { TaskPanel } from './components/TaskPanel';
+import { SessionCard } from './components/SessionCard';
 import { CharactersPage } from './pages/CharactersPage';
 import { MailDraftCard } from './components/MailDraftCard';
 import { MemoryPage } from './pages/MemoryPage';
@@ -183,6 +184,7 @@ export default function App() {
             onStopSpeaking={input.stopSpeaking}
             inputRef={commandInputRef}
           />
+          <SessionCard activeTask={activeTask} />
           <MailDraftCard activeTask={activeTask} />
           <TaskPanel
             task={activeTask}

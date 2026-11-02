@@ -1,0 +1,463 @@
+{
+ "summary": {
+  "browser": "msedge",
+  "commands": 23,
+  "passed": 19,
+  "pct": 82.6,
+  "by_bucket": {
+   "youtube": "19/23"
+  }
+ },
+ "started": "2026-11-02T10:26:18.350Z",
+ "finished": "2026-11-02T10:26:57.582Z",
+ "rows": [
+  {
+   "n": 1,
+   "bucket": "youtube",
+   "command": "play atif aslam songs on youtube",
+   "expect": "completed",
+   "status": "failed",
+   "verified": false,
+   "tool": "play_youtube_video",
+   "args": {
+    "query": "atif aslam songs"
+   },
+   "ok": false,
+   "seconds": 20.4,
+   "spoken": "Played the first real result in the browser.",
+   "extension_note": null,
+   "error": "Verification failed: the player's clock is moving: True; browser window shows the video: False",
+   "note": ""
+  },
+  {
+   "n": 2,
+   "bucket": "youtube",
+   "command": "what's playing",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "now_playing",
+    "target": "youtube"
+   },
+   "ok": true,
+   "seconds": 0.1,
+   "spoken": "Best of ATIF ASLAM Songs | Bollywood Romantic Love Songs | Audio Jukebox | Hindi, by Best Of Atif Aslam.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 3,
+   "bucket": "youtube",
+   "command": "pause the video",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "pause",
+    "target": "youtube"
+   },
+   "ok": true,
+   "seconds": 0,
+   "spoken": "",
+   "extension_note": null,
+   "error": "YouTube video pause kar di.",
+   "note": ""
+  },
+  {
+   "n": 4,
+   "bucket": "youtube",
+   "command": "resume the video",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "resume",
+    "target": "youtube"
+   },
+   "ok": true,
+   "seconds": 2.4,
+   "spoken": "",
+   "extension_note": null,
+   "error": "YouTube video resume kar di.",
+   "note": ""
+  },
+  {
+   "n": 5,
+   "bucket": "youtube",
+   "command": "skip 10 seconds",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "seek",
+    "target": "youtube",
+    "seconds": 10
+   },
+   "ok": true,
+   "seconds": 0.3,
+   "spoken": "At 0:13.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 6,
+   "bucket": "youtube",
+   "command": "rewind 5 seconds",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "seek",
+    "target": "youtube",
+    "seconds": -5
+   },
+   "ok": true,
+   "seconds": 0.3,
+   "spoken": "At 0:08.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 7,
+   "bucket": "youtube",
+   "command": "speed 1.5",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "speed",
+    "target": "youtube",
+    "rate": 1.5
+   },
+   "ok": true,
+   "seconds": 0.1,
+   "spoken": "Speed is 1.5x.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 8,
+   "bucket": "youtube",
+   "command": "normal speed",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "speed",
+    "target": "youtube",
+    "rate": 1
+   },
+   "ok": true,
+   "seconds": 0.1,
+   "spoken": "Speed is 1x.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 9,
+   "bucket": "youtube",
+   "command": "youtube volume 40",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "volume",
+    "target": "youtube",
+    "level": 40
+   },
+   "ok": true,
+   "seconds": 0.1,
+   "spoken": "Video volume is 40 percent.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 10,
+   "bucket": "youtube",
+   "command": "mute the video",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "mute",
+    "target": "youtube"
+   },
+   "ok": true,
+   "seconds": 0.1,
+   "spoken": "The video is muted.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 11,
+   "bucket": "youtube",
+   "command": "unmute the video",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "unmute",
+    "target": "youtube"
+   },
+   "ok": true,
+   "seconds": 0.1,
+   "spoken": "The video is unmuted.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 12,
+   "bucket": "youtube",
+   "command": "theatre mode",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "theatre",
+    "target": "youtube",
+    "enable": true
+   },
+   "ok": true,
+   "seconds": 0.5,
+   "spoken": "Theatre is on.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 13,
+   "bucket": "youtube",
+   "command": "turn off theater mode",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "theatre",
+    "target": "youtube",
+    "enable": false
+   },
+   "ok": true,
+   "seconds": 0.5,
+   "spoken": "Theatre is off.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 14,
+   "bucket": "youtube",
+   "command": "turn on captions",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "captions",
+    "target": "youtube",
+    "enable": true
+   },
+   "ok": true,
+   "seconds": 0.1,
+   "spoken": "Captions is on.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 15,
+   "bucket": "youtube",
+   "command": "turn off captions",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "captions",
+    "target": "youtube",
+    "enable": false
+   },
+   "ok": true,
+   "seconds": 0.5,
+   "spoken": "Captions is off.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 16,
+   "bucket": "youtube",
+   "command": "set quality to 480p",
+   "expect": "completed",
+   "status": "failed",
+   "verified": false,
+   "tool": "control_browser",
+   "args": {
+    "action": "quality",
+    "target": "youtube",
+    "quality": "large"
+   },
+   "ok": false,
+   "seconds": 0.1,
+   "spoken": null,
+   "extension_note": null,
+   "error": "The player does not offer quality levels here.",
+   "note": ""
+  },
+  {
+   "n": 17,
+   "bucket": "youtube",
+   "command": "quality auto",
+   "expect": "completed",
+   "status": "failed",
+   "verified": false,
+   "tool": "control_browser",
+   "args": {
+    "action": "quality",
+    "target": "youtube",
+    "quality": "auto"
+   },
+   "ok": false,
+   "seconds": 0,
+   "spoken": null,
+   "extension_note": null,
+   "error": "The player does not offer quality levels here.",
+   "note": ""
+  },
+  {
+   "n": 18,
+   "bucket": "youtube",
+   "command": "loop this video",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "loop",
+    "target": "youtube",
+    "enable": true
+   },
+   "ok": true,
+   "seconds": 0.1,
+   "spoken": "Loop is on.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 19,
+   "bucket": "youtube",
+   "command": "turn off loop",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "loop",
+    "target": "youtube",
+    "enable": false
+   },
+   "ok": true,
+   "seconds": 0.1,
+   "spoken": "Loop is off.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 20,
+   "bucket": "youtube",
+   "command": "like this video",
+   "expect": "refused",
+   "status": "failed",
+   "verified": false,
+   "tool": "control_browser",
+   "args": {
+    "action": "like",
+    "target": "youtube"
+   },
+   "ok": true,
+   "seconds": 0.7,
+   "spoken": null,
+   "extension_note": null,
+   "error": "YouTube did not accept the like (not signed in? it then asks you to sign in).",
+   "note": "the test profile is signed out: YouTube asks to sign in, so it must NOT report liked"
+  },
+  {
+   "n": 21,
+   "bucket": "youtube",
+   "command": "next video",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "next",
+    "target": "youtube"
+   },
+   "ok": true,
+   "seconds": 0.3,
+   "spoken": "Playing: Best of ATIF ASLAM Songs | Bollywood Romantic Love Songs | Audio Jukeb.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 22,
+   "bucket": "youtube",
+   "command": "previous video",
+   "expect": "completed",
+   "status": "failed",
+   "verified": false,
+   "tool": "control_browser",
+   "args": {
+    "action": "previous",
+    "target": "youtube"
+   },
+   "ok": false,
+   "seconds": 5.6,
+   "spoken": null,
+   "extension_note": null,
+   "error": "There is no previous video to go back to.",
+   "note": ""
+  },
+  {
+   "n": 23,
+   "bucket": "youtube",
+   "command": "search youtube for coke studio",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "web_search",
+   "args": {
+    "query": "youtube for coke studio"
+   },
+   "ok": true,
+   "seconds": 0.8,
+   "spoken": null,
+   "extension_note": null,
+   "error": "Kaam complete: web search.",
+   "note": ""
+  }
+ ]
+}

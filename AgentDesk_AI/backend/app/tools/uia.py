@@ -299,6 +299,9 @@ class UiActTool(BaseTool):
                                    "title_before": before.window.title}
             if control is not None:
                 out["control"] = {"name": control.name, "type": control.type, "id": control.id}
+            if control is not None and a.action in ("click", "type", "select"):
+                from .highlight import flash
+                flash(control.rect, control.name)      # the target is outlined for 0.3 s before it is touched
             if a.action == "click":
                 backend.click(window, control)
             elif a.action == "type":

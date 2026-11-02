@@ -74,7 +74,7 @@ def test_the_planner_is_asked_with_the_last_turns_before_giving_up(db, registry,
     first = _run(db, registry, settings, "open youtube")
     seen = {}
 
-    def fake(command, registry_, settings_, memory, language=None):
+    def fake(command, registry_, settings_, memory, language=None, desktop=None):
         seen["command"], seen["turns"], seen["language"] = command, [t.command for t in memory.turns], language
         return Plan(actions=[PlanAction(tool="play_youtube_video", args={"query": "popular songs"})], note="Playing.")
     monkeypatch.setattr(planner_mode, "fallback_plan", fake)
