@@ -58,6 +58,9 @@ async def lifespan(app: FastAPI):
     warm_sapi()  # keep the Windows voice loaded: each sentence then takes ~50 ms instead of ~900 ms
     from .search import budget as _budget
     threading.Thread(target=_budget.warm, daemon=True).start()  # tokenizer download (first run only)
+    if os.environ.get("AGENTDESK_LOCK_WATCHER", "1") != "0" and "PYTEST_CURRENT_TEST" not in os.environ and os.name == "nt":
+        from .tools.device import lock_watcher
+        lock_watcher.start()   # notices lock -> unlock, so the page can say "welcome back" (the PC itself can never be unlocked by an app)
     if os.environ.get("AGENTDESK_ENTITY_INDEX", "1") != "0":  # (the same switch keeps tests off the network)
         from .ai import warm
         warm.start()

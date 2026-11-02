@@ -72,6 +72,9 @@ TRIGGERS: dict[str, str] = {
     "open_terminal": r"terminal|command prompt|cmd\b|powershell|console|shell|ٹرمینل|کمانڈ پرامپٹ|टर्मिनल|कमांड प्रॉम्प्ट",
     "run_terminal_command": r"terminal|command prompt|cmd\b|powershell|shell|console|\bgit\b|pytest|npm|pip\b|python|run (?:the |my )?tests?|dir\b|"
                             r"\bcd\b|go to (?:the )?.+ folder|list (?:the )?files|run (?:a |the )?command|ٹرمینل|कमांड|ٹیسٹ|टेस्ट|टर्मिनल",
+    "device_control": r"lock|sleep|restart|reboot|shut ?down|power|awake|battery|charging|airplane|aeroplane|flight mode|do not disturb|dnd|night ?light|unlock|"
+                      r"cancel|لاک|ری ?اسٹارٹ|بیٹری|लॉक|रीस्टार्ट|बैटरी",
+    "explorer_view": r"sort|view|details|icons|tiles|hidden|properties|search (?:this folder|here)|file explorer|explorer|ترتیب|छिपी|क्रमबद्ध",
     "screen_act": r"on (?:the )?screen|look at|can you see|what(?:'s| is) (?:on )?(?:the )?screen|visible|canvas|game|doesn'?t respond|isn'?t responding|"
                   r"no accessibility|screen par|screen pe|سکرین|اسکرین|स्क्रीन|dekho|dekh ke|dekh kar",
     "compose_email": r"e-?mail|mail|compose|draft|ای ?میل|ईमेल|@\w",

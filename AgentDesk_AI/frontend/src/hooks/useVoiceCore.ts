@@ -61,6 +61,15 @@ export function useVoiceCore({ prefs, config, voiceLanguage }: Params) {
     humour: prefs?.persona.humour ?? 50,
   });
 
+  // After the PC was locked for a while and unlocked, the server has one "welcome back" line waiting: ask now and then, speak it once.
+  useEffect(() => {
+    if (!prefs?.onboarded || !speechReady || prefs.persona.speak_replies === false || prefs.welcome_back === false) return;
+    const timer = window.setInterval(() => {
+      void voiceApi.welcome().then((w) => (w.text ? playerRef.current?.speak(w.text) : undefined)).catch(() => undefined);
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [prefs?.onboarded, prefs?.welcome_back, speechReady]);
+
   // Optional daily greeting: once per calendar day, only when the server voice is on and the user finished onboarding.
   useEffect(() => {
     if (!prefs?.onboarded || !prefs.daily_greeting || !speechReady || prefs.persona.speak_replies === false) return;

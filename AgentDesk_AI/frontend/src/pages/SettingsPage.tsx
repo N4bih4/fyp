@@ -175,6 +175,11 @@ export function SettingsPage({ prefs, config, usage, onSave }: SettingsPageProps
           <span>Let the assistant look at app windows. <span className="block text-slate-500">Only for apps it cannot read otherwise (games, custom-drawn programs). A picture of that one window goes to the cloud AI, so it also needs the cloud setting above. Shells and password managers are never looked at.</span></span>
         </label>
         <label className="mt-3 flex items-start gap-2 text-sm">
+          <input type="checkbox" className="mt-1" checked={prefs.welcome_back !== false} data-testid="welcome-back"
+            onChange={(e) => void save({ welcome_back: e.target.checked }, 'Saved.')} />
+          <span>Say "welcome back" when I unlock the PC. <span className="block text-slate-500">Windows cannot be unlocked by any app; this only notices that you did, after the PC was locked for a while.</span></span>
+        </label>
+        <label className="mt-3 flex items-start gap-2 text-sm">
           <input type="checkbox" className="mt-1" checked={prefs.terminal_window !== false} data-testid="terminal-window"
             onChange={(e) => void save({ terminal_window: e.target.checked }, 'Saved.')} />
           <span>Show a live terminal window when it runs commands. <span className="block text-slate-500">Off: commands still run and are read back, just without the window.</span></span>

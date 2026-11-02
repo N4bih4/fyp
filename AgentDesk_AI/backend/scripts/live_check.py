@@ -255,6 +255,26 @@ def p_screen_act_read(env: Env) -> Outcome:
     return judge(r, v, bool((r.output or {}).get("answer")), f"answer={_short((r.output or {}).get('answer'), 80)}")
 
 
+def p_device_battery(env: Env) -> Outcome:
+    """device_control in its read-only form: the battery (never locks, sleeps, restarts or changes a mode)."""
+    r, v = env.run("device_control", {"action": "battery"})
+    if not r.success and "no battery" in str(r.error):
+        return Outcome(BLOCKED, "this PC has no battery")
+    if not IS_WINDOWS and not r.success:
+        return Outcome(BLOCKED, f"not Windows: {_short(r.error, 100)}")
+    return judge(r, v, bool((r.output or {}).get("percent") is not None), f"battery={(r.output or {}).get('percent')}")
+
+
+def p_explorer_view(env: Env) -> Outcome:
+    """explorer_view: the details view of the front File Explorer window (BLOCKED when none is open; it changes nothing else)."""
+    r, v = env.run("explorer_view", {"action": "view", "mode": "details"})
+    if not r.success and "No File Explorer window" in str(r.error):
+        return Outcome(BLOCKED, "no File Explorer window is open")
+    if not IS_WINDOWS and not r.success:
+        return Outcome(BLOCKED, f"not Windows: {_short(r.error, 100)}")
+    return judge(r, v, bool((r.output or {}).get("view_now")), f"view={(r.output or {}).get('view_now')}")
+
+
 def p_ui_act_read(env: Env) -> Outcome:
     """ui_act in its read-only form: reads the first named control of the front window (never clicks, types or scrolls)."""
     listed, _ = env.run("ui_inspect", {})
@@ -552,6 +572,8 @@ PROBES: list[Probe] = [
     Probe("ui_inspect", "read", p_ui_inspect),
     Probe("ui_act", "gui", p_ui_act_read),
     Probe("screen_act", "gui", p_screen_act_read),
+    Probe("device_control", "gui", p_device_battery),
+    Probe("explorer_view", "gui", p_explorer_view),
     Probe("run_terminal_command", "read", p_terminal_read),
     Probe("open_terminal", "gui", p_open_terminal),
     Probe("send_email", "read", p_send_email_refuses),

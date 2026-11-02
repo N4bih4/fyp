@@ -79,6 +79,7 @@ class Preferences(BaseModel):
     speech_volume: int = Field(default=100, ge=0, le=100)
     cloud_answers: bool | None = None             # None = not asked yet; True = questions/web answers may use the cloud AI
     screen_vision: bool = True                    # layer 3: may look at a window (picture to the cloud AI) when UI Automation sees nothing; still needs cloud_answers
+    welcome_back: bool = True                     # say "welcome back" when the PC is unlocked after a while
     terminal_window: bool = True                  # show the live PowerShell window while terminal commands run
     daily_greeting: bool = False                  # speak a greeting the first time the app opens each day
     conversation_cutoff: str | None = None   # ISO time; older turns are not used as memory
@@ -103,6 +104,7 @@ class PreferencesUpdate(BaseModel):
     cloud_answers: bool | None = None
     screen_vision: bool | None = None
     terminal_window: bool | None = None
+    welcome_back: bool | None = None
 
 
 def get_preferences(db: Session) -> Preferences:

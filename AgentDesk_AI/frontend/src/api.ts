@@ -160,6 +160,7 @@ export interface Preferences {
   daily_greeting: boolean;
   cloud_answers: boolean | null;
   screen_vision?: boolean;
+  welcome_back?: boolean;
   terminal_window?: boolean;
   conversation_cutoff?: string | null;
 }
@@ -369,6 +370,7 @@ export const voiceApi = {
     return { blob: await res.blob(), engine: res.headers.get('X-TTS-Engine') ?? '' };
   },
   /** The phrase to speak. A task yields its closing line ("Done" only if verified); a tool yields the acknowledgement. */
+  welcome: async () => (await (await voiceFetch('/voice/welcome', { method: 'GET' })).json()) as { text: string },
   greeting: async () => (await (await voiceFetch('/voice/greeting', { method: 'GET' })).json()) as { enabled: boolean; text: string },
   catalog: async () => (await (await voiceFetch('/voice/catalog', { method: 'GET' })).json()) as Catalog,
   line: async (body: { task?: TaskOut; tool?: string; args?: Record<string, unknown>; event?: string; language: string; personality?: string; user_name?: string; formality?: number; humour?: number }) =>

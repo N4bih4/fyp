@@ -131,6 +131,21 @@ def greeting_line(db: Session = Depends(get_db)) -> dict:
     return {"enabled": prefs.daily_greeting, "text": text}
 
 
+@router.get("/welcome")
+def welcome_back(db: Session = Depends(get_db)) -> dict:
+    """Once, after the PC was locked for a while and unlocked: the line to speak. Empty text = nothing to say."""
+    from ..preferences import get_preferences
+    from ..tools.device import lock_watcher
+    prefs = get_preferences(db)
+    seconds = lock_watcher.consume()
+    if seconds is None or not prefs.welcome_back:
+        return {"text": ""}
+    lang = {"ur-PK": "roman", "hi-IN": "hi"}.get(prefs.persona.language, "en")
+    name = prefs.persona.user_name
+    lines = {"en": f"Welcome back{', ' + name if name else ''}.", "roman": f"Welcome back{' ' + name if name else ''}.", "hi": f"वापसी पर स्वागत है{' ' + name if name else ''}।"}
+    return {"text": lines[lang], "locked_seconds": seconds}
+
+
 @router.get("/catalog")
 def catalog() -> dict:
     """Built-in avatars, personalities and the voices that exist for them."""

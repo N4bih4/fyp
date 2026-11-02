@@ -19,6 +19,8 @@ from .uia import uia_tools
 from .terminal import terminal_tools
 from .mail import mail_tools
 from .messenger import messenger_tools
+from .device import device_tools
+from .explorer_view import explorer_tools
 from .screen import screen_tools
 
 
@@ -46,6 +48,8 @@ class ToolRegistry:
         tools.extend(mail_tools(self.ctx))
         tools.extend(messenger_tools(self.ctx))
         tools.extend(screen_tools(self.ctx))
+        tools.extend(device_tools(self.ctx))
+        tools.extend(explorer_tools(self.ctx))
         self._tools: dict[str, BaseTool] = {t.name: t for t in tools}
 
     def get(self, name: str) -> BaseTool:

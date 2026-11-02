@@ -36,6 +36,9 @@ PHRASES: dict[str, set[str]] = {
              "sunao", "parho", "पढ़ कर सुनाओ", "पढ़ के सुनाओ", "सुनाओ", "پڑھ کر سناؤ", "سناؤ"},
     "undo": {"undo", "undo that", "undo it", "revert", "revert that", "take that back", "wapas karo", "wapas kar do", "undo karo",
              "isay wapas karo", "वापस करो", "अनडू", "واپس کرو", "اسے واپس کرو"},
+    "unlock": {"unlock my pc", "unlock the pc", "unlock my computer", "unlock the computer", "unlock my laptop", "unlock the laptop", "unlock", "unlock it", "unlock the screen",
+               "pc unlock karo", "computer unlock karo", "laptop unlock karo", "unlock kar do", "mera pc unlock karo", "screen unlock karo",
+               "پی سی ان لاک کرو", "ان لاک کرو", "अनलॉक करो", "पीसी अनलॉक करो"},
     "close": {"no", "nope", "no thanks", "no thank you", "that's all", "thats all", "that's it", "thats it", "that is all", "nothing else",
               "nothing", "i'm good", "im good", "all good", "thanks", "thank you", "ok thanks", "okay thanks", "bas", "bas itna hi", "bas shukriya",
               "bas itna", "nahi", "nahin", "nahi shukriya", "shukriya", "bas ho gaya", "theek hai shukriya", "koi baat nahi",
@@ -62,6 +65,11 @@ SAYS: dict[str, dict[str, str]] = {
     "undone": {"en": "Undone.", "roman_ur": "Wapas kar diya.", "ur": "واپس کر دیا۔", "hi": "वापस कर दिया।"},
     "undo_failed": {"en": "I couldn't undo that: {why}", "roman_ur": "Main isay wapas nahi kar saka: {why}", "ur": "میں اسے واپس نہیں کر سکا: {why}",
                     "hi": "मैं इसे वापस नहीं कर सका: {why}"},
+    "cannot_unlock": {"en": "I can't unlock Windows, and no app can: the lock screen is protected. Use your PIN, fingerprint or face. I can keep the PC awake, and I'll say welcome back when you unlock.",
+                      "roman_ur": "Main Windows unlock nahi kar sakta, koi app nahi kar sakti: lock screen mahfooz hoti hai. Apna PIN, fingerprint ya chehra istemal karein. Main PC ko jagaye rakh sakta hoon, aur unlock par welcome back kahunga.",
+                      "ur": "میں ونڈوز ان لاک نہیں کر سکتا، کوئی ایپ نہیں کر سکتی: لاک اسکرین محفوظ ہوتی ہے۔ اپنا پن، فنگر پرنٹ یا چہرہ استعمال کریں۔ میں پی سی کو جاگتا رکھ سکتا ہوں اور ان لاک پر خوش آمدید کہوں گا۔",
+                      "hi": "मैं Windows अनलॉक नहीं कर सकता, कोई ऐप नहीं कर सकती: लॉक स्क्रीन सुरक्षित होती है। अपना PIN, फ़िंगरप्रिंट या चेहरा इस्तेमाल करें। मैं PC को जगाए रख सकता हूँ और अनलॉक पर वेलकम बैक कहूँगा।"},
+    "cancelled_power": {"en": "Cancelled. The PC stays on.", "roman_ur": "Cancel kar diya. PC chalta rahega.", "ur": "منسوخ کر دیا۔ پی سی چلتا رہے گا۔", "hi": "रद्द कर दिया। PC चालू रहेगा।"},
     "closed": {"en": "Okay, I'm here if you need me.", "roman_ur": "Theek hai, zaroorat ho to bata dena.", "ur": "ٹھیک ہے، ضرورت ہو تو بتا دینا۔",
                "hi": "ठीक है, ज़रूरत हो तो बता देना।"},
     "ended": {"en": "Task ended. Anything else?", "roman_ur": "Task khatam. Aur kuch?", "ur": "ٹاسک ختم۔ اور کچھ؟", "hi": "टास्क खत्म। और कुछ?"},
@@ -136,6 +144,8 @@ def try_handle(db: Session, task: Task, command: str, registry: ToolRegistry, se
     if lang == "en":                       # one Roman Urdu word ("bas", "khatam") has no second marker for the older detector
         from ..voice.langdetect import detect
         lang = "roman_ur" if detect(command) == "roman" else "en"
+    if kind == "unlock":
+        return _done(db, task, _say("cannot_unlock", lang))
     if kind == "end":
         was_open = sessions.close(db)
         return _done(db, task, _say("ended" if was_open else "no_task", lang))
@@ -153,6 +163,10 @@ def try_handle(db: Session, task: Task, command: str, registry: ToolRegistry, se
         return _done(db, task, _say("waiting", lang))
     previous = _previous(db, task)
     if kind == "stop":
+        from ..tools import device
+        if device.abort_pending():                      # a shutdown / restart is counting down: "stop" and "cancel" abort it first
+            sessions.close(db)
+            return _done(db, task, _say("cancelled_power", lang))
         live = [t for t in previous if t.status not in sessions.TERMINAL]
         for t in live:
             executor.cancel_task(db, t.id, registry)

@@ -54,6 +54,8 @@ _TOOL: dict[str, dict[str, tuple[str, str]]] = {
                    "ur": ("{query} تلاش کر رہا ہوں۔", "تلاش کھل گئی ہے۔"), "hi": ("{query} खोज रहा हूँ।", "खोज खुल गई है।")},
     "play_youtube_video": {"en": ("Finding that on YouTube.", "It is playing."), "roman": ("YouTube par dhoond raha hoon.", "Chal raha hai."),
                            "ur": ("یوٹیوب پر ڈھونڈ رہا ہوں۔", "چل رہا ہے۔"), "hi": ("यूट्यूब पर ढूँढ रहा हूँ।", "चल रहा है।")},
+    "device_control": {"en": ("On it.", "Done."), "roman": ("Ho raha hai.", "Ho gaya."), "ur": ("ہو رہا ہے۔", "ہو گیا۔"), "hi": ("हो रहा है।", "हो गया।")},
+    "explorer_view": {"en": ("Changing the view.", "Done."), "roman": ("View badal raha hoon.", "Ho gaya."), "ur": ("ویو بدل رہا ہوں۔", "ہو گیا۔"), "hi": ("व्यू बदल रहा हूँ।", "हो गया।")},
     "screen_act": {"en": ("This app needs me to look at the screen, a few seconds.", "Done."),
                    "roman": ("Is app ke liye mujhe screen dekhni hogi, kuch second lagenge.", "Ho gaya."),
                    "ur": ("اس ایپ کے لیے مجھے اسکرین دیکھنی ہوگی، چند سیکنڈ لگیں گے۔", "ہو گیا۔"),

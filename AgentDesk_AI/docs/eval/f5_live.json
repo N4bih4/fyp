@@ -1,0 +1,272 @@
+{
+ "summary": {
+  "steps": 22,
+  "passed": 22,
+  "pc": "DESKTOP-TSNS7N9",
+  "pct": 100.0
+ },
+ "rows": [
+  {
+   "step": "battery",
+   "ok": true,
+   "success": true,
+   "verified": true,
+   "spoken": "Battery is at 89 percent, charging.",
+   "error": null,
+   "evidence": {
+    "now": {
+     "percent": 89,
+     "plugged": true,
+     "minutes_left": null
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "step": "airplane status (read only)",
+   "ok": true,
+   "success": true,
+   "verified": true,
+   "spoken": "Airplane mode is off.",
+   "error": null,
+   "evidence": {
+    "radios": {
+     "3": false,
+     "1": true
+    }
+   },
+   "seconds": 0.2
+  },
+  {
+   "step": "lock state (read only)",
+   "ok": true,
+   "locked": false
+  },
+  {
+   "step": "do not disturb on",
+   "ok": true,
+   "success": true,
+   "verified": true,
+   "spoken": "Do Not Disturb is on.",
+   "error": null,
+   "evidence": {
+    "dnd": true
+   },
+   "seconds": 0.0
+  },
+  {
+   "step": "do not disturb status",
+   "ok": true,
+   "success": true,
+   "verified": true,
+   "spoken": "Do Not Disturb is on.",
+   "error": null,
+   "evidence": {
+    "dnd": true
+   },
+   "seconds": 0.0
+  },
+  {
+   "step": "do not disturb restore",
+   "ok": true,
+   "success": true,
+   "verified": true,
+   "spoken": "Do Not Disturb is off.",
+   "error": null,
+   "evidence": {
+    "dnd": false
+   },
+   "seconds": 0.0
+  },
+  {
+   "step": "keep awake 1 minute",
+   "ok": true,
+   "success": true,
+   "verified": true,
+   "spoken": "I will keep the PC awake for 1 minutes.",
+   "error": null,
+   "evidence": {
+    "minutes_left": 1
+   },
+   "seconds": 0.0
+  },
+  {
+   "step": "stop keeping awake",
+   "ok": true,
+   "success": true,
+   "verified": true,
+   "spoken": "The PC may sleep again.",
+   "error": null,
+   "evidence": {},
+   "seconds": 0.0
+  },
+  {
+   "step": "shutdown scheduled (600 s, cancelled next)",
+   "ok": true,
+   "success": true,
+   "verified": true,
+   "spoken": "Shutting down in 600 seconds. Say cancel to stop it.",
+   "error": null,
+   "evidence": {
+    "seconds": 600,
+    "cancellable": true
+   },
+   "seconds": 0.1
+  },
+  {
+   "step": "cancel the shutdown",
+   "ok": true,
+   "success": true,
+   "verified": true,
+   "spoken": "Cancelled. The PC stays on.",
+   "error": null,
+   "evidence": {
+    "cancelled": true
+   },
+   "seconds": 0.0
+  },
+  {
+   "step": "nothing left pending",
+   "ok": true,
+   "abort_code": 1116,
+   "note": "1116 = no shutdown in progress"
+  },
+  {
+   "step": "explorer: sort by date, newest first",
+   "ok": true,
+   "success": true,
+   "verified": true,
+   "spoken": "Sorted by date, newest or largest first.",
+   "error": null,
+   "evidence": {
+    "sort": "prop:-System.DateModified;"
+   },
+   "seconds": 0.9
+  },
+  {
+   "step": "explorer: sort by name",
+   "ok": true,
+   "success": true,
+   "verified": true,
+   "spoken": "Sorted by name.",
+   "error": null,
+   "evidence": {
+    "sort": "prop:System.ItemNameDisplay;"
+   },
+   "seconds": 0.6
+  },
+  {
+   "step": "explorer: view as list",
+   "ok": true,
+   "success": true,
+   "verified": true,
+   "spoken": "Showing list.",
+   "error": null,
+   "evidence": {
+    "view": 3
+   },
+   "seconds": 0.6
+  },
+  {
+   "step": "explorer: view as details",
+   "ok": true,
+   "success": true,
+   "verified": true,
+   "spoken": "Showing details.",
+   "error": null,
+   "evidence": {
+    "view": 4
+   },
+   "seconds": 0.6
+  },
+  {
+   "step": "explorer: show hidden files",
+   "ok": true,
+   "success": true,
+   "verified": true,
+   "spoken": "Hidden files are shown.",
+   "error": null,
+   "evidence": {
+    "hidden_shown": true
+   },
+   "seconds": 0.5
+  },
+  {
+   "step": "explorer: hide hidden files",
+   "ok": true,
+   "success": true,
+   "verified": true,
+   "spoken": "Hidden files are hidden.",
+   "error": null,
+   "evidence": {
+    "hidden_shown": false
+   },
+   "seconds": 0.7
+  },
+  {
+   "step": "explorer: restore the hidden-files setting",
+   "ok": true,
+   "success": true,
+   "verified": true,
+   "spoken": "Hidden files are hidden.",
+   "error": null,
+   "evidence": {
+    "hidden_shown": false
+   },
+   "seconds": 1.2
+  },
+  {
+   "step": "explorer: properties of a file",
+   "ok": true,
+   "success": true,
+   "verified": true,
+   "spoken": "Properties of a.txt.",
+   "error": null,
+   "evidence": {
+    "windows": [
+     "a Properties"
+    ]
+   },
+   "seconds": 1.0
+  },
+  {
+   "step": "explorer: search the folder",
+   "ok": true,
+   "success": true,
+   "verified": true,
+   "spoken": "Searching f5live_4blceirp for aaaa.",
+   "error": null,
+   "evidence": {
+    "windows": [
+     "aaaa - Search Results - File Explorer",
+     "ttps://www.youtube.com - Google Search - Google Chrome"
+    ]
+   },
+   "seconds": 0.3
+  },
+  {
+   "step": "night light on",
+   "ok": true,
+   "success": true,
+   "verified": true,
+   "spoken": "Night light is on.",
+   "error": null,
+   "evidence": {
+    "nightlight": true
+   },
+   "seconds": 4.0
+  },
+  {
+   "step": "night light restore",
+   "ok": true,
+   "success": true,
+   "verified": true,
+   "spoken": "Night light is off.",
+   "error": null,
+   "evidence": {
+    "nightlight": false
+   },
+   "seconds": 4.1
+  }
+ ]
+}

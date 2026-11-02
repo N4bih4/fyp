@@ -203,7 +203,8 @@ def prepare_local_request(db, task, registry):
     spoken = _apply_correction(db, spoken, recent)
     routed = switch_followup(spoken, recent) or canonical_command(spoken)
     from ..ai.browser_commands import youtube_followup
-    media = youtube_followup(routed, recent) or browser_plan(routed)
+    from ..ai.device_commands import device_plan
+    media = youtube_followup(routed, recent) or browser_plan(routed) or device_plan(routed)
     if media is not None:
         return media
     pieces = re.split(r"\s+(?:and|aur|और|اور)\s+", routed, flags=re.IGNORECASE)

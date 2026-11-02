@@ -6,6 +6,14 @@ Older evidence: `FEATURE_AUDIT.md`, `audit/FEATURE_TRACEABILITY_MATRIX.md`,
 
 ## Session log
 
+### 2026-11-02 — Session 32: F5 (full device control)
+
+- `device_control` (lock, sleep, restart / shutdown with Windows' 10 s timer and a spoken "cancel", keep awake, battery, airplane mode that restores exactly what was on, Do Not Disturb, night light through the Settings page) and `explorer_view` (sort, view mode, hidden files, Properties, search in the front File Explorer window, read back from the folder view / registry / the dialog that must appear). Spoken forms in `ai/device_commands.py`. Docs: `docs/DEVICE_CONTROL.md`.
+- Unlock is impossible for any app (protected lock-screen desktop): there is no unlock action; "unlock my pc" is explained. A server thread notices lock -> unlock and the page says "welcome back" once (Settings checkbox, `welcome_back`).
+- Live on this PC (`backend/scripts/device_live.py`, never locks / sleeps / restarts / shuts down / touches the radios, every change undone): **22/22** (`docs/eval/f5_live.json`). A first run found the Properties dialog title hides the file extension; fixed.
+- NOT done live: lock, sleep, the real 10 s restart / shutdown, airplane mode on (it would cut the network). Fakes in `tests/test_f5_device.py` (50). Sleep cannot be observed afterwards (reported as "accepted", not verified). Night light needs the English Settings.
+- Full suite: `docs/eval/f5_pytest.txt`.
+
 ### 2026-11-02 — Session 31: F2 results and F4 (browser extension 2.0 + full YouTube control)
 
 - F2 (local intent model) measured: trained 5 epochs on CPU (about 90 min; val accuracy 99.6% on a random split of the same templates). On the held-out test (templates and filler values never seen): intent accuracy 83.9% clean / 82.9% noisy, slot F1 0.865, Roman Urdu weakest (73.7%), 91.4% correct among predictions at confidence >= 0.85 but 31 wrong-and-confident ones; int8 ONNX 99 MB, CPU latency p50 9.7 ms / p90 11.2 ms. The old regex matcher on the same sentences: answered 47.5%, right on 75.3% of those, 35.8% overall. Groq planner not run on this split. Report: `docs/eval/f2_report.json`. The model is not committed (`models/`), not wired into command handling. Synthetic seed data: real sentences needed (docs/DATASET_GUIDE.md).
