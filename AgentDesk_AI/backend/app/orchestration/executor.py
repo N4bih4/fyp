@@ -596,9 +596,10 @@ def _execute_single_action(db: Session, action: Action, tool, parsed, settings: 
         if attempts > 1:
             action.error += f" (tried {attempts} times)"
     db.commit()
+    layer = (result.output or {}).get("layer", 1) if isinstance(result.output, dict) else 1
     log_event("action_end", level=20 if action.status == ActionStatus.SUCCEEDED else 30, task_id=action.task_id,
               action_id=action.id, tool=action.tool_name, status=action.status,
-              detail=action.error if action.status != ActionStatus.SUCCEEDED else None)
+              detail=action.error if action.status != ActionStatus.SUCCEEDED else f"layer {layer}")
 
 
 # ------------------------------------------------------------------ agentic loop (Groq)

@@ -58,6 +58,9 @@ class Settings(BaseSettings):
     # Bound on agentic-loop tool steps per task (cost + runaway protection).
     agent_max_steps: int = 10
 
+    # Layer 3 (look at the screen): an image-capable Groq model. Checked on 2026-11-02: qwen/qwen3.8-27b accepted a picture and named the right button.
+    vision_model: str = "qwen/qwen3.8-27b"
+
     # --- E-mail (OAuth client ids; see docs/EMAIL_SETUP.md). The ids are not secrets in a desktop app, but they are not committed either. ---
     google_oauth_client_id: str = ""
     google_oauth_client_secret: str = ""

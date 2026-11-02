@@ -19,6 +19,7 @@ from .uia import uia_tools
 from .terminal import terminal_tools
 from .mail import mail_tools
 from .messenger import messenger_tools
+from .screen import screen_tools
 
 
 class UnknownToolError(ValueError):
@@ -44,6 +45,7 @@ class ToolRegistry:
         tools.extend(terminal_tools(self.ctx))
         tools.extend(mail_tools(self.ctx))
         tools.extend(messenger_tools(self.ctx))
+        tools.extend(screen_tools(self.ctx))
         self._tools: dict[str, BaseTool] = {t.name: t for t in tools}
 
     def get(self, name: str) -> BaseTool:

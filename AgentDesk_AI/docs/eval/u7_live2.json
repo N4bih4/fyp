@@ -1,0 +1,400 @@
+{
+ "summary": {
+  "steps": 20,
+  "really_happened": 18,
+  "pct": 90.0,
+  "also_verified_by_the_tool": 17,
+  "median_seconds": 6.53,
+  "max_seconds": 14.15
+ },
+ "rows": [
+  {
+   "step": 1,
+   "goal": "click Start",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": 7,
+   "box_text": "Start",
+   "seconds": 5.47,
+   "timings": {
+    "capture_ms": 85,
+    "ocr_ms": 472,
+    "model_ms": 2461,
+    "act_ms": 310,
+    "total_ms": 4042
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 2,
+   "goal": "click the Add +1 button",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": 13,
+   "box_text": "Add +1",
+   "seconds": 3.04,
+   "timings": {
+    "capture_ms": 65,
+    "ocr_ms": 125,
+    "model_ms": 712,
+    "act_ms": 108,
+    "total_ms": 1636
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 3,
+   "goal": "click the Add +10 button",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": 15,
+   "box_text": "Add +10",
+   "seconds": 6.53,
+   "timings": {
+    "capture_ms": 70,
+    "ocr_ms": 133,
+    "model_ms": 4191,
+    "act_ms": 102,
+    "total_ms": 5131
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 4,
+   "goal": "what is the score?",
+   "risk": "low",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": null,
+   "box_text": null,
+   "seconds": 2.8,
+   "timings": {
+    "capture_ms": 72,
+    "ocr_ms": 136,
+    "model_ms": 1974
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 5,
+   "goal": "click the text field next to Name",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": false,
+   "truth": true,
+   "box": 23,
+   "box_text": "type here",
+   "seconds": 6.63,
+   "timings": {
+    "capture_ms": 61,
+    "ocr_ms": 147,
+    "model_ms": 4310,
+    "act_ms": 106,
+    "total_ms": 5240
+   },
+   "error": null,
+   "verification_details": "Nothing on the screen changed after the click, so I cannot say it worked."
+  },
+  {
+   "step": 6,
+   "goal": "type Zain in the name field",
+   "risk": "medium",
+   "tool_ok": false,
+   "verified": false,
+   "truth": false,
+   "box": null,
+   "box_text": null,
+   "seconds": 3.6,
+   "timings": null,
+   "error": "Groq rate limit reached; retry in about 16 s. Limits: https://console.groq.com/settings/limits.",
+   "verification_details": null
+  },
+  {
+   "step": 7,
+   "goal": "click Save name",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": false,
+   "truth": false,
+   "box": 24,
+   "box_text": "Save nam",
+   "seconds": 7.53,
+   "timings": {
+    "capture_ms": 83,
+    "ocr_ms": 158,
+    "model_ms": 4875,
+    "act_ms": 102,
+    "total_ms": 5880
+   },
+   "error": null,
+   "verification_details": "Nothing on the screen changed after the click, so I cannot say it worked."
+  },
+  {
+   "step": 8,
+   "goal": "scroll down in the scores list",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": 9,
+   "box_text": "Scores list",
+   "seconds": 4.79,
+   "timings": {
+    "capture_ms": 92,
+    "ocr_ms": 154,
+    "model_ms": 2094,
+    "act_ms": 202,
+    "total_ms": 3350
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 9,
+   "goal": "scroll up in the scores list",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": 9,
+   "box_text": "Scores list",
+   "seconds": 14.15,
+   "timings": {
+    "capture_ms": 61,
+    "ocr_ms": 132,
+    "model_ms": 11723,
+    "act_ms": 202,
+    "total_ms": 12754
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 10,
+   "goal": "click the add plus ten button",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": 15,
+   "box_text": "Add +10",
+   "seconds": 4.34,
+   "timings": {
+    "capture_ms": 66,
+    "ocr_ms": 127,
+    "model_ms": 1969,
+    "act_ms": 103,
+    "total_ms": 2917
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 11,
+   "goal": "which page is this?",
+   "risk": "low",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": null,
+   "box_text": null,
+   "seconds": 13.26,
+   "timings": {
+    "capture_ms": 67,
+    "ocr_ms": 138,
+    "model_ms": 12495
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 12,
+   "goal": "click Back",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": 38,
+   "box_text": "Back",
+   "seconds": 5.66,
+   "timings": {
+    "capture_ms": 66,
+    "ocr_ms": 129,
+    "model_ms": 3345,
+    "act_ms": 102,
+    "total_ms": 4271
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 13,
+   "goal": "click Options",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": 8,
+   "box_text": "Options",
+   "seconds": 11.94,
+   "timings": {
+    "capture_ms": 63,
+    "ocr_ms": 101,
+    "model_ms": 9636,
+    "act_ms": 103,
+    "total_ms": 10561
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 14,
+   "goal": "click the Sound toggle",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": 7,
+   "box_text": "Sound: ON",
+   "seconds": 4.82,
+   "timings": {
+    "capture_ms": 65,
+    "ocr_ms": 76,
+    "model_ms": 2630,
+    "act_ms": 107,
+    "total_ms": 3490
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 15,
+   "goal": "click the Music toggle",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": 8,
+   "box_text": "Music: ON",
+   "seconds": 12.0,
+   "timings": {
+    "capture_ms": 58,
+    "ocr_ms": 72,
+    "model_ms": 9717,
+    "act_ms": 102,
+    "total_ms": 10531
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 16,
+   "goal": "click the Sound toggle",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": 8,
+   "box_text": "Sound: OFF",
+   "seconds": 4.6,
+   "timings": {
+    "capture_ms": 62,
+    "ocr_ms": 104,
+    "model_ms": 2377,
+    "act_ms": 101,
+    "total_ms": 3223
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 17,
+   "goal": "click Back",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": 10,
+   "box_text": "Back",
+   "seconds": 10.75,
+   "timings": {
+    "capture_ms": 76,
+    "ocr_ms": 106,
+    "model_ms": 8528,
+    "act_ms": 102,
+    "total_ms": 9429
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 18,
+   "goal": "click Start",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": 7,
+   "box_text": "Start",
+   "seconds": 5.71,
+   "timings": {
+    "capture_ms": 66,
+    "ocr_ms": 76,
+    "model_ms": 3152,
+    "act_ms": 102,
+    "total_ms": 4278
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 19,
+   "goal": "click Back",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": 38,
+   "box_text": "Back",
+   "seconds": 13.12,
+   "timings": {
+    "capture_ms": 70,
+    "ocr_ms": 140,
+    "model_ms": 10840,
+    "act_ms": 102,
+    "total_ms": 11791
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 20,
+   "goal": "click the Unicorn button",
+   "risk": "medium",
+   "tool_ok": false,
+   "verified": false,
+   "truth": true,
+   "box": null,
+   "box_text": null,
+   "seconds": 3.71,
+   "timings": {
+    "capture_ms": 73,
+    "ocr_ms": 70,
+    "model_ms": 2959
+   },
+   "error": "I looked at 'VisionTestApp' but could not tell where to click the Unicorn button: No Unicorn button is present in the listed boxes; only Start, Options, Credits, and window controls are available..",
+   "verification_details": null
+  }
+ ]
+}

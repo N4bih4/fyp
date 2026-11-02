@@ -1,0 +1,411 @@
+{
+ "summary": {
+  "steps": 20,
+  "really_happened": 20,
+  "pct": 100.0,
+  "also_verified_by_the_tool": 18,
+  "median_seconds": 5.23,
+  "max_seconds": 22.93
+ },
+ "rows": [
+  {
+   "step": 1,
+   "goal": "click Start",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": 7,
+   "box_text": "Start",
+   "seconds": 4.54,
+   "timings": {
+    "capture_ms": 56,
+    "ocr_ms": 651,
+    "model_ms": 1789,
+    "act_ms": 245,
+    "total_ms": 3300
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 2,
+   "goal": "click the Add +1 button",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": 13,
+   "box_text": "Add +1",
+   "seconds": 2.42,
+   "timings": {
+    "capture_ms": 54,
+    "ocr_ms": 99,
+    "model_ms": 548,
+    "act_ms": 117,
+    "total_ms": 1237
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 3,
+   "goal": "click the Add +10 button",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": 15,
+   "box_text": "Add +10",
+   "seconds": 5.23,
+   "timings": {
+    "capture_ms": 46,
+    "ocr_ms": 115,
+    "model_ms": 3152,
+    "act_ms": 101,
+    "total_ms": 3893
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 4,
+   "goal": "what is the score?",
+   "risk": "low",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": null,
+   "box_text": null,
+   "seconds": 1.56,
+   "timings": {
+    "capture_ms": 64,
+    "ocr_ms": 124,
+    "model_ms": 840
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 5,
+   "goal": "click the text field next to Name",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": false,
+   "truth": true,
+   "box": 23,
+   "box_text": "type here",
+   "seconds": 22.93,
+   "timings": {
+    "capture_ms": 43,
+    "ocr_ms": 77,
+    "waited_for_limit": 1,
+    "model_ms": 21077,
+    "act_ms": 114,
+    "total_ms": 21732
+   },
+   "error": null,
+   "verification_details": "Nothing on the screen changed after the click, so I cannot say it worked."
+  },
+  {
+   "step": 6,
+   "goal": "type Zain in the name field",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": 23,
+   "box_text": "type here",
+   "seconds": 4.98,
+   "timings": {
+    "capture_ms": 69,
+    "ocr_ms": 84,
+    "model_ms": 2951,
+    "act_ms": 300,
+    "total_ms": 3851
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 7,
+   "goal": "click Save name",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": false,
+   "truth": true,
+   "box": 24,
+   "box_text": "Save nam",
+   "seconds": 22.18,
+   "timings": {
+    "capture_ms": 52,
+    "ocr_ms": 74,
+    "waited_for_limit": 1,
+    "model_ms": 20196,
+    "act_ms": 103,
+    "total_ms": 20922
+   },
+   "error": null,
+   "verification_details": "Nothing on the screen changed after the click, so I cannot say it worked."
+  },
+  {
+   "step": 8,
+   "goal": "scroll down in the scores list",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": 9,
+   "box_text": "Scores list",
+   "seconds": 4.48,
+   "timings": {
+    "capture_ms": 52,
+    "ocr_ms": 86,
+    "model_ms": 2489,
+    "act_ms": 202,
+    "total_ms": 3245
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 9,
+   "goal": "scroll up in the scores list",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": 9,
+   "box_text": "Scores list",
+   "seconds": 22.04,
+   "timings": {
+    "capture_ms": 59,
+    "ocr_ms": 61,
+    "waited_for_limit": 1,
+    "model_ms": 20045,
+    "act_ms": 202,
+    "total_ms": 20865
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 10,
+   "goal": "click the add plus ten button",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": 15,
+   "box_text": "Add +10",
+   "seconds": 5.1,
+   "timings": {
+    "capture_ms": 57,
+    "ocr_ms": 57,
+    "model_ms": 3262,
+    "act_ms": 102,
+    "total_ms": 3884
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 11,
+   "goal": "which page is this?",
+   "risk": "low",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": null,
+   "box_text": null,
+   "seconds": 20.35,
+   "timings": {
+    "capture_ms": 69,
+    "ocr_ms": 92,
+    "waited_for_limit": 1,
+    "model_ms": 19786
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 12,
+   "goal": "click Back",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": 38,
+   "box_text": "Back",
+   "seconds": 5.26,
+   "timings": {
+    "capture_ms": 53,
+    "ocr_ms": 95,
+    "model_ms": 3304,
+    "act_ms": 102,
+    "total_ms": 4078
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 13,
+   "goal": "click Options",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": 8,
+   "box_text": "Options",
+   "seconds": 19.67,
+   "timings": {
+    "capture_ms": 57,
+    "ocr_ms": 39,
+    "model_ms": 17823,
+    "act_ms": 103,
+    "total_ms": 18443
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 14,
+   "goal": "click the Sound toggle",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": 7,
+   "box_text": "Sound: ON",
+   "seconds": 4.86,
+   "timings": {
+    "capture_ms": 55,
+    "ocr_ms": 44,
+    "model_ms": 3029,
+    "act_ms": 102,
+    "total_ms": 3689
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 15,
+   "goal": "click the Music toggle",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": 8,
+   "box_text": "Music: ON",
+   "seconds": 20.13,
+   "timings": {
+    "capture_ms": 47,
+    "ocr_ms": 74,
+    "model_ms": 18262,
+    "act_ms": 102,
+    "total_ms": 18917
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 16,
+   "goal": "click the Sound toggle",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": 8,
+   "box_text": "Sound: OFF",
+   "seconds": 4.77,
+   "timings": {
+    "capture_ms": 59,
+    "ocr_ms": 65,
+    "model_ms": 2971,
+    "act_ms": 102,
+    "total_ms": 3656
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 17,
+   "goal": "click Back",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": 10,
+   "box_text": "Back",
+   "seconds": 19.93,
+   "timings": {
+    "capture_ms": 65,
+    "ocr_ms": 50,
+    "model_ms": 17996,
+    "act_ms": 104,
+    "total_ms": 18747
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 18,
+   "goal": "click Start",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": 7,
+   "box_text": "Start",
+   "seconds": 4.71,
+   "timings": {
+    "capture_ms": 66,
+    "ocr_ms": 37,
+    "model_ms": 2947,
+    "act_ms": 102,
+    "total_ms": 3547
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 19,
+   "goal": "click Back",
+   "risk": "medium",
+   "tool_ok": true,
+   "verified": true,
+   "truth": true,
+   "box": 38,
+   "box_text": "Back",
+   "seconds": 21.59,
+   "timings": {
+    "capture_ms": 50,
+    "ocr_ms": 55,
+    "waited_for_limit": 1,
+    "model_ms": 19701,
+    "act_ms": 102,
+    "total_ms": 20370
+   },
+   "error": null,
+   "verification_details": null
+  },
+  {
+   "step": 20,
+   "goal": "click the Unicorn button",
+   "risk": "medium",
+   "tool_ok": false,
+   "verified": false,
+   "truth": true,
+   "box": null,
+   "box_text": null,
+   "seconds": 5.23,
+   "timings": {
+    "capture_ms": 54,
+    "ocr_ms": 68,
+    "model_ms": 2692
+   },
+   "error": "I looked at 'VisionTestApp' but could not tell where to click the Unicorn button: No Unicorn button is present in the listed boxes; only Start, Options, Credits, and window controls are available..",
+   "verification_details": null
+  }
+ ]
+}

@@ -45,6 +45,9 @@ CONVENTIONS
   {"command": "git status"}. Put in "command" ONLY what the user asked for, never anything extra, and never chain commands with ; & |
   > or a second line. "Run the tests" = pytest -q (Python project) or npm test (a package.json); if unsure which, ask. Read-only
   commands run at once; the server decides what needs approval (intent "terminal").
+- Order of control: native tools first, then ui_inspect / ui_act, and screen_act ONLY for an app whose controls ui_inspect cannot list (a game, a canvas,
+  a custom-drawn window; ui_inspect shows almost nothing) or when the user says to look at the screen. screen_act {"goal": "click Start", "window": "<app>"}
+  does one step and takes a few seconds; it sends a picture of that window to the cloud AI (intent "screen_control").
 - Sites: youtube -> https://www.youtube.com, gmail -> https://mail.google.com,
   whatsapp -> https://web.whatsapp.com, chatgpt -> https://chatgpt.com. "in chrome" -> "browser": "chrome".
 - application_package queries must be the English/ASCII product name (e.g. "vlc"). Install only with

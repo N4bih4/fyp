@@ -6,6 +6,13 @@ Older evidence: `FEATURE_AUDIT.md`, `audit/FEATURE_TRACEABILITY_MATRIX.md`,
 
 ## Session log
 
+### 2026-11-02 — Session 28: Upgrade U7 (vision fallback, layer 3): `screen_act`
+
+- New `app/vision/` (boxes, Windows OCR, numbered overlay, Groq/Gemini vision model) and `tools/screen.py` (`screen_act`): screenshot + OCR/UIA boxes + numbered picture; the model names a box id only; click at the detected box centre; verified by photographing again. Details: `docs/VISION.md`.
+- Order of control logged per action (`layer 2`/`layer 3`); `ui_inspect` hints at `screen_act` for windows with almost no controls.
+- Safety: needs cloud answers on; shells/password managers never looked at; password boxes never typed; send/pay/delete/install boxes only when named (HIGH).
+- Tests: `tests/test_u7_vision.py` (45). Live: `scripts/vision_live.py` on a UIA-blind Tk app with ground truth: run 3 = 20/20 really happened, 18 tool-verified, median 5.2 s, max 22.9 s (rate-limit wait). Runs 1-2: 20/20 and 18/20. Check script: `scripts/check_u7.ps1`.
+
 ### 2026-11-02 — Session 27: Upgrade U6 (e-mail + chat messages): OAuth, dictation, voice edits, read-back, send, verify in Sent
 
 **Built (not committed)** — details and setup in `docs/EMAIL_SETUP.md`

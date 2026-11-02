@@ -179,12 +179,21 @@ def resolve_control(snap: Snapshot, args: UiActArgs) -> Control:
             found = snap.find(args.id)
             if entity_match.score(args.control, found.name) >= 0.6:
                 return found
+        poor = " This window exposes almost nothing to UI Automation: try screen_act (layer 3)." if is_poor(snap) else ""
         raise UiaError(f"No control called '{args.control}' in '{snap.window.title}'. Controls seen: "
-                       f"{', '.join(c.name for c in pool[:8] if c.name) or 'none'}.")
+                       f"{', '.join(c.name for c in pool[:8] if c.name) or 'none'}.{poor}")
     found = snap.find(args.id or 0)
     if found is None:
         raise UiaError(f"Control id {args.id} is not in the current list of '{snap.window.title}'. Look at the window again.")
     return found
+
+
+_TITLEBAR = {"minimise", "minimize", "maximise", "maximize", "restore", "close", "system"}
+
+
+def is_poor(snap: Snapshot) -> bool:
+    """A window whose only controls are its title bar: UI Automation cannot help with it (a canvas, a game, a custom-drawn app)."""
+    return len([c for c in snap.controls if c.name.casefold() not in _TITLEBAR and c.type != "MenuBar"]) <= 2
 
 
 def _scroll_target(snap: Snapshot) -> Control | None:
@@ -223,7 +232,8 @@ class UiInspectTool(BaseTool):
             ranked = {c.name for c in controls if entity_match.score(a.query, c.name) >= 0.6}
             controls = [c for c in controls if c.name in ranked]
         return ToolResult(success=True, output={
-            "window": window.title, "process": window.process, "count": len(controls), "truncated": snap.truncated,
+            "layer": 2, "window": window.title, "process": window.process, "count": len(controls), "truncated": snap.truncated,
+            **({"hint": "This window exposes almost nothing to UI Automation: use screen_act (layer 3) to work with it."} if is_poor(snap) else {}),
             "controls": [c.public() for c in controls], "digest": _digest(snap)})
 
     def verify(self, args: BaseModel, result: ToolResult) -> Verification:
@@ -284,7 +294,7 @@ class UiActTool(BaseTool):
                 if refusal:
                     return ToolResult(success=False, error=refusal)
             front = backend.foreground()
-            out: dict[str, Any] = {"action": a.action, "window": window.title, "handle": window.handle, "digest_before": _digest(before),
+            out: dict[str, Any] = {"layer": 2, "action": a.action, "window": window.title, "handle": window.handle, "digest_before": _digest(before),
                                    "front_before": front.handle if front else None,
                                    "title_before": before.window.title}
             if control is not None:

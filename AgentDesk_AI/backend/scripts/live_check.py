@@ -245,6 +245,16 @@ def p_ui_inspect(env: Env) -> Outcome:
     return judge(r, v, bool((r.output or {}).get("window")), f"window={_short((r.output or {}).get('window'), 60)} controls={(r.output or {}).get('count')}")
 
 
+def p_screen_act_read(env: Env) -> Outcome:
+    """screen_act in its read-only form: asks what the front window shows (one picture goes to the cloud model; nothing is clicked)."""
+    r, v = env.run("screen_act", {"goal": "what is the title of this window?"})
+    if not r.success and "cloud answers" in str(r.error):
+        return Outcome(BLOCKED, "cloud answers are off")
+    if not IS_WINDOWS and not r.success:
+        return Outcome(BLOCKED, f"not Windows: {_short(r.error, 100)}")
+    return judge(r, v, bool((r.output or {}).get("answer")), f"answer={_short((r.output or {}).get('answer'), 80)}")
+
+
 def p_ui_act_read(env: Env) -> Outcome:
     """ui_act in its read-only form: reads the first named control of the front window (never clicks, types or scrolls)."""
     listed, _ = env.run("ui_inspect", {})
@@ -541,6 +551,7 @@ PROBES: list[Probe] = [
     Probe("control_browser", "read", p_browser_inspect),
     Probe("ui_inspect", "read", p_ui_inspect),
     Probe("ui_act", "gui", p_ui_act_read),
+    Probe("screen_act", "gui", p_screen_act_read),
     Probe("run_terminal_command", "read", p_terminal_read),
     Probe("open_terminal", "gui", p_open_terminal),
     Probe("send_email", "read", p_send_email_refuses),
