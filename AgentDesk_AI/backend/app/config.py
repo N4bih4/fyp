@@ -29,6 +29,13 @@ class Settings(BaseSettings):
     # model IDs and availability change over time.
     ai_model: str = "openai/gpt-oss-120b"
     groq_api_key: str | None = None
+    # Extra keys (comma separated). When one hits its limit the next is used automatically (ai/key_pool.py).
+    groq_api_keys: str = ""
+    # Optional cloud brain (Render): planning/chat/speech run there, tools still run on this PC. See app/cloud_main.py.
+    cloud_brain_url: str = ""
+    # Contact e-mail sent to Wikipedia in the User-Agent (their policy). Empty = Wikipedia is not used.
+    wikipedia_contact_email: str = ""
+    cloud_brain_token: str | None = None
     openai_api_key: str | None = None
     gemini_api_key: str | None = None
     # Explicit opt-in: another provider may have separate billing/data handling.
@@ -46,8 +53,19 @@ class Settings(BaseSettings):
     groq_tts_model: str = "canopylabs/orpheus-v1-english"
     groq_tts_voice: str = "autumn"
     ai_max_retries: int = 2
+    # Strict-JSON planner rollout: legacy | shadow | structured (see orchestration/planner_mode.py).
+    planner_mode: str = "legacy"
     # Bound on agentic-loop tool steps per task (cost + runaway protection).
     agent_max_steps: int = 10
+
+    # Layer 3 (look at the screen): an image-capable Groq model. Checked on 2026-11-02: qwen/qwen3.8-27b accepted a picture and named the right button.
+    vision_model: str = "qwen/qwen3.8-27b"
+    stt_force_language: bool = False        # True = send the language box to Whisper as a hard setting (the old behaviour)
+
+    # --- E-mail (OAuth client ids; see docs/EMAIL_SETUP.md). The ids are not secrets in a desktop app, but they are not committed either. ---
+    google_oauth_client_id: str = ""
+    google_oauth_client_secret: str = ""
+    ms_oauth_client_id: str = ""
 
     # --- Database ---
     database_url: str = "sqlite:///./agentdesk.db"
@@ -103,7 +121,16 @@ class Settings(BaseSettings):
 
     @property
     def groq_configured(self) -> bool:
-        return bool(self.groq_api_key)
+        return bool(self.groq_api_key or self.groq_api_keys.strip())
+
+    @property
+    def cloud_configured(self) -> bool:
+        return bool(self.cloud_brain_url.strip() and (self.cloud_brain_token or "").strip())
+
+    def resolved_groq_keys(self) -> list[str]:
+        from .ai.key_pool import parse_keys
+
+        return parse_keys(self.groq_api_key, self.groq_api_keys)
 
 
 @lru_cache

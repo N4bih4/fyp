@@ -13,6 +13,16 @@ from .filesystem import filesystem_tools
 from .media import media_tools
 from .system import system_tools
 from .web import web_tools
+from .memory import memory_tools
+from .knowledge import knowledge_tools
+from .uia import uia_tools
+from .terminal import terminal_tools
+from .mail import mail_tools
+from .messenger import messenger_tools
+from .device import device_tools
+from .documents import document_tools
+from .explorer_view import explorer_tools
+from .screen import screen_tools
 
 
 class UnknownToolError(ValueError):
@@ -32,6 +42,16 @@ class ToolRegistry:
         tools.extend(system_tools(self.ctx))
         tools.extend(web_tools(self.ctx))
         tools.extend(media_tools(self.ctx))
+        tools.extend(memory_tools(self.ctx))
+        tools.extend(knowledge_tools(self.ctx))
+        tools.extend(uia_tools(self.ctx))
+        tools.extend(terminal_tools(self.ctx))
+        tools.extend(mail_tools(self.ctx))
+        tools.extend(messenger_tools(self.ctx))
+        tools.extend(screen_tools(self.ctx))
+        tools.extend(device_tools(self.ctx))
+        tools.extend(document_tools(self.ctx))
+        tools.extend(explorer_tools(self.ctx))
         self._tools: dict[str, BaseTool] = {t.name: t for t in tools}
 
     def get(self, name: str) -> BaseTool:
@@ -45,13 +65,17 @@ class ToolRegistry:
     def names(self) -> list[str]:
         return sorted(self._tools)
 
+    def model_names(self) -> list[str]:
+        """The tools the model may use: every tool except the ones only server code may run (send_email)."""
+        return [n for n in self.names() if not self._tools[n].hidden_from_model]
+
     def metadata(self) -> list[dict]:
-        return [self._tools[n].describe() for n in self.names()]
+        return [self._tools[n].describe() for n in self.model_names()]
 
     def describe_for_prompt(self) -> str:
         """Compact tool catalogue for the AI system prompt."""
         lines = []
-        for name in self.names():
+        for name in self.model_names():
             tool = self._tools[name]
             schema = tool.args_schema.model_json_schema()
             props = json.dumps(schema.get("properties", {}), separators=(",", ":"))

@@ -6,6 +6,493 @@ Older evidence: `FEATURE_AUDIT.md`, `audit/FEATURE_TRACEABILITY_MATRIX.md`,
 
 ## Session log
 
+### 2026-11-02 — Session 33: F6 (work documents: research, plans, notes)
+
+- `make_document` (`tools/documents.py`): research / plan / notes -> .docx, .md or .pdf (Edge prints the PDF in its own profile) in Documents\AgentDesk, opened, "Your file is ready". The AI only writes section prose from fenced untrusted text; the Sources list is pages really read; `[n]` citations to missing sources are removed; every document carries an AI-written label; a plan says no outside sources. A broad topic asks ONE question first (no approval for it); the reply is recognised by `ai/document_commands.py`. Progress lines + Stop (`app/progress.py`, `GET /tasks/{id}/progress`, `ProgressLines` in the task panel; the executor binds the action id into the tool's thread and a cancel stops it at the next step).
+- Found: the Render cloud brain's `/cloud/chat` is capped at 400 tokens (and 8000 chars per message), so a long section came back empty; long text now uses this PC's own Groq key (with `reasoning_effort=low`), and `/cloud/chat` accepts `max_tokens` / `effort` (needs a Render redeploy). The small model translated "water cycle" into Urdu as "washerman's cycle": non-English documents use the large model. Wikipedia pages return 403 to the generic page fetcher.
+- Live (`scripts/document_live.py`, real fetcher + real Groq + real writers, temp folder): 7/7 (Word 13.9 s, Markdown 15.9 s, PDF 12.8 s, plan 5.7 s, Urdu 9.7 s, notes 5.4 s, broad topic asks). Search providers NOT exercised: they need a contact e-mail / Tavily key that is not set on this PC. Only "brief" run live. Docs: `docs/WORK_DOCUMENTS.md`, `scripts/check_f6.ps1`.
+- Tests: `tests/test_f6_documents.py` (34). Full suite: `docs/eval/f6_pytest.txt`.
+
+### 2026-11-02 — Session 32: F5 (full device control)
+
+- `device_control` (lock, sleep, restart / shutdown with Windows' 10 s timer and a spoken "cancel", keep awake, battery, airplane mode that restores exactly what was on, Do Not Disturb, night light through the Settings page) and `explorer_view` (sort, view mode, hidden files, Properties, search in the front File Explorer window, read back from the folder view / registry / the dialog that must appear). Spoken forms in `ai/device_commands.py`. Docs: `docs/DEVICE_CONTROL.md`.
+- Unlock is impossible for any app (protected lock-screen desktop): there is no unlock action; "unlock my pc" is explained. A server thread notices lock -> unlock and the page says "welcome back" once (Settings checkbox, `welcome_back`).
+- Live on this PC (`backend/scripts/device_live.py`, never locks / sleeps / restarts / shuts down / touches the radios, every change undone): **22/22** (`docs/eval/f5_live.json`). A first run found the Properties dialog title hides the file extension; fixed.
+- NOT done live: lock, sleep, the real 10 s restart / shutdown, airplane mode on (it would cut the network). Fakes in `tests/test_f5_device.py` (50). Sleep cannot be observed afterwards (reported as "accepted", not verified). Night light needs the English Settings.
+- Full suite: `docs/eval/f5_pytest.txt`.
+
+### 2026-11-02 — Session 31: F2 results and F4 (browser extension 2.0 + full YouTube control)
+
+- F2 (local intent model) measured: trained 5 epochs on CPU (about 90 min; val accuracy 99.6% on a random split of the same templates). On the held-out test (templates and filler values never seen): intent accuracy 83.9% clean / 82.9% noisy, slot F1 0.865, Roman Urdu weakest (73.7%), 91.4% correct among predictions at confidence >= 0.85 but 31 wrong-and-confident ones; int8 ONNX 99 MB, CPU latency p50 9.7 ms / p90 11.2 ms. The old regex matcher on the same sentences: answered 47.5%, right on 75.3% of those, 35.8% overall. Groq planner not run on this split. Report: `docs/eval/f2_report.json`. The model is not committed (`models/`), not wired into command handling. Synthetic seed data: real sentences needed (docs/DATASET_GUIDE.md).
+- F4: extension 2.0.0 (popup, reconnect with backoff, 15 s ping and 45 s dead-link detection, optional native messaging host, `scripts/install_native_host.ps1`, `scripts/diagnose_extension.ps1`, stable extension id from a manifest key). The app picks the browser used last when two are connected. New YouTube controls and website actions (see `docs/BROWSER_CONTROLS.md`). Found and fixed: `play_youtube_video` ran in a worker process that cannot reach the extension (it only ever opened the page); the player lookup after a click used the old `<video>`; the quality API needs the page's own world; waits were 8 s on a slow link.
+- Live (real Edge 156 + real extension + real backend; website actions on a local page, YouTube on youtube.com, temporary profile): first run 23/40, then 36/40, final **39/40 (97.5%)**: tabs 4/4, websites 13/13, YouTube 22/23 (failing: "previous video": no earlier video reachable after "next"). Results vary between runs on this slow link (the play command passed in the last run and failed in two earlier ones). Chrome 156 ignores `--load-extension`, so Chrome was NOT automated; native host not registered on this PC (the installer changes HKCU; run it yourself).
+- Tests: `tests/test_f4_browser.py` (53), `browser-extension/tests/test_f4_youtube.cjs`; extension tests updated for 2.0.0. Full suite: see `docs/eval/f4_pytest.txt`.
+- Side effects of my tests: earlier runs opened YouTube results in your default browser (the old fallback path).
+
+### 2026-11-02 — Session 30: F2 (local intent model, in progress) and F3 (task sessions until "end")
+
+- F2: `data/intents.yaml` (61 intents x 4 languages, templates), `ml/` (build/validate dataset, train xlm-roberta-base joint intent+slot on CPU, int8 ONNX export, evaluation), `backend/app/nlu/local_model.py` (onnxruntime wrapper, optional), `docs/DATASET_GUIDE.md`, `ml/retrain.ps1`, `scripts/check_f2.ps1`. Training epoch 2 of 5: val intent accuracy 98.2% (synthetic data; see the guide's honest limits). Export + test-set evaluation + latency are NOT done yet; the model is not wired into command handling.
+- F3: a task stays open until the user ends it. "end task / that's all / bas / khatam" end it at any time ("Task ended. Anything else?"); two minutes of silence make the SERVER ask "Shall I end this task?" (`POST /voice/session/idle`: wait / ask / ended; yes ends, no carries on, silence for 12 s ends it); the hard expiry is 10 minutes (a crashed page). The session now remembers the folder it works in: "make a folder called X here", "go back", "what is in here" (and Roman Urdu forms) are rewritten against it (`orchestration/session_context.py`; the stored task command becomes the full rewritten command), and the open task is given to the planner as DESKTOP_CONTEXT. The microphone closes after the follow-up time but the task stays open and listening re-opens after the next reply. UIA and screen actions outline the target for 0.3 s before touching it (`tools/highlight.py`, GDI; verified live: 474 amber pixels while drawn, 0 after). Frontend: `SessionCard` (goal, app, folder, steps with check / warning / cross) and the idle timer.
+- Tests: `tests/test_f3_task_sessions.py` (30). One U3 test changed on purpose ("that's all" now ends a task without a question first). Full-suite result: see `docs/eval/f3_pytest.txt`.
+- NOT measured / not done: barge-in <= 300 ms (needs a microphone); the SessionCard and idle timer in a real browser with speech; "highlight" on apps other than the test rectangle; steps' evidence text in the card is limited to tool name + checked / not checked.
+
+### 2026-11-02 — Session 29: U8 settings/docs + "play music on YouTube" bug fix (start of F1)
+
+- U8: settings `screen_vision`, `terminal_window`; user guide section 6b; demo script part 2; `docs/FINAL_REPORT_U8.md`. Clean folder + new venv install of the committed code imports fine (same PC, not a second PC).
+- Bug (language box Urdu, English sentence "I say you can play music on YouTube not only open the URL" -> Urdu "samajh nahi aaya"): (1) `voice/langdetect.py`: the reply and the TTS voice follow the sentence's own language; persona language gains `auto` (new default); Whisper is no longer forced to the language box (`STT_FORCE_LANGUAGE=true` restores it). (2) `executor._planner_or_question`: a command nothing local understood now goes to the planner (only with cloud answers on) before giving up. (3) `orchestration/context.py`: the last 10 tasks are passed to the planner as conversation memory; prompt rule 10 for corrections. (4) `nlu/clarify.py`: if still unsure, ONE specific question in the user's language ("Do you want me to play something on YouTube? Which song or artist?"); the generic line stays for empty/noise only.
+- Tests: `tests/test_bug_youtube_correction.py` (14). Full suite 2931 passed, 1 failed (`test_phase16_worker` kill test: known flaky, passes alone), 4 skipped.
+- NOT done (F1 rest): 300-sentence test set, `correction`/`follow_up`/`end_task` as planner intents, planner run against real Groq for this sentence, spoken run.
+
+### 2026-11-02 — Session 28: Upgrade U7 (vision fallback, layer 3): `screen_act`
+
+- New `app/vision/` (boxes, Windows OCR, numbered overlay, Groq/Gemini vision model) and `tools/screen.py` (`screen_act`): screenshot + OCR/UIA boxes + numbered picture; the model names a box id only; click at the detected box centre; verified by photographing again. Details: `docs/VISION.md`.
+- Order of control logged per action (`layer 2`/`layer 3`); `ui_inspect` hints at `screen_act` for windows with almost no controls.
+- Safety: needs cloud answers on; shells/password managers never looked at; password boxes never typed; send/pay/delete/install boxes only when named (HIGH).
+- Tests: `tests/test_u7_vision.py` (45). Live: `scripts/vision_live.py` on a UIA-blind Tk app with ground truth: run 3 = 20/20 really happened, 18 tool-verified, median 5.2 s, max 22.9 s (rate-limit wait). Runs 1-2: 20/20 and 18/20. Check script: `scripts/check_u7.ps1`.
+
+### 2026-11-02 — Session 27: Upgrade U6 (e-mail + chat messages): OAuth, dictation, voice edits, read-back, send, verify in Sent
+
+**Built (not committed)** — details and setup in `docs/EMAIL_SETUP.md`
+- `app/mail/`: `oauth.py` (authorization code + PKCE, single-use state, tokens only in the Windows Credential Manager, refresh, smallest scopes: Gmail send + metadata + contacts, Outlook Mail.Send / Mail.Read / Contacts / People), `providers.py` (Gmail API and Microsoft Graph over httpx: contacts, send with attachments, "is it in Sent?"), `contacts.py` (name -> contact with the U1 sound-alike matcher, asks when several fit, spoken addresses "ali dot khan at example dot com"), `draft.py` (the draft, undo history, and the confirmation), `service.py` (the only place an e-mail leaves the PC), `rewrite.py` ("make it more formal": cloud AI, shown and used only on yes, needs the cloud-answers permission), `api.py` (`/mail/status`, `/mail/connect`, `/mail/oauth/callback`, `/mail/disconnect`, `/mail/draft`).
+- `orchestration/mail_flow.py`: "Write an email to Ali" -> subject -> dictation sentence by sentence -> "stop dictation" -> "send it" -> read-back of recipient, subject and first line -> "yes, send it" -> sent -> looked up in Sent -> "Email sent to Ali." Voice edits: read it back, delete the last sentence, undo, change X to Y (keeps the capitals), change the subject / the recipient, make it more formal / shorter, attach a file (name and size said aloud, waits for yes), cancel. English and Roman Urdu triggers; one language per e-mail; replies in 4 languages. While a draft is open every plain sentence is dictation, including ones that look like commands.
+- SEND RULE (enforced in code, not by the model): only a sentence with "send" / "bhej" after the read-back sends ("yes", "okay", dictated text do not); the confirmation is a server secret tied to the exact recipients, subject, text and attachments (a hash), voided by any edit, expires after 10 minutes, and a draft is sent once. `send_email` is a tool hidden from the model (`hidden_from_model`: not in any tool list or schema, a plan naming it is rejected), refuses a made-up confirmation even if a click approves it, and `verify` looks in Sent (found = verified; otherwise the answer says to check the mailbox).
+- Chat messages (`orchestration/message_flow.py`, `tools/messenger.py`): "In WhatsApp, message Ahmed 'I'm on my way'" (also Telegram, Teams; EN + Roman Urdu) -> read-back -> "yes, send it" -> deep link (text typed in) -> Send pressed through UI Automation -> the chat is read again (message must appear, text box empty). Numbers from the Memory page ("Ahmed: +92..."), Telegram @names, Teams addresses from the e-mail contacts. Same rule and hidden `send_message` tool; "Send" pressed is recorded before the click so a retry can never send twice.
+- Frontend: live "Email draft" card, Settings > Email (provider choice, Connect opens the provider's own page, Disconnect), 15 s listening window while dictating (`/voice/session` reports `dictation`), `/mail` added to the dev proxy. API auth: `/mail/*` needs the local token except the OAuth callback (state + PKCE protect it).
+
+**Tested how**
+- 79 tests (`test_u6_mail.py` 42, `test_u6_providers.py` 24, `test_u6_messages.py` 13) on a fake mailbox, mock HTTP transports and a fake chat window: the spec's conversation end to end, ambiguity, voice edits, attachments (incl. > 20 MB), every send-rule case (no read-back, "yes" only, edited text, old token, stale, double send, made-up token via tool and via a click, Sent folder missing, provider error, hidden from planner), Gmail MIME / Graph payloads, Sent checks, contacts, OAuth (PKCE, state, refresh, revoked, credential manager missing, endpoints). Existing tool-list tests were updated (the two send tools exist but are hidden). Live probes `send_email` / `send_message` pass only by REFUSING a call with no confirmation.
+- Live on the running backend (text): not connected -> "Email is not connected yet. Open Settings, Email, ..."; `/mail/connect` says which client id to add; the Email section renders in Settings; `/tools` does not list the send tools.
+
+**NOT tested / not done**
+- No real mailbox was touched: there is no OAuth client id on this PC and no test mailbox given. The Gmail / Graph calls are verified against my reading of their documentation through mock transports, not against the services. `scripts/mail_live.py` / `scripts\check_u6.ps1 -Provider -To` does the live send to a TEST mailbox once you add the client id.
+- WhatsApp / Telegram / Teams: not installed or not driven here; only the fake chat window ran. The real apps' Send button names and chat markup may differ.
+- Voice: no spoken run (the built-in browser has no microphone); the 15 s dictation window and the live draft card were not exercised in a browser with a draft.
+- The e-mail text is dictated into the app's own draft, not typed into the Gmail / Outlook compose window.
+- Contact lookup uses the account's contacts only; "recent recipients" and CC / BCC are not built. Reply / forward and reading the inbox are out of scope.
+
+### 2026-11-02 — Session 26: Upgrade U5 (terminal + browser/YouTube completion)
+
+**Built (not committed)**
+- Terminal (`tools/terminal_policy.py`, `tools/terminal.py`, `docs/TERMINAL.md`): `open_terminal` (real cmd / PowerShell / Windows Terminal in a folder, low risk) and `run_terminal_command`.
+  Read-only allow-list runs at once (cd, dir / ls, pwd, type / cat of small non-secret files, echo, where, git status / log / diff / show / branch / remote -v ..., tool versions, pip / npm list); most are done by the program itself, the rest as a fixed argument list with no shell.
+  Anything with `; & | < > ` ^ $ % ( ) { } ! * ? ~` is never allow-listed. Everything else needs approval (medium, shown in full and read out "Say yes, run it, or click Approve"); destructive patterns (del, rm, rd /s, format, reg delete, Remove-Item, shutdown, taskkill, curl | iex, Set-ExecutionPolicy, git push --force / reset --hard / clean -f, pip uninstall, npm publish ...) are high risk and a spoken yes is refused (click only); interactive shells, editors and bare REPLs are blocked even if approved.
+  Output: last 50 lines, secrets masked, a one-sentence summary ("3 tests failed, 12 passed.", "On branch main: 2 changed, 1 untracked.", failures say "It failed with exit code N"), the folder is remembered between commands, time limit with whole-tree kill, the program's own API keys are not passed to the command, and a window titled "AgentDesk terminal" follows a transcript file live.
+  `/tasks/{id}/reply` now also accepts "yes, run it" / "run it" / "go ahead".
+- Browser (`tools/browser.py`, `ai/browser_commands.py`, extension 1.2.0): new actions switch tab, read title, seek (skip / rewind seconds or to a position), speed, volume, mute, unmute, full screen, next video, list results, click result N, scroll; spoken commands for them (and "play the second one" right after a YouTube search); every action is verified from the page itself (the extension re-reads the video's `currentTime`, `playbackRate`, `volume`, `muted`, `fullscreenElement`, the new video id, `scrollY`); a page that did not change is reported as not done; an older extension is told to update. All low risk. `exit` and unset fields are not sent.
+- Planner: tools registered, shortlisted (`run_terminal_command` pairs with `find_paths`), `terminal` intent and a prompt rule.
+
+**Tested how**
+- `tests/test_u5_terminal.py`: 732 tests (parametrized): every allow-list entry (45), approve (38) and high-risk (49) commands, blocked commands, and each allow-listed command with 10 injection tails (450 cases, none may stay allowed), paths outside the allowed folder, real runs (dir, cd remembered across tool instances, type, git status in a temp repo, python --version, exit codes, last 50 lines, time-out kill, secrets kept out of the child), summaries, masking, and the end-to-end approval paths through the executor (low runs unasked; medium waits and is read out; high needs a click and refuses a spoken yes; blocked stays blocked when approved; the model cannot lower risk).
+- `tests/test_u5_browser.py` (86) on a simulated extension + `browser-extension/tests/test_youtube.cjs` on a fake YouTube DOM: every action, bad input rejected before it reaches the page, blocked full screen reported, non-YouTube tabs refused.
+- LIVE on this PC (`scripts/terminal_live.py`, `docs/eval/u5_terminal_live.json`): 9/9 as expected: pwd, dir, git status, git log, python --version, echo, where git (0.07-0.2 s each, verified), an approved python one-liner printed 42, a 60 s sleep was stopped after 5 s with no process left behind. A first run found that `python` on this PC's PATH is the Microsoft Store stub (exit 9009): fixed by putting the real interpreter first in the command's PATH.
+
+**NOT tested / not done**
+- The browser controls on the REAL youtube.com and in a real Chrome with the extension loaded: the extension is not paired on this PC and no Chromium was available (Playwright browsers not installed), so only the fake DOM and the simulated extension ran. YouTube's markup (`ytd-video-renderer a#video-title`, `.ytp-next-button`) can differ; full screen may be refused by Chrome (reported, not claimed).
+- Deliberate difference from the spec's "runs commands typed into the terminal": the window is a live VIEW of a controlled child process (reliable exit code, output, time-out kill). Needs your OK (see the report).
+- Spoken summaries are English only; the terminal summaries for Urdu / Hindi users are still English sentences.
+- Scrolling non-YouTube pages is done with the U4 UI Automation tool, not the extension.
+
+### 2026-11-02 — Session 25: Upgrade U4 (UI Automation layer): `ui_inspect` and `ui_act`
+
+**Built (not committed)**
+- `tools/uia_backend.py`: `UiaBackend` interface + `PywinautoBackend` (pywinauto UIA). A snapshot is at most 80 controls of one window {id, name, type, value, enabled, box, focused, checked, selected}, focused first, then named interactive ones, in reading order; scan limited to 900 elements / 1.5 s. Actions use the control's own patterns (Invoke, Toggle, SelectionItem, Value, Scroll), falling back to a click at the centre of the rectangle UI Automation reported for THAT control, the mouse wheel, or Page Down; no model-invented coordinates. A password field's value is never listed.
+- `tools/uia.py`: `ui_inspect` (low risk, 2 s cache) and `ui_act` (click / type / select / scroll / press_keys / read). Controls are found by NAME with the U1 sound-alike matcher, narrowed by the type the action needs (a label and its field share a name); two equal controls make the tool ASK ("Which one do you mean ...?", shown through the executor's needs_confirmation path), never guess.
+- Risk is set by the server: read and scroll low; click / type / select / keys medium; clicking Pay / Buy / Delete / Submit / Install / Send / Uninstall ..., and Alt+F4 / Ctrl+W / Delete are high. A control whose real name is dangerous cannot be clicked on a plan that did not name it. Shell / admin windows get no input; password and secret-looking fields (password, card, CVV, PIN, OTP) are never read or typed.
+- Verification looks again: typing reads the field back, select checks the item, scroll checks the position or the screen, a click needs the window, a value or the focus to have changed (a click with no visible effect is reported as "cannot say it worked"), a closed window counts as the effect of a click or key.
+- Registered in the tool registry, the planner shortlist (with `ui_inspect`/`ui_act` paired), a new `ui_control` intent and a prompt rule (native tools first). Planner request tokens still fit: median 3.2k, p95 3.7k (limit 8k).
+
+**Tested how**
+- `tests/test_u4_uia.py` (63 tests) on a fake desktop of 7 apps (`tests/helpers/fake_uia.py`): 51 scripted actions over Notepad, Explorer, Settings, Calculator, Word, Excel, Chrome all as expected (incl. 4 that must be refused or reported unverified), plus risk, ambiguity, shell and password refusal, cache, key mapping.
+- LIVE on this PC (`scripts/uia_live.py`, `docs/eval/u4_live.json`): the real backend drives its own Calculator, a Notepad tab on a temp file, an Explorer window on a temp folder, Settings and a Chrome page. First run 0/31 (a wrong wrapper call and duplicate control names), then fixed; runs 2 to 4: 28/33, 30/32, **32/33 (97.0%)**: calculator 9/9 (7+8 reads 15, misheard name "clea" -> Clear), notepad 7/7, settings 5/5, chrome 7/7, explorer 4/5 (Alt+Up did not change the window; left as a failure). These fixes were made against the same scenarios, so 97% is not a blind number.
+- Read-only on your real windows: Explorer 80 controls (truncated) in 1.1 s, Chrome 33 in 0.6 s, the Claude window 4 controls (an Electron app that exposes little).
+
+**NOT tested / not done**
+- Word and Excel: not installed on this PC (only the logic is covered by the fake desktop). The target 50 live actions: 33 were run.
+- The planner (LLM) choosing `ui_inspect` then `ui_act` was not run against Groq; no examples were added to the few-shot file.
+- The element cache lives per server process; heavy apps (a browser page with thousands of elements) are cut at 900 elements, so a control far down a big page may not be listed.
+- Layer 3 (vision) is U7.
+
+### 2026-11-02 — Session 24: Upgrade U3 (agent loop + conversation): task session, conversation phrases, bounded re-check, "Anything else?"
+
+**Built (not committed)**
+- `orchestration/session.py`: the task session (goal, steps done with verified flag, current app, open items such as "waiting for approval", `awaiting`), stored as a preference row, expires after 90 s idle, updated after every command and run (`GET /voice/session`, `POST /voice/session/close`). After a VERIFIED result `awaiting = "anything_else"`; a failure, a question or an approval never sets it.
+- `orchestration/session_commands.py`: whole-utterance phrases in English, Roman Urdu, Urdu and Hindi, checked before any command parser: stop (cancels the running / waiting task = kill switch, closes the session), wait (cancels nothing), repeat, read it to me, undo (the same verified rollback as the Undo button), and "no / that's all / thanks / bas shukriya" or "yes" ONLY right after "Anything else?". "go back" is left to the browser commands.
+- `/voice/line` appends "Anything else?" (4 languages) to the closing line of the task the session is about (not to long read-outs); setting `anything_else` (Settings checkbox, default on); follow-up window default 8 -> 10 s.
+- Bounded re-check (`executor._observe_and_retry`): when a step ran but its check did not see the result, it is repeated up to 2 times ONLY for tools that are safe to repeat (open_application, open_folder, list_folder, list_trash, find_files, find_paths); create / write / delete / send / install / settings are never repeated by the server; the result records `attempts` and a final failure says "(tried 3 times)".
+- Frontend: after a spoken reply the microphone re-opens only while the session is open ("that's all" returns to idle); silence for the follow-up window closes the session. Barge-in on speech start already existed (`onspeechstart` stops the player at once).
+
+**Tested how**
+- `tests/test_u3_conversation.py`: 48 tests including 10 scripted multi-turn conversations (result -> anything else -> no; repeat twice; create -> undo -> nothing to undo; stop cancels a waiting approval; wait cancels nothing; Roman Urdu closing; a plain "no" is not swallowed; retry succeeds for open_application on the second check; create_folder is never retried; read it -> yes -> idle expiry). All pass.
+- Live on the running backend (text, through the dev proxy): "show trash" -> session open, awaiting anything_else, spoken line "Done. It is empty. Anything else?"; "no thanks" -> "Okay, I'm here if you need me." and the session is closed.
+- Full backend suite and frontend: see the report below / `scripts\check_u3.ps1`.
+
+**NOT tested / not done**
+- No spoken conversation was run (the built-in browser has no microphone): the re-opening microphone, barge-in within 300 ms and the spoken "Anything else?" need the live checks in `scripts\check_u3.ps1`.
+- The 300 ms barge-in time was not measured (only the code path exists).
+- Dictation mode (email, U6), "undo" for tools without a checkpoint (it says there is nothing it can undo), and a re-plan by the cloud model after a failed step in the local path (only the existing Groq agent loop observes and re-plans; the local path re-checks, then reports).
+
+### 2026-11-02 — Session 23: Upgrade U2 (speed): latency log with budgets, early acknowledgement, model routing, warm connection
+
+**Built (not committed)**
+- `voice/latency.py`: `BUDGET_MS` (section 7), `record_task` (server row per command: plan, execute_verify, total, route; no command text), `stage_report` (p50 / p90 / share within budget / ok or MISS). `executor.start_task` writes the row; `GET /voice/latency/stages`; `scripts/latency_report.py` prints the table from the app's real log. The browser now also reports `transcribed` and `ack_first_word`.
+- `POST /voice/ack`: "Opening Chrome." from the local fast path in under 1 ms, only for safe one-step open/show/read tools (`EARLY_ACK_TOOLS`); delete, volume, remember, multi-step and unknown commands get none. The page speaks it in parallel with the task (`useSpokenReplies.earlyAck`); the closing line waits for it to finish; the old 900 ms timer ack is skipped when the early one fired.
+- Model routing (`nlu/planner.py`): `is_complex()` (sequence words, long, "and" in a long sentence); simple -> gpt-oss-20b first, complex -> gpt-oss-120b first, the other is the fallback; the plan is validated either way. Two old tests asserted 120b-first and were updated.
+- Warm connection: Groq client keep-alive 90 s (httpx default is 5 s) + `ai/warm.py` pings a no-token endpoint every 50 s while the app was used in the last 30 min (measured: a request after 70 s idle 874 ms vs 330 ms warm; Groq closes an idle connection after about a minute). A rejected key is dropped and the next key tried.
+- Endpointing: VAD end silence 650 -> 450 ms, hold before sending a Whisper result 500 -> 120 ms. RISK: a sentence with a longer pause may be cut in two; needs a live test.
+- Bug found while testing: my edit scripts turned doubled backslashes into backspace characters (`\b` in regexes). The U1 "plus plus" rule (committed in 56d1dd3) never worked until now; fixed together with the new routing patterns.
+
+**Measured (this PC)**
+- `scripts/latency_u2.py`, 30 runs, sandbox app, read-only / sandbox-folder commands, apps NOT launched (`docs/eval/u2_latency.json`): Whisper p50 1112 ms (p90 1321); /voice/ack p50 6 ms; first TTS sentence p50 30 ms; plan p50 11 ms; execute + verify p50 20 ms (max 514); closing line + its TTS about 27 ms.
+  Estimated end of speech -> first acknowledgement audio (adds the configured 450 ms VAD silence and 120 ms hold, NOT measured in a browser): p50 1711 ms, p90 1790 ms -> **MISS of the 1.5 s budget** (1 of 18 within it). Only 18 of 30 commands got an early acknowledgement.
+  Estimated end of speech -> done: p50 1754 ms, p90 2009 ms, max 2816 ms; **30 of 30 under 5 s**.
+  Cause of the acknowledgement miss: Whisper alone takes 1.1 s here (network round trip about 330 ms); the spec assumed 0.5-0.8 s.
+- Fast path (`scripts/fastpath_coverage.py`, 250 first-turn gold commands): 99.2% answered locally with the right tools (dev 166/168, holdout 82/82), 0.16 ms median.
+- Model routing live (`scripts/model_routing_check.py`, 6 gold commands, `docs/eval/u2_models.json`): gpt-oss-20b 6/6 right tools, median 775 ms; gpt-oss-120b 6/6, median 1102 ms. Six commands only: it shows 20b is about 30% faster on these, not that it is as accurate in general.
+- Tests: full backend run 1861 passed, 2 failed (the two old model-order assertions, then updated; `tests/test_nlu.py` 56 passed), 4 skipped; 32 new tests in `tests/test_u2_speed.py`. Frontend `tsc` clean, `npm test` 21/21.
+
+**NOT measured / not done**
+- Launching an app and verifying it (the real cost of "Open Chrome"): not run, to avoid opening windows from a test; the app's own log fills it in during real use (`scripts\check_u2.ps1`, `latency_report.py`).
+- The microphone, browser and playback stages (only added as constants); the spoken early acknowledgement itself was not heard (the built-in browser blocks the microphone, and no audio was played).
+- Vision tasks and multi-step progress line within 5 s (U7 / U3). UIA tree cache (U4).
+- The Whisper stage misses its 1.1 s budget (p50 1.11 s, p90 1.32 s); it is the network, not the code.
+
+### 2026-11-02 — Session 22: Upgrade U1 (understanding): entity index, sound-alike matching, Whisper vocabulary, correction memory
+
+**Built (not committed)**
+- `nlu/entity_index.py`: names of installed apps (Start Menu, App Paths, Store apps via Get-StartApps, built-in aliases), recent files, Documents/Desktop/Downloads/Pictures/Videos/Music (depth 3), Explorer Quick Access. Names only; rebuilt in a background thread at start and every 10 min (`AGENTDESK_ENTITY_INDEX=0` turns it off; tests do). `add_external()` is the hook for browser page titles and contacts (NOT filled yet: needs the extension / U6).
+- `nlu/phonetic.py`: a Metaphone-style key written for this project (NOT full Double Metaphone: one key per word) + a Roman-Urdu/Hindi spelling folder (kh/k, aa/a, ee/i, oo/u, w/v, z/j) and the "kholo/khol do..." verbs.
+- `nlu/entity_match.py`: score = max(text similarity, sound similarity) with guards (half the words unmatched -> ask; "pad" must not match "notepad"; exact name beats Notepad++; exe names from App Paths weigh 0.9; duplicate spellings merged). `decide()` follows section 4.4: >= 0.85 and 0.08 ahead -> act; 0.60-0.85 -> act and say what was understood; below 0.60 or two close -> ask; high risk acts only on an exact name. Over 150 names a C-speed pre-filter picks ~40 names to score (test proves same answers).
+- Wired in: `open_application` ranking (and the 0.60 rule, reply carries `heard` / `understood`), `find_paths` / `find_files` scoring, `/voice/stt` (server adds your app, file and folder names to the Whisper prompt, <= 700 characters), planner (`NAME_CANDIDATES` top 3 as data + prompt rule 9).
+- Correction memory: "no, I said Firefox" / "nahi maine Firefox kaha tha" opens Firefox and stores `heard => meant` as a memory row of kind `alias` (shows on the Memory page, editable; nothing stored when memory is off). Used by `open_application` and the matcher.
+
+**Measured**
+- Text evaluation, 218 commands (74+34 mispronounced), fixture index with look-alike names (`tests/nlu_eval/u1_cases.py`, `scripts/eval_u1.py`, raw rows `docs/eval/u1_eval.json`):
+  DEV 153 cases (used while tuning): 100% target ok (incl. asking with the right candidate), 93.4% resolved without asking, 0 wrong actions, 0 wrong high-risk actions.
+  HOLDOUT 65 cases (run once after tuning; I did not retune after): 98.5% ok, 84.7% resolved without asking, 1 wrong action ("what's up app" -> WhatsApp, labelled NONE by me; arguably acceptable), 0 wrong high-risk actions.
+  The spec target (>= 95%, 0 wrong high-risk) is met ON THIS SET. The set is written by me and the fixture is small (59 apps, 20 files, 16 folders): it is evidence, not proof.
+- Real index on this PC: 1,764 names (226 apps, 1,448 files, 90 folders) built in 2.7 s in the background (Store apps 3.1 s and Quick Access 1.8 s are the slow sources); lookup median 3.6 ms, max 15 ms; planner hint over all names 105 ms; Whisper hint 688 characters.
+- `pytest tests -q` -> 1830 passed, 4 skipped (48 new in `tests/test_u1_entity.py`). Two known timing-sensitive subprocess tests (`test_phase9_reliability` kill test, `test_phase16_worker` kill test) failed in some full runs under load and pass alone.
+
+**NOT measured / not done**
+- Real accented or Urdu/Hindi SPEECH: the 218 cases are text. Whisper's own hearing of your voice with the new hint is untested: `scripts\check_u1.ps1` lists the spoken checks for you.
+- The Whisper hint effect is unmeasured (no A/B with real audio). The planner `NAME_CANDIDATES` were not run against Groq.
+- Files by type/folder/date hints ("the Word one in Documents", "from yesterday"), browser titles and contacts in the index: later milestones. Store (UWP) apps are in the index and the hint but `open_application` still launches only Start Menu shortcuts and known exes.
+- `risk_for_args`: a fuzzily matched Start Menu app now counts as a known app (low risk) from score 0.60; this is the spec's rule but it loosened the old 0.82.
+
+
+### 2026-11-01 — Session 21: "Open the YouTube" failed (user screenshot)
+
+**Two bugs**
+1. A spoken article broke the parsers: "Open the YouTube" became `open_application` with app name "the YouTube" (also "the chrome", "the notepad", "the gmail", "the folder downloads"). `clean_transcript` now drops
+   a "the / a / an" right after the verb (and before a Roman Urdu verb) and the final period, before any parser runs. `open facebook / instagram / twitter / linkedin / google / netflix / reddit / amazon / wikipedia` open the website.
+2. A task could hang: when `open_application` answered "closest installed apps: ..." the executor set FAILED and then AWAITING_INPUT, an illegal state change: `/run` returned HTTP 500 and the page showed "executing / Running..." forever (the screenshot).
+   The status is now decided once. The user gets a short question: "I couldn't find \"x\". Did you mean GitHub Desktop? Say yes, or the exact name." (readable and speakable).
+
+**Measured (sandbox server, this PC):** "Open the YouTube" plan + run + verify = 0.53 s and 0.75 s (completed, verified); "show trash" 0.06-0.44 s. Whisper adds 1.1-2.6 s before this, so a spoken command takes about 2-3.5 s end to end; the part this code controls is under 1 s.
+**Tested how:** `pytest tests -q` -> 1782 passed, 4 skipped (new: 20 tests in `tests/test_voice_live_fixes.py`, including a regression test that fails without the executor fix).
+
+### 2026-11-01 — Session 20: Step 1g, planner comparison result (200 commands, old local path vs new strict planner)
+
+`scripts/shadow_replay.py`, 200 single-turn gold commands (50 per language), tool shortlist on, one call every 45 s, about 2.5 hours; raw rows and summary in `docs/eval/1g_shadow_main/`.
+
+| | old local path | new planner |
+|---|---|---|
+| right tool sequence | 178 / 200 (89.0%) | 178 / 200 (89.0%) |
+| right tools and arguments (198 without find-then-act steps) | 156 / 198 (78.8%) | 166 / 198 (83.8%) |
+| has an answer | 177 / 200 have a local plan, 23 would go to the Groq agent loop | 193 / 200 (7 failed: 4 unresolved references, 2 AIError, 1 rejected plan) |
+
+- By language, right tool sequence old / new: English 46 / 45, Roman Urdu 44 / 47, Urdu 44 / 42, Hindi 44 / 44. Where both produced a plan (173) the tool sequences agree 154 times (89%).
+- New planner latency: median 1.23 s, p90 1.87 s per call (Groq, tool shortlist).
+- Meaning: the strict planner is as good as the local parsers on tools and slightly better on arguments, and it covers commands the local path cannot. It is NOT better on tool choice, and it is worse on Urdu script. One run, one dataset, tools-and-arguments scoring only (not the intent label of Gate G3).
+- Not decided: `PLANNER_MODE` stays `legacy`; the planner is already used for conversation intents (Step 1e). Making it the default planner is the user's call.
+- Still open for 1g: the `whatsapp_open_chat` and `winget_install` live checks (need your number and a package ID: `scripts\check_1g.ps1`) and the browser check (extension not paired).
+
+### 2026-11-01 — Session 19: live voice test, issues found and fixed
+
+**How:** `backend/scripts/voice_live.py` runs the REAL voice pipeline against a sandbox copy of the app (temporary home and database) and prints every step with times:
+the command is spoken with the app's TTS, transcribed by Groq Whisper, run as a task (actions, risk, verification), a spoken "yes" is sent for approvals, the closing line is produced and spoken.
+Run it in a terminal; it plays the audio on your speakers. It writes `docs/VOICE_ISSUES.md` and `docs/eval/voice_live/`. NOT covered: your microphone, the page's voice-activity detection and playback.
+
+**Found by the first run (21 issues) and fixed**
+- V1 high: Whisper ends every transcript with "." and `create a folder called Lab in Documents.` was not understood (parsers expect no final period). `strip_end_punctuation` now runs before the local parsers.
+- V2 medium: that period was also stored in memory ("...12 December." and "December.." when read back). Stripped.
+- V3 high: every Urdu / Hindi reply was **silent audio returned as HTTP 200** (46-byte WAV): this PC's SAPI has only English voices. A silent clip now counts as a failure, `/voice/tts` answers 503, and the page speaks it with the browser voice.
+- V4 high: Urdu / Hindi "remember / what do you remember / forget" were not understood locally (0/20 of the Step 1e phrasings). Added the forms to the fast path (`tests/test_voice_live_fixes.py`).
+- V5 medium: a long "could not read that command" note was spoken as "Which one? See the screen.". Now "I didn't catch that, say it again"; a numbered list of candidates still says "which one".
+- V6 medium: a failed web answer read out `WIKIPEDIA_CONTACT_EMAIL ... docs/SEARCH_SETUP.md` for 13 seconds. Setup-style errors are now spoken as "it isn't set up yet, details on screen".
+- V7 medium: "list the files" / "show trash" said only "Done.". Now "Done. There are 5 items: a, b and c, 2 more." (4 languages).
+- V8 low: every assistant answer began with "Right away." (the persona's example catchphrase leaked into the prompt). Removed from the prompt; the UI text is unchanged.
+- V9 latency: each spoken sentence started a new PowerShell (~0.9 s). A persistent SAPI worker (`SapiWorker`, warmed at server start, falls back to the old path) makes it 25-160 ms.
+- Memory confirmations ("Okay, I'll remember: ...") were English for Urdu / Hindi users; now localized.
+- Whisper hint now includes "create a folder in Documents, Desktop, Downloads" (it once heard "in" as "&"; not reproducible, only a mitigation).
+
+**Environment problems found and fixed**
+- The launcher expects `backend\.venv` (from INSTALL.cmd) but it did not exist, so the app ran on the system Python 3.14, which lacks 12 required packages (groq, pycaw, screen-brightness-control, pywinauto, keyring, tiktoken, pypdf, python-docx, edge-tts, ...).
+  Created `backend\.venv` (Python 3.12, git-ignored) from `requirements.lock.txt` + `requirements.txt`; the server now runs on it.
+- `python-multipart` is needed to import the app (speech upload) but was only in `requirements-cloud.txt`: a clean install would not start. Added to `requirements.txt`; the five packages missing from `requirements.lock.txt` were appended to it (pinned to the installed versions).
+
+**Second run (after the fixes): 11 issues left, none critical, no high.** Spoken "yes" approved a medium-risk folder creation (verified) and did NOT approve a high-risk delete (stayed awaiting approval, told to click Approve).
+- No server voice for Urdu / Hindi replies (503, browser voice is used): edge-tts cannot reach `speech.platform.bing.com` from this network (intermittent) and Orpheus needs its terms accepted by the Groq org admin. English uses Windows SAPI (David / Zira / Hazel).
+- Latency end of speech -> first reply audio: 1.9-2.9 s for local commands, 4.3 s for a cloud answer, so about 1 in 2 are over the 2.5 s target; Whisper takes 1.1-2.6 s of it. (The 14 s and 4.6 s rows include a second spoken turn for the approval and a cold sandbox: harness artifacts.)
+- No spoken input for Urdu / Hindi could be tested: there is no Urdu / Hindi voice here to produce the audio. Those cases went in as text. Real Urdu / Hindi speech still needs a human test.
+
+**Tested how:** `pytest tests -q` -> 1761 passed, 4 skipped (new: `tests/test_voice_live_fixes.py`, 44); frontend `tsc` clean, `npm test` pass, `npm run build` ok.
+
+### 2026-11-01 — Session 18: Step 1g, planner tool shortlist (decision: shortlist tools; fixes the HTTP 413)
+
+**Done**
+- `app/nlu/shortlist.py`: per command the planner is shown only the tools it could need (hand-written English / Roman Urdu / Urdu / Hindi trigger words per tool, plus the local matcher's guess,
+  last turn's tools for follow-ups like "a bit more", and pairs such as file operations -> `find_paths`, install -> `application_package`). 6 to 11 tools instead of 38; the prompt catalogue, the few-shot examples and the JSON schema all use the same list.
+- Safety unchanged: the shortlist only narrows what the MODEL may name. Every plan is still validated against the FULL registry; risk and approvals come from the tool. A wrong shortlist can only make the planner say unsupported / ask, never run something extra.
+- Cloud brain (`/cloud/plan`) uses the same planner code, so it benefits once Render is redeployed.
+
+**Measured (offline, `scripts/shortlist_report.py` -> `docs/eval/1g_shortlist.json`)**
+- Planner request size (prompt + examples + schema): **9,332 tokens with all tools -> median 2,979, p95 3,479, max 3,977** (limit 8,000 per minute on the free tier).
+- Shortlist recall (the gold plan's tools are all offered): dev 184/184, holdout 90/90 (not looked at while writing the word lists), all 274/274 (earlier turns passed as context, as in the app).
+  Without the earlier turns 5 follow-ups ("a bit more", "delete the first one") were missed: they rely on last-turn tools. Conversation phrasings of Step 1e: 300/300, BUT I added words after seeing 20 misses, so that number is tuned.
+- Live, 3 real planner calls on this PC: all succeeded (valid plans: volume up -> `manage_system_setting`, "youtube kholo" -> `open_url`, "mera exam ... yaad rakho" -> intent `memory` / `memory_remember`), 2.7-2.8k prompt tokens, 1.2-4.1 s.
+
+**NOT measured:** how accurate the planner is over many commands (the 200-command comparison, see the next entry). Recall of the shortlist is not accuracy of the model.
+`pytest tests -q` -> 1715 passed (+ the known load-sensitive `test_phase9_reliability` kill test failing once under full-suite load).
+
+### 2026-11-01 — Session 17: Step 1g, planner comparison and live checks (BLOCKED: the planner cannot run on the free tier)
+
+**Done**
+- `live_check.py --api [URL]`: `control_browser` is probed through the RUNNING app (the extension's socket lives in the server process, not in the script): `/browser/status`, then the read-only task "list tabs", judged on the verified result. Tests with a fake transport (5).
+- `scripts/shadow_replay.py`: replays the single-turn gold commands (`tests/nlu_eval/commands.jsonl`, 276 items usable) through the OLD local path and the NEW strict planner, scores both against gold (tools and arguments), per language.
+  Resumable, paced to the token limit (65 s between calls), temporary database, ids only in the output. Tests with a fake planner (6).
+- `scripts/check_1g.ps1` for you: browser probe, WhatsApp draft (needs YOUR number), winget install (needs an exact ID you choose), optional shadow replay. BLOCKED / SKIP rows are not shown as PASS.
+- Back-off in `planner_mode.routing_plan`: after one failed planner call it is not asked again for 5 minutes (found below; the every-mode routing was otherwise adding failing calls to every unparsed command).
+
+**Measured live (this PC, 2026-11-01)**
+- `control_browser --api`: **BLOCKED**, `/browser/status` = connected false, 0 profiles: no browser extension is paired right now. Not a pass.
+- Shadow pilot, 5 commands (`docs/eval/1g_shadow_pilot/`): old local path 5/5 correct (tools and args); new planner **0/5, every call failed**.
+- Why: (1) the strict planner request is about **9.3k tokens** (system 2.3k + examples/user 0.6k + JSON schema 6.5k for 38 tools); Groq's free tier allows 8k tokens/minute, so BOTH models answer HTTP 413 "request too large".
+  It was ~7.1k in M1 and has grown with the new tools. (2) The Render cloud brain answers `/cloud/plan` with HTTP 500 (cause unknown: needs the Render logs).
+  So the planner is not usable on the current limits at all, and the 200-command old-vs-new comparison is **NOT done**.
+
+**Not done / needs you**
+- Planner request must fit under 8k tokens (or a higher Groq tier). Options: shortlist the tools sent per command, drop the strict schema for a catalogue plus server-side validation, or a paid tier. This is a design/cost decision.
+- `whatsapp_open_chat` and `winget_install` live checks: run `scripts\check_1g.ps1 -WhatsAppPhone <your number> -InstallId <package id>` on your PC (they need your number and a real install).
+- Pair the Chrome/Edge extension, then rerun the browser check. Check why Render `/cloud/plan` returns 500.
+
+**Tested how:** `pytest tests -q` (project venv) -> 1706 passed, 4 skipped.
+
+### 2026-11-01 — Session 16: Step 1e, routing behind the planner's `intent` (regex = fast path)
+
+**Done**
+- New planner intents `memory`, `summarise`, `web_answer` (next to the existing `chat`); `Plan.intent` carries the label; system prompt updated.
+- `conversation_flow.route_by_intent`: with `PLANNER_MODE=structured`, when the regex rules decide nothing, the strict planner's intent routes the command:
+  `chat` -> short spoken answer, `web_answer` / `memory` / `summarise` -> the planner's plan (tools, risk and approvals still decided by the server).
+  A label whose tools do not match (e.g. `memory` + `delete_file`) is not routed. `chat` and `web_answer` still need the user's cloud-answers permission.
+- Fast path fixed: the first run of the new phrasing tests found 23 real misroutes (memory questions such as "what did you save about me" sent to cloud chat; a URL containing "news" sent to web search).
+  `classify` now defers (returns None) on memory words and on URLs / file paths.
+- 360 phrasings (6 intents x 20 EN / 20 Roman Urdu / 10 Urdu / 10 Hindi) in `tests/routing_phrasings.py`; `tests/test_m5_routing.py`.
+
+**Tested how:** `pytest tests -q` (project venv) -> 1689 passed, 4 skipped (was 947). `python scripts/routing_report.py` -> `docs/eval/m5_routing_fastpath.json`.
+
+**Measured (regex fast path only, no model):** it decides 170 of 360 phrasings and routes 0 of them wrongly. By language it decides 94/120 English, 56/120 Roman Urdu,
+7/60 Urdu, 6/60 Hindi. The rest (190) are left to the planner. Caveat: the fast path was changed after a first run, so this is not a blind measurement.
+
+**NOT measured:** how well the real model labels intents for the 190 phrasings the regex leaves (the tests use a fake planner that returns the labelled intent).
+Nothing here was run against Groq.
+**Decision (user, 2026-11-01): ask the planner in every mode.** `planner_mode.routing_plan`: in `legacy` and `shadow` mode a command that the regex fast path and the local parsers did not understand
+is first labelled by the planner; only chat / memory / summarise / web_answer intents are routed, any other plan is discarded and the old Groq agent path runs as before.
+Cost: one extra cloud call per such command. Never asked in Local-only mode, in explicit-cloud mode (`AI_CLOUD_MODE`), or without a cloud key (tests prove each).
+`pytest tests -q` -> 1694 passed, 4 skipped. `test_phase9_reliability.py::test_kill_during_execution_then_restart_reports_honestly` (subprocess servers, 20 s timing window,
+mock provider, never reaches the planner) failed twice in full-suite runs while the machine was busy and 0 of 12 times alone; treated as a load-sensitive flake, root cause not investigated.
+
+### 2026-11-01 — Session 15: Step 1f, App.tsx split (no behaviour change)
+
+**Done:** `frontend/src/App.tsx` 1,417 -> 212 lines. Moved to `taskFormat.ts`, `components/{Spinner,ActionCard,AppHeader,CommandPanel,TaskPanel,TaskHistory}.tsx`,
+`speech/recognitionTypes.ts`, and hooks `useTasks`, `useAppData`, `useVoiceCore` (shared voice state/refs), `useVoiceInput` (microphone side), `useSpokenReplies`.
+The largest new file is 252 lines. The code was moved, not rewritten; one-off `stopSpeaking` handler extracted from the button.
+
+**Tested how:** `tsc --noEmit` clean; `npm test` 21/21; `npm run test:e2e` (Edge, real backend, includes pixel snapshots) 23/23; `npm run build` ok.
+
+**Not verified:** real microphone / real voice (the e2e microphone is faked). `src/api.ts` is still 347 lines (over the 300 limit; not part of App.tsx).
+
+### 2026-10-31 — Session 14: M5 web search rebuild (branch `m5-search`, NOT merged, NOT yet measured live)
+
+**Decision (user, 2026-10-31):** option B. Wikipedia official REST API + Tavily, behind a `SearchProvider` interface; no scraping, no
+user-agent spoofing. Contact e-mail for Wikipedia's User-Agent and the Tavily key are still to be provided by the user.
+
+**Done**
+- Removed the DuckDuckGo HTML scraping and its browser-style user agent. `app/search/`: `provider.py` (interface, `SearchBusy`,
+  `SearchNotConfigured`), `wikipedia.py` (REST search + page summaries, User-Agent `AgentDesk-AI/0.3 (Riphah FYP; <email>)`, at most 1 request/second,
+  off until `WIKIPEDIA_CONTACT_EMAIL` is set), `tavily.py` (key from Windows Credential Manager or `TAVILY_API_KEY`; sent only in the
+  Authorization header), `router.py` (Wikipedia first for "what/who is ..." definitions, Tavily for everything else, each the other's fallback),
+  `cache.py` (10-minute TTL), `budget.py` (token budget with gpt-oss's `o200k_harmony` tokenizer; estimate fallback is labelled).
+- `web_answer` now: checks the privacy switch BEFORE any search request (the question itself goes to Wikipedia/Tavily), reads provider snippets
+  (no page scraping), keeps the whole prompt <= 1,500 tokens, summarises with gpt-oss-20b, caches answers 10 minutes, and says
+  "Search is busy, try again in a minute." on 429 / Tavily 432-433. Verifier also checks the token budget.
+  `summarise_page` / `summarise_file` use the same budget and the small model; the page reader identifies itself honestly as `AgentDesk-AI/0.3`.
+- `scripts/set_search_key.py` (hidden prompt -> Credential Manager), `docs/SEARCH_SETUP.md`, Settings shows which providers are set up.
+- `scripts/eval_conversation.py`: model grading (gpt-oss-120b, correct / partly / wrong) next to keyword grading, CSV for spot-checks, target
+  web >= 18/20 model-graded correct.
+
+**Tested how:** `pytest tests -q` -> 947 passed, 4 skipped (new `tests/test_m5_search.py`, 41 tests: Wikipedia headers + 1/s spacing, Tavily key only in the
+header, 429/432/433, routing table, cache TTL, token budget, injection text fenced, no request before permission). All with fakes.
+
+**NOT measured:** nothing live. Wikipedia and Tavily were not called (no e-mail, no key), so the web target (>= 18/20, twice, an hour apart) is
+unproven. M5's last live result stays: web 12/20 (old DuckDuckGo path, keyword graded). The first run of the tokenizer downloads its vocabulary
+file from a public host (a new network destination, no user data).
+
+### 2026-10-31 — Session 13: Step 0 merge to main (v0.3.0)
+
+**Done:** merged `m1-cloud-brain`, `m2-voice`, `m3-avatars`, `m4-ui`, `m5-memory-chat` into `main` in that order (merge commits, no squash).
+Full backend + frontend unit suites after each merge: 736, 774, 831, 837, 918 backend tests passed (4 skipped) and 4, 11, 18, 21, 21 frontend tests.
+Browser tests (Edge) 14/14 on the M5 branch before the merge. Tagged `v0.3.0`.
+
+**Known issue (not fixed):** `tests/test_phase16_worker.py::test_apps_started_by_earlier_jobs_survive_a_later_kill` is flaky:
+about 3-4 failures in 20 runs, and the same rate on the original v0.2.0 commit `7a5f967`, so it is not new. In the failing runs the helper app
+started by the earlier job is already gone when the assertion runs although it is not in `killed_pids`. Root cause not found. It could be
+only a test race (the helper is a venv launcher process), or a real defect where an app the assistant opened closes when a later tool times out.
+Needs investigation before v1.0. One full-suite run during the M5 merge failed on it; the rerun passed (918).
+
+**Web answers target NOT met:** M5 live eval web 12/20 (target 18/20). Web search rebuild in progress on `m5-search` (user decision: Wikipedia
+REST API + Tavily; waiting for the contact email and the Tavily key).
+
+### 2026-10-31 — Session 12: M5 Memory and conversation (branch `m5-memory-chat`)
+
+**Done**
+- Memory tools `memory_remember` (low), `memory_recall` (low), `memory_forget` (medium, preview + approval, refuses when several notes match);
+  voice/typed routing by strict rules (`app/conversation.py`), `DELETE /memory` (delete all) + button, secret guard now also refuses
+  "my password is ..." (it let that through before), daily greeting (`GET /voice/greeting`, Settings switch, once per day).
+- Chat answers (`conversation_flow.py`): questions and small talk get a spoken answer of at most 3 sentences with persona wording and the
+  saved notes as fenced data. `web_answer` (search, read up to 3 pages as data, answer + sources), `summarise_page`, `summarise_file`
+  (txt/md/csv/pdf/docx, allowed folders only), "summarise <url or full path>" routing. A spoken line for a verified single action is its own
+  `spoken` text, not "Done."
+- **Privacy gate (decided by the user, 2026-10-31):** questions and web text go to Groq only after the user says yes. Onboarding step
+  "Questions and privacy" asks once; Settings has the switch; unanswered or "no" means questions are refused locally with a spoken
+  explanation and nothing is sent. One switch covers chat and web answers; "Local only" mode overrides it. Commands for this PC are unaffected.
+
+**Tested how**
+- `pytest tests -q` -> 900 passed before the gate; `tests/test_m5_conversation.py` 81 passed after (adds the gate, search limits, routing).
+  Browser tests (Edge): 14/14 for ui + new_user after the gate.
+- Live evaluation (`scripts/eval_conversation.py`, real Groq via the cloud brain, real internet, keyword-graded, run on the code BEFORE the
+  fixes below): **chat 19/20, web 12/20, memory 3/3**. Chat miss: "hello" -> "Good evening. How may I assist you?" is a fine answer my
+  keyword grader rejected (counted as a miss). Web misses: 6x "couldn't read any web page" (DuckDuckGo's HTML endpoint answered HTTP 202,
+  a bot challenge, after a few quick queries; Wikipedia answers 403 to any generic user agent), 2x cloud brain 422 (my prompt was ~10,500
+  characters; the cloud brain refuses over 8,000). **The 90% target for web answers is NOT met.**
+- Fixed after the eval: prompt documents capped at 6,000 characters; a throttled search now says so instead of "couldn't read any web page".
+  Not re-run live yet.
+
+**Not done / needs the user**
+- A reliable web search source. DuckDuckGo's HTML endpoint is rate-limited for automated use and Wikipedia requires contact details in the
+  user agent. Options need a user decision (an API key, or what contact to send). No workaround was added.
+- Human steps in `docs/TEST_SCRIPT.md` (M5). Web answers and summaries not verified on a second internet connection.
+
+### 2026-10-31 — Session 11: M4 UI refinement (branch `m4-ui`)
+
+**Done**
+- Design tokens (`--bg/--surface/--raised/--line/--ink/--ink2/--accent/--ok/--warn/--bad`) in Tailwind + `index.css`; dark HUD by default,
+  light theme toggle (remembered), accent follows the chosen character, Inter / Space Grotesk (web fonts; system fonts offline),
+  14 px radius, glass cards. The old components keep their classes; legacy slate/white/blue/red/amber/emerald classes are mapped to tokens.
+- Left rail (Home, Characters, Memory, Settings; bottom bar under ~770 px), Start AI / Stop button + `Ctrl + Space` hint, chat-bubble
+  transcript, avatar-first Home. Mini mode = 72 px character bubble with state glow and an "Approve?" tag. Tray: Start/stop listening,
+  mini mode, Settings (`window.__agentx` hooks, fixed calls only). Settings: follow-up window 0-15 s and speech volume (new preferences).
+- Playwright now installed (`playwright`, `pixelmatch`, `pngjs`); the harness runs on Edge and ignores local API keys.
+
+**Tested how (all on this PC)**
+- `pytest tests -q` -> 837 passed, 4 skipped. `npm test` 21 passed (incl. contrast >= 4.5:1 for every text/background token pair in both
+  themes and for all six avatar accents, read from the real CSS). `npm run build` ok.
+- `npm run test:e2e` -> 20/20 in Edge: 8 earlier flows (onboarding now 5 steps), 10 new UI tests (avatar select + reload, filter, personality,
+  avatar mood idle/listening/concerned, approval, theme, settings persistence, layout at 1280 and 360 px, focus ring, mini mode), 2 pixel
+  snapshots of Home (baselines in `frontend/e2e/snapshots/`).
+- `docs/ui/`: 27 screenshots (onboarding, home, characters, memory, settings, approval card in dark and light, at 100% = 1920x1080 and
+  150% = 1280x720 CSS px at 1.5x; mini mode); none scroll sideways (`docs/ui/report.json`).
+
+**Not done / not measured**
+- Not tested at real Windows display scaling 125%, on a 4K monitor, or with Narrator; "150%" is emulated in the browser.
+- Tray and mini window were not run (pywebview shell); only the tray menu logic is unit-tested.
+- Spec items not built: Tasks / Routines / World Monitor rail entries (M6, M7), mic device picker, speech speed, noise-level test,
+  a dedicated "current task" side panel (the existing Current task card is kept below the command box), mic level meter in the bottom bar,
+  Framer Motion (CSS transitions are used), the light theme keeps a fixed darker accent.
+- Visual snapshots cover Home only. The fonts load from Google Fonts when online.
+
+### 2026-10-31 — Session 10: M3 Avatars and personalities (branch `m3-avatars`, partly done)
+
+**Done:** 6 avatars (3 female, 3 male) + custom picture, 5 personalities (Assistant, Mentor, Best Friend, Coach, Custom with sliders),
+persona fields, `/voice/catalog`, personality wording in `responses.py`, SVG avatar with 6 moods, Characters page, 5-step onboarding
+with mic test, Home shows the avatar (or the orb). Rule 3.9 test: same commands give identical plans under every personality.
+**Tested:** `pytest tests -q` 831 passed, 4 skipped; `npm test` 18 passed; `npm run build` ok; onboarding and Characters page clicked
+through in a browser (Orion + Best Friend saved with male voices). **Not done:** `scripts/check_m3.ps1` and the M3 section of
+`docs/TEST_SCRIPT.md`; real voice playback of male vs female voices; e2e (Playwright not installed, flow updated but not run);
+wake-word detection (phrase is only saved); Urdu/Hindi personality wording (uses Assistant wording).
+
+### 2026-10-31 — Session 9: M2 Two-way voice (branch `m2-voice`)
+
+**Done**
+- `backend/app/voice/`: `responses.py` (spoken lines per event x language [en, Roman Urdu, Urdu, Hindi]; "Done" only when every
+  action is `succeeded` AND its verification passed), `chunking.py` (sentences <= 200 chars, direction tag budgeted), `tts.py`
+  (chain Orpheus -> edge-tts -> Windows SAPI; a failing engine is skipped for 5 min; 64-clip cache; SAPI picks an installed
+  voice of the requested gender), `latency.py` (per-stage JSONL, no transcript text), `api.py` (`/voice/stt|tts|chunks|line|latency`,
+  token-protected; `/config/status` has `speech_ready`).
+- Frontend: `speech/player.ts` (sentence-by-sentence playback, next sentence generated while one plays, immediate `stop()`, browser
+  voice as last resort), `speech/whisperRecognition.ts` (mic + energy VAD + pre-roll, WAV to Groq Whisper via `/voice/stt`, drop-in for
+  the browser SpeechRecognition, `onspeechstart` = barge-in), `speech/vad.ts`. App.tsx: server voice when `speech_ready`, spoken
+  acknowledgement after 0.9 s and "Still working" after 4.5 s of a running task, 8 s follow-up window in push-to-talk, silence
+  debounce 2.2 s -> 0.5 s for Whisper input. Without a speech service the old browser voice is unchanged.
+- `scripts/check_m2.ps1`, `scripts/voice_bench.py`, `scripts/tts_probe.py`, `docs/TEST_SCRIPT.md` (M2 section).
+- Cloud brain URL set in `backend/.env` (git-ignored): chat through Render returned HTTP 200.
+
+**Tested how**
+- `pytest tests -q` -> 774 passed, 4 skipped, 0 failed (`tests/test_m2_voice.py`: 38). `npm test` 11 passed (incl. 7 new VAD/WAV), `npm run build` ok.
+- Real engines on this PC (`tts_probe.py`): edge-tts ur-PK-UzmaNeural / AsadNeural, hi-IN-SwaraNeural / MadhurNeural PASS (1.8-3.5 s per
+  sentence, new connection each time); SAPI male (David) and female (Zira) PASS (~0.5 s); Orpheus FAIL: Groq org must accept the terms.
+- `voice_bench.py` (server side, cold synthesis, 30 runs, command text -> first sentence synthesized): p50 0.9 s, p90 1.56 s,
+  29/30 <= 2.5 s (96.7%). With Whisper in front (`--stt`, SAPI-spoken commands): p50 2.24 s, only 22/30 (73%) <= 2.5 s; Whisper
+  word accuracy 100% (30 synthetic commands). Direct Groq (no Render hop) was no faster (STT ~1.0 s). **The 90% target is NOT met
+  with speech-to-text included**; Orpheus (faster than spawning SAPI) cannot be measured until the terms are accepted.
+- Bugs found by measuring and fixed: action status is `succeeded` (not `completed`), so real tasks would never have said "Done";
+  long `plan_note` text was read aloud; SAPI `SelectVoiceByHints` ignored gender.
+
+**Not done / not measured (needs you)**
+- Real microphone, real speaker playback, barge-in time (<= 300 ms), follow-up window and the true first-word latency in the browser:
+  run `docs/TEST_SCRIPT.md` section M2 (the UI reports to `/voice/latency`).
+- Orpheus: accept the terms at console.groq.com/playground?model=canopylabs/orpheus-v1-english.
+- VAD is energy-based, not Silero (Silero needs onnxruntime-web); Roman Urdu is spoken by the English voice chain.
+- Personalities: only the Assistant phrase set exists (M3). `PLANNER_MODE` still `legacy`; M1 items still open.
+
+### 2026-10-31 — Session 8: M1 Live foundations (in progress)
+
+**Done**
+- `PLANNER_MODE` (`legacy` default | `shadow` | `structured`), `app/orchestration/planner_mode.py`. `shadow`: for commands the
+  local parsers understood, the strict-JSON planner is also asked in a background thread and compared in
+  `%LOCALAPPDATA%\AgentDesk\pilot\shadow_plans.jsonl` (command hash only). `structured`: commands the local parsers did not
+  understand go to the strict planner first; any failure falls back to the old Groq agent path. Risk/approval unchanged.
+- `backend/scripts/groq_smoke.py` (chat, strict-schema acceptance, 3 plans, optional `--wav` STT, `--tts`).
+- `scripts/check_m1.ps1` (tests, live Groq, NLU held-out local + Groq, all tools on Windows, shadow log; evidence in `docs/eval/m1_*`).
+
+**Tested how**
+- `pytest tests -q` -> 731 passed, 3 skipped, 1 failed. The failure (`test_phase18_tools.py::test_media_key_off_windows_fails_honestly`)
+  also fails without these changes: it assumes a non-Windows host. New: `tests/test_m1_planner_mode.py` (7).
+
+- **Multiple Groq keys** (`GROQ_API_KEYS=k1,k2,...` in `backend/.env`, git-ignored; `app/ai/key_pool.py`). On HTTP 429 the key cools down
+  (Groq's retry-after, else 60 s) and the next key is used at once, without waiting; a key Groq rejects (401/403) is dropped. Shared by
+  the agent loop, planner, STT and TTS. Tests: `tests/test_key_pool.py` (7). Tests ignore `backend/.env`.
+- **Live run found and fixed two real problems**: (1) Groq rejected the strict schema (`"required": []` on no-argument tools);
+  (2) the planner prompt was ~10k tokens, over the free tier's 8k tokens/min (HTTP 413) — catalogue now names/descriptions only,
+  4 few-shot examples chosen by similarity, max_tokens 900 -> about 7.1k prompt tokens per plan.
+
+- **Cloud brain for Render** (`app/cloud_main.py`, `render.yaml`, `requirements-cloud.txt`, `docs/RENDER_DEPLOY.md`): token-guarded
+  `/cloud/plan|chat|stt|tts`, fails closed without `CLOUD_API_TOKEN`, rate limited, no tools. The PC calls it through
+  `app/cloud_client.py` (`CLOUD_BRAIN_URL` + `CLOUD_BRAIN_TOKEN`) and re-validates every plan locally. Tests: `test_cloud_brain.py` (6).
+  Run locally with real keys: token check 401 without / plan "chrome kholo" -> `open_application` valid / chat OK. NOT yet deployed
+  to Render, so cold-start time and Linux install of `requirements-cloud.txt` are unmeasured.
+
+**Measured live (2026-10-31, free tier)**
+- `groq_smoke.py`: chat PASS; strict schema accepted by gpt-oss-120b (2 plans: "open notepad", "chrome kholo" -> `open_application`, valid).
+  Full smoke run: plans row FAIL with a rate limit (see below). TTS FAIL: Orpheus needs the org admin to accept its terms at
+  console.groq.com/playground?model=canopylabs/orpheus-v1-english.
+- All 11 keys appear to belong to one Groq organization (the 413 error names the same org): the 8k tokens/min limit is per
+  organization, so switching keys does NOT add capacity. Separate accounts/organizations are needed for that.
+
+**Not done (needs you)**
+- Accept the Orpheus terms (above). Planner-vs-old comparison and the Windows tool run are NOT measured: run `scripts\check_m1.ps1`.
+  Default stays `legacy` until shadow data exists.
+
 ### 2026-10-31 — Session 7: Phases 19-20 PILOT, RELEASE, REPORT
 
 **Done**

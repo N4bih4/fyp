@@ -1,0 +1,120 @@
+........................................................................ [  2%]
+........................................................................ [  4%]
+........................................................................ [  6%]
+.......................................sss.............................. [  9%]
+...........F.F.....F.................................................... [ 11%]
+........................................................................ [ 13%]
+........................................................................ [ 16%]
+........................................................................ [ 18%]
+........................................................................ [ 20%]
+........................................................................ [ 23%]
+........................................................................ [ 25%]
+........................................................................ [ 27%]
+........................................................................ [ 30%]
+........................................................................ [ 32%]
+........................................................................ [ 34%]
+........................................................................ [ 37%]
+........................................................................ [ 39%]
+........................................................................ [ 41%]
+........................................................................ [ 44%]
+........................................................................ [ 46%]
+........................................................................ [ 48%]
+..............................................................s......... [ 51%]
+........................................................................ [ 53%]
+........................................................................ [ 55%]
+........................................................................ [ 58%]
+........................................................................ [ 60%]
+........................................................................ [ 62%]
+........................................................................ [ 65%]
+........................................................................ [ 67%]
+........................................................................ [ 69%]
+........................................................................ [ 72%]
+........................................................................ [ 74%]
+........................................................................ [ 76%]
+........................................................................ [ 79%]
+........................................................................ [ 81%]
+........................................................................ [ 83%]
+........................................................................ [ 86%]
+........................................................................ [ 88%]
+........................................................................ [ 90%]
+........................................................................ [ 93%]
+........................................................................ [ 95%]
+........................................................................ [ 97%]
+......................................................................   [100%]
+================================== FAILURES ===================================
+______________ test_every_registered_tool_has_exactly_one_probe _______________
+
+    def test_every_registered_tool_has_exactly_one_probe():
+        probes = [p.tool for p in live_check.PROBES]
+        assert len(probes) == len(set(probes))
+>       assert set(probes) == set(ToolRegistry().names())
+E       AssertionError: assert {'application...py_file', ...} == {'application...py_file', ...}
+E         
+E         Extra items in the right set:
+E         'explorer_view'
+E         'device_control'
+E         Use -v to get more diff
+
+tests\test_live_check.py:20: AssertionError
+_____________ test_sandbox_probes_pass_and_every_tool_is_reported _____________
+
+tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-HP/pytest-471/test_sandbox_probes_pass_and_e0')
+
+    def test_sandbox_probes_pass_and_every_tool_is_reported(tmp_path):
+        rows = live_check.run_checks({"sandbox"}, sandbox=tmp_path / "sb")
+        assert {r["tool"] for r in rows} == set(ToolRegistry().names())
+        sandbox_rows = [r for r in rows if r["category"] == "sandbox"]
+        assert len(sandbox_rows) == 15
+        failed = [r for r in sandbox_rows if r["status"] != live_check.PASS]
+        assert not failed, failed
+>       assert all(r["status"] == live_check.SKIP for r in rows if r["category"] != "sandbox")
+E       assert False
+E        +  where False = all(<generator object test_sandbox_probes_pass_and_every_tool_is_reported.<locals>.<genexpr> at 0x000001DCD91EA400>)
+
+tests\test_live_check.py:40: AssertionError
+___ test_the_api_option_switches_the_browser_probe_and_the_default_does_not ___
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001DCDA13A510>
+tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-HP/pytest-471/test_the_api_option_switches_t0')
+
+    def test_the_api_option_switches_the_browser_probe_and_the_default_does_not(monkeypatch, tmp_path):
+        monkeypatch.setattr(live_check, "_api_browser_inspect", lambda base, client=None: live_check.Outcome(live_check.PASS, f"via {base}"))
+        rows = live_check.run_checks({"read"}, {"control_browser"}, tmp_path / "sb", options={"api": "http://x:1"})
+>       assert rows[0]["status"] == live_check.PASS and rows[0]["evidence"] == "via http://x:1"
+E       AssertionError: assert ('FAIL' == 'PASS'
+E         
+E         - PASS
+E         + FAIL)
+
+tests\test_live_check.py:110: AssertionError
+============================== warnings summary ===============================
+tests/test_phase11_security.py::test_oversized_and_malformed_bodies_rejected_cleanly
+tests/test_phase11_security.py::test_oversized_and_malformed_bodies_rejected_cleanly
+  F:\uisoft\fyp-nabiha\AgentDesk_AI\backend\.venv\Lib\site-packages\httpx2\_models.py:424: DeprecationWarning: Use 'content=<...>' to upload raw bytes/text content.
+    headers, stream = encode_request(
+
+tests/test_u6_mail.py::test_a_stale_confirmation_is_read_back_again_not_sent
+  F:\uisoft\fyp-nabiha\AgentDesk_AI\backend\.venv\Lib\site-packages\_pytest\threadexception.py:54: PytestUnhandledThreadExceptionWarning: Exception in thread groq-warm
+  
+  Traceback (most recent call last):
+    File "C:\Users\HP\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1075, in _bootstrap_inner
+      self.run()
+    File "C:\Users\HP\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1012, in run
+      self._target(*self._args, **self._kwargs)
+    File "F:\uisoft\fyp-nabiha\AgentDesk_AI\backend\app\ai\warm.py", line 34, in loop
+      client.warm()
+    File "F:\uisoft\fyp-nabiha\AgentDesk_AI\backend\tests\test_u2_speed.py", line 185, in warm
+      pings.append(1)
+  MemoryError
+  
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_live_check.py::test_every_registered_tool_has_exactly_one_probe
+FAILED tests/test_live_check.py::test_sandbox_probes_pass_and_every_tool_is_reported
+FAILED tests/test_live_check.py::test_the_api_option_switches_the_browser_probe_and_the_default_does_not
+3 failed, 3087 passed, 4 skipped, 3 warnings in 531.79s (0:08:51)
+FINISHED

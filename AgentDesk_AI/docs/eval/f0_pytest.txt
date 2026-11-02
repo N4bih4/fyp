@@ -1,0 +1,147 @@
+........................................................................ [  2%]
+........................sss............................................. [  4%]
+........................................................................ [  7%]
+........................................................................ [  9%]
+........................................................................ [ 12%]
+........................................................................ [ 14%]
+........................................................................ [ 17%]
+........................................................................ [ 19%]
+........................................................................ [ 22%]
+........................................................................ [ 24%]
+........................................................................ [ 26%]
+........................................................................ [ 29%]
+........................................................................ [ 31%]
+........................................................................ [ 34%]
+........................................................................ [ 36%]
+........................................................................ [ 39%]
+........................................................................ [ 41%]
+........................................................................ [ 44%]
+........................................................................ [ 46%]
+......F........................................s........................ [ 49%]
+........................................................................ [ 51%]
+........................................................................ [ 53%]
+........................................................................ [ 56%]
+........................................................................ [ 58%]
+........................................................................ [ 61%]
+........................................................................ [ 63%]
+........................................................................ [ 66%]
+........................................................................ [ 68%]
+........................................................................ [ 71%]
+........................................................................ [ 73%]
+........................................................................ [ 76%]
+........................................................................ [ 78%]
+........................................................................ [ 80%]
+........................................................................ [ 83%]
+........................................................................ [ 85%]
+........................................................................ [ 88%]
+........................................................................ [ 90%]
+........................................................................ [ 93%]
+........................................................................ [ 95%]
+........................................................................ [ 98%]
+........................................................                 [100%]
+================================== FAILURES ===================================
+___________ test_apps_started_by_earlier_jobs_survive_a_later_kill ____________
+
+ctx = ToolContext(allowed_directories=[WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-HP/pytest-428/test_apps_started...h('F:/uisoft/fyp-nabiha/AgentDesk_AI/backend/agentdesk_test'), discovery_directories=[], isolate_system_controls=False)
+tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-HP/pytest-428/test_apps_started_by_earlier_j0')
+
+    def test_apps_started_by_earlier_jobs_survive_a_later_kill(ctx, tmp_path):
+        w = worker.ToolWorker()
+        first = w.run({"tool_class": "tests.helpers.slow_tool:QuickTool", "ctx": ctx,
+                       "args": {"path": str(tmp_path / "a.txt"), "launch_child": True}}, timeout=30)
+        app_pid = first.result["output"]["child_pid"]
+        args = SlowArgs(seconds=30, marker=str(tmp_path / "marker"), child_pid_file=str(tmp_path / "child.pid"))
+        second = w.run({"tool_class": "tests.helpers.slow_tool:SlowTool", "ctx": ctx, "args": args.model_dump()}, timeout=3)
+        try:
+            assert second.stopped == worker.STOP_TIMEOUT
+            assert app_pid not in second.killed_pids and not _gone(app_pid)
+            assert _gone(int(Path(args.child_pid_file).read_text()))
+        finally:
+>           psutil.Process(app_pid).kill()
+            ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_phase16_worker.py:78: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\psutil\__init__.py:314: in __init__
+    self._init(pid)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = psutil.Process(pid=4488, status='terminated'), pid = 4488
+_ignore_nsp = False
+
+    def _init(self, pid, _ignore_nsp=False):
+        if pid is None:
+            pid = os.getpid()
+        else:
+            if pid < 0:
+                msg = f"pid must be a positive integer (got {pid})"
+                raise ValueError(msg)
+            try:
+                _psplatform.cext.check_pid_range(pid)
+            except OverflowError as err:
+                msg = "process PID out of range"
+                raise NoSuchProcess(pid, msg=msg) from err
+    
+        self._pid = pid
+        self._name = None
+        self._exe = None
+        self._create_time = None
+        self._gone = False
+        self._pid_reused = False
+        self._hash = None
+        self._lock = threading.RLock()
+        # used for caching on Windows only (on POSIX ppid may change)
+        self._ppid = None
+        # platform-specific modules define an _psplatform.Process
+        # implementation class
+        self._proc = _psplatform.Process(pid)
+        self._last_sys_cpu_times = None
+        self._last_proc_cpu_times = None
+        self._exitcode = _SENTINEL
+        self._ident = (self.pid, None)
+        try:
+            self._ident = self._get_ident()
+        except AccessDenied:
+            # This should happen on Windows only, since we use the fast
+            # create time method. AFAIK, on all other platforms we are
+            # able to get create time for all PIDs.
+            pass
+        except ZombieProcess:
+            # Zombies can still be queried by this class (although
+            # not always) and pids() return them so just go on.
+            pass
+        except NoSuchProcess:
+            if not _ignore_nsp:
+                msg = "process PID not found"
+>               raise NoSuchProcess(pid, msg=msg) from None
+E               psutil.NoSuchProcess: process PID not found (pid=4488)
+
+.venv\Lib\site-packages\psutil\__init__.py:360: NoSuchProcess
+============================== warnings summary ===============================
+tests/test_phase11_security.py::test_oversized_and_malformed_bodies_rejected_cleanly
+tests/test_phase11_security.py::test_oversized_and_malformed_bodies_rejected_cleanly
+  F:\uisoft\fyp-nabiha\AgentDesk_AI\backend\.venv\Lib\site-packages\httpx2\_models.py:424: DeprecationWarning: Use 'content=<...>' to upload raw bytes/text content.
+    headers, stream = encode_request(
+
+tests/test_u6_mail.py::test_rewrite_can_be_declined_and_needs_the_cloud_permission
+  F:\uisoft\fyp-nabiha\AgentDesk_AI\backend\.venv\Lib\site-packages\_pytest\threadexception.py:54: PytestUnhandledThreadExceptionWarning: Exception in thread groq-warm
+  
+  Traceback (most recent call last):
+    File "C:\Users\HP\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1075, in _bootstrap_inner
+      self.run()
+    File "C:\Users\HP\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1012, in run
+      self._target(*self._args, **self._kwargs)
+    File "F:\uisoft\fyp-nabiha\AgentDesk_AI\backend\app\ai\warm.py", line 34, in loop
+      client.warm()
+    File "F:\uisoft\fyp-nabiha\AgentDesk_AI\backend\tests\test_u2_speed.py", line 185, in warm
+      pings.append(1)
+  MemoryError
+  
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_phase16_worker.py::test_apps_started_by_earlier_jobs_survive_a_later_kill
+1 failed, 2931 passed, 4 skipped, 3 warnings in 334.43s (0:05:34)

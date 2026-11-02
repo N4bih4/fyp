@@ -34,3 +34,23 @@ Goal: show that the assistant understands four languages, always shows what it w
 - WhatsApp/winget/media step fails: say so — these were unit-tested but first live runs happen on this PC
   (see INTEGRATIONS.md); show the verifier message as evidence of honest failure.
 - Never demo Wi-Fi/Bluetooth off, installs, or typing into other apps live.
+
+## Part 2 — control of every app (upgrade U1–U7, +10 minutes)
+
+Setup: cloud answers ON, Groq key set, `python backend\scripts\vision_testapp.py %TEMP%\state.json` ready (a canvas app that Windows accessibility cannot read),
+a Gmail/Outlook test mailbox connected (Settings → Email), browser extension 1.2.0 paired, a YouTube video open.
+
+| # | Do / say | Point out |
+|---|---|---|
+| 16 | "open notpad" | Mis-heard name resolved; say "no I meant Notepad" once and show it is remembered |
+| 17 | "In Calculator click seven, plus, eight, equals" | Layer 2: each click approved, result 15 read back from the real control |
+| 18 | "open a terminal in Documents and run git status" | Live PowerShell window; output read back; then "run format c:" is refused |
+| 19 | "pause YouTube", "speed 1.5" | Verified from the page, not assumed |
+| 20 | "write an email to <test address> saying the demo works" | Draft, read-back, "change the last line", **"yes, send it"**; then it confirms from the Sent folder |
+| 21 | Start the canvas test app. "click Start", "click Add plus ten" | Spoken notice "needs me to look at the screen"; show a numbered picture from `docs\eval\u7_images`; the score really changes |
+| 22 | "click the Unicorn button" | It refuses instead of guessing |
+| 23 | Settings → untick "Let the assistant look at app windows"; repeat step 21 | Refused, no picture sent |
+| 24 | Say "stop" during a task | Kill switch |
+| 25 | Show `docs\FINAL_REPORT_U8.md` | Measured numbers per milestone, including what failed |
+
+Do not demo: sending to a real contact, payments, typing into a password field.

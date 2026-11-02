@@ -48,6 +48,7 @@ class TaskOut(BaseModel):
     updated_at: datetime
     retry_at: float | None = None
     provider_note: str | None = None
+    speak_full: bool = False   # the reply is meant to be read out in full (a read-back of an e-mail), not shortened to a few sentences
     # Present when a task stopped after some actions had already changed things.
     partial: dict[str, Any] | None = None
     actions: list[ActionOut] = []
@@ -59,6 +60,8 @@ class ConfigStatusOut(BaseModel):
     ai_configured: bool
     mock_mode: bool
     groq_configured: bool = False
+    search: dict[str, bool] = {}   # which web-search providers are set up: {"wikipedia": bool, "tavily": bool}
+    speech_ready: bool = False  # server-side speech (Whisper / Orpheus / edge-tts) can be used
     agent_max_steps: int = 10
     fallback_provider: str = "none"
     fallback_configured: bool = False

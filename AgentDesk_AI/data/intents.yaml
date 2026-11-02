@@ -1,0 +1,426 @@
+# AgentDesk local intent + slot model: the intents, their slots and the TEMPLATES that build the seed dataset.
+#
+# A template is a sentence with {slot} placeholders. Several templates for one language are written on one line, separated by " | ".
+# A leading "!" marks a template as a CORRECTION of the previous request ("is_correction": true).
+# Slot values come from `fillers` below (or from the real sentences people add to data/real/*.jsonl, see docs/DATASET_GUIDE.md).
+# Add templates, fillers or whole intents here, then run:  ml\.venv\Scripts\python ml\build_dataset.py
+#
+# HONEST NOTE: these seed templates were written by one author (Claude), not collected from real speakers. A model trained on them alone
+# looks better on its own test split than it will on real people. Real sentences from you, Mirha and classmates (docs/DATASET_GUIDE.md)
+# are what make the numbers meaningful. Each intent has 3-6 templates per language here; the guide asks you to bring it to 10+.
+version: 1
+languages: [en, roman_ur, ur, hi]
+
+fillers:
+  app: [Chrome, Notepad, File Explorer, Calculator, Word, Excel, PowerPoint, Spotify, Paint, Task Manager, Firefox, Edge, VS Code, Settings, WhatsApp, Telegram, Zoom, Teams, Camera, Photos, Outlook, Discord, VLC, Command Prompt]
+  app_ur: [کروم, نوٹ پیڈ, کیلکولیٹر, ورڈ, ایکسل, واٹس ایپ, فائل ایکسپلورر]
+  app_hi: [क्रोम, नोटपैड, कैलकुलेटर, वर्ड, एक्सेल, व्हाट्सएप, फ़ाइल एक्सप्लोरर]
+  site: [YouTube, Gmail, Google, Facebook, Instagram, Wikipedia, GitHub, LinkedIn, Netflix, Twitter, ChatGPT, Amazon]
+  query: [Atif Aslam songs, Coke Studio, lofi music, python tutorial, Arijit Singh, news today, study music, Nusrat Fateh Ali Khan, cricket highlights, relaxing music, Ali Zafar, Shape of You, Quran recitation, funny videos, Pakistan weather]
+  query_ur: [عاطف اسلم کے گانے, کوک اسٹوڈیو, پرانے گانے, خبریں, کرکٹ ہائی لائٹس]
+  query_hi: [अरिजीत सिंह के गाने, पुराने गाने, समाचार, क्रिकेट हाइलाइट्स, भजन]
+  search: [weather in Lahore, best laptop under 80000, how to make biryani, FYP report format, python list sort, dollar rate today, nearest hospital, Islamabad hotels]
+  path: [Downloads, Documents, Desktop, Pictures, Music, Videos, D drive, 6th sem folder, FYP folder, Lab files]
+  name: [Notes, Lab, Assignment, FYP, Photos 2025, Resume, Report, Budget, Project, Backup]
+  file: [resume.docx, notes.txt, report.pdf, budget.xlsx, todo.txt, cv.pdf, assignment.docx, thesis.pdf, slides.pptx]
+  new_name: [Final, Backup, Old, Version 2, Submission]
+  level: ["10", "20", "30", "40", "50", "60", "70", "80", "90", "100", "25", "75"]
+  minutes: ["5", "10", "15", "30", "45", "60", "2", "20"]
+  seconds: ["10", "15", "30", "45", "60", "90", "20", "5"]
+  speed: ["1.5", "2", "0.5", "1.25", "0.75"]
+  recipient: [Ali, Ahmed, Sara, Mirha, Mom, Dad, Hassan, Fatima, Sir Usman, Zain, Ayesha, my teacher]
+  text: ["I will be late", "see you at five", "the meeting is cancelled", "happy birthday", "I am on my way", "call me when you are free", "thank you so much"]
+  subject: [Meeting, Assignment, Leave request, Project update, Invoice, Interview]
+  package: [vlc, git, python, 7zip, nodejs, notepad plus plus, obs studio, zoom]
+  command: [git status, dir, pip list, python --version, npm test, ipconfig, git log, node --version]
+  topic: [climate change, machine learning, the Mughal empire, solar energy, blockchain, cyber security, time management, renewable energy, Pakistan economy, human memory]
+  thing: [my laptop password hint, the wifi name, my roll number, the exam date, my best friend's birthday, my favourite colour]
+  time: [5 pm, 7 am, tomorrow morning, in ten minutes, at 3, tonight, in an hour, at noon]
+  question: [who is the prime minister of Pakistan, what is the capital of Australia, how far is the moon, what is photosynthesis, when did Pakistan become independent, how many people live in Karachi]
+  button: [Save, Submit, Next, OK, Cancel, Start, Search, Login, Download, Play, Send, Close, Add, Apply]
+  field: [search box, name field, address bar, message box, email field, title box]
+  typed: [hello world, my name is Zain, meeting at five, good morning, test message]
+
+intents:
+  # ------------------------------------------------------------------ apps and windows
+  open_app:
+    risk: low
+    en: "open {app} | launch {app} | start {app} | please open {app} for me | can you open {app} | i want to use {app} | bring up {app}"
+    roman_ur: "{app} kholo | {app} open karo | {app} chalao | mujhe {app} kholna hai | zara {app} khol do | {app} lagao"
+    ur: "{app_ur} کھولو | {app_ur} کھول دو | مجھے {app_ur} چلانا ہے | {app_ur} اوپن کرو"
+    hi: "{app_hi} खोलो | {app_hi} खोल दो | मुझे {app_hi} चलाना है | {app_hi} ओपन करो"
+  close_app:
+    risk: medium
+    en: "close {app} | quit {app} | shut {app} | exit {app} | close all {app} windows"
+    roman_ur: "{app} band karo | {app} band kar do | {app} bund karo | {app} ko close karo"
+    ur: "{app_ur} بند کرو | {app_ur} بند کر دو | {app_ur} کلوز کرو"
+    hi: "{app_hi} बंद करो | {app_hi} बंद कर दो | {app_hi} क्लोज करो"
+  switch_app:
+    risk: low
+    en: "switch to {app} | go to {app} | bring {app} to the front | show me {app} window | alt tab to {app}"
+    roman_ur: "{app} par jao | {app} pe switch karo | {app} wali window dikhao | {app} samne lao"
+    ur: "{app_ur} پر جاؤ | {app_ur} والی ونڈو دکھاؤ | {app_ur} پر سوئچ کرو"
+    hi: "{app_hi} पर जाओ | {app_hi} वाली विंडो दिखाओ | {app_hi} पर स्विच करो"
+  window_control:
+    risk: low
+    slots: [app, action]
+    en: "minimize {app} | maximize {app} | minimise this window | maximise the window | restore {app} | snap {app} to the left | snap {app} to the right"
+    roman_ur: "{app} minimize karo | {app} ko bara karo | window chhoti kar do | window maximize karo | {app} ko left par lagao"
+    ur: "{app_ur} منیمائز کرو | ونڈو چھوٹی کرو | ونڈو بڑی کرو"
+    hi: "{app_hi} मिनिमाइज़ करो | विंडो छोटी करो | विंडो बड़ी करो"
+  open_website:
+    risk: low
+    en: "open {site} | go to {site} | take me to {site} | open {site} website | load {site}"
+    roman_ur: "{site} kholo | {site} par jao | {site} website kholo | mujhe {site} dikhao"
+    ur: "{site} کھولو | {site} پر جاؤ | {site} ویب سائٹ کھولو"
+    hi: "{site} खोलो | {site} पर जाओ | {site} वेबसाइट खोलो"
+  web_search:
+    risk: low
+    en: "search for {search} | google {search} | look up {search} | search the web for {search} | find information about {search}"
+    roman_ur: "{search} search karo | {search} google karo | {search} ke bare mein dhoondo | internet par {search} talash karo"
+    ur: "{search} تلاش کرو | {search} گوگل کرو | انٹرنیٹ پر {search} ڈھونڈو"
+    hi: "{search} सर्च करो | {search} गूगल करो | इंटरनेट पर {search} खोजो"
+  # ------------------------------------------------------------------ YouTube and media
+  youtube_play:
+    risk: low
+    en: "play {query} on youtube | youtube play {query} | put on {query} on youtube | i want to listen to {query} on youtube | search youtube for {query} and play it | play some music on youtube | !i say you can play the music on youtube not only open the url | !no i want you to play the song not just open youtube"
+    roman_ur: "youtube pe {query} chala do | youtube par {query} chalao | {query} youtube pe lagao | youtube se {query} sunao | mujhe youtube pe gana sunna hai | youtube kholo aur gana chalao | !maine kaha youtube par gana chalao sirf open nahi karo"
+    ur: "یوٹیوب پر {query_ur} چلاؤ | یوٹیوب پر {query_ur} لگاؤ | یوٹیوب سے {query_ur} سناؤ | یوٹیوب پر گانا چلاؤ"
+    hi: "यूट्यूब पर {query_hi} चलाओ | यूट्यूब पर {query_hi} लगाओ | यूट्यूब से {query_hi} सुनाओ | यूट्यूब पर गाना चलाओ"
+  youtube_pause:
+    risk: low
+    en: "pause the video | pause youtube | stop the video | hold on pause it | pause the song on youtube"
+    roman_ur: "video rok do | youtube pause karo | gana rok do | video pause kar do"
+    ur: "ویڈیو روک دو | یوٹیوب روک دو | گانا روک دو"
+    hi: "वीडियो रोक दो | यूट्यूब पॉज़ करो | गाना रोक दो"
+  youtube_resume:
+    risk: low
+    en: "resume the video | continue playing | play the video again | unpause youtube | keep playing"
+    roman_ur: "video dobara chalao | youtube resume karo | gana phir se chalao | video jari rakho"
+    ur: "ویڈیو دوبارہ چلاؤ | یوٹیوب جاری رکھو | گانا پھر سے چلاؤ"
+    hi: "वीडियो फिर से चलाओ | यूट्यूब चालू करो | गाना फिर से चलाओ"
+  youtube_seek:
+    risk: low
+    slots: [seconds]
+    en: "skip {seconds} seconds | go forward {seconds} seconds | rewind {seconds} seconds | go back {seconds} seconds | jump ahead {seconds} seconds"
+    roman_ur: "{seconds} second aage karo | {seconds} second peeche karo | video {seconds} second skip karo | {seconds} second rewind karo"
+    ur: "{seconds} سیکنڈ آگے کرو | {seconds} سیکنڈ پیچھے کرو"
+    hi: "{seconds} सेकंड आगे करो | {seconds} सेकंड पीछे करो"
+  youtube_control:
+    risk: low
+    slots: [action, speed]
+    en: "set speed to {speed} | play at {speed} speed | make the video full screen | turn on captions | turn off subtitles | skip the ad | go to the next video | play the previous video | turn on theatre mode | loop this video"
+    roman_ur: "speed {speed} kar do | video full screen karo | subtitles on karo | ad skip karo | agli video chalao | pichli video lagao | video loop par lagao"
+    ur: "سپیڈ {speed} کرو | ویڈیو فل اسکرین کرو | سب ٹائٹل آن کرو | اشتہار سکپ کرو | اگلی ویڈیو چلاؤ"
+    hi: "स्पीड {speed} करो | वीडियो फुल स्क्रीन करो | सबटाइटल चालू करो | विज्ञापन स्किप करो | अगला वीडियो चलाओ"
+  youtube_now_playing:
+    risk: low
+    en: "what is playing | what's playing on youtube | which song is this | tell me the title of this video | who is singing this"
+    roman_ur: "kya chal raha hai | yeh kaun sa gana hai | video ka naam kya hai | yeh kaun gaa raha hai"
+    ur: "کیا چل رہا ہے | یہ کون سا گانا ہے | ویڈیو کا نام کیا ہے"
+    hi: "क्या चल रहा है | यह कौन सा गाना है | वीडियो का नाम क्या है"
+  media_control:
+    risk: low
+    en: "next song | previous song | play the next track | pause the music | resume the music | skip this song"
+    roman_ur: "agla gana | pichla gana | gana badlo | music rok do | music chalao | yeh gana skip karo"
+    ur: "اگلا گانا | پچھلا گانا | گانا بدلو | میوزک روک دو | میوزک چلاؤ"
+    hi: "अगला गाना | पिछला गाना | गाना बदलो | म्यूज़िक रोक दो | म्यूज़िक चलाओ"
+  browser_tab:
+    risk: medium
+    slots: [site]
+    en: "close the {site} tab | switch to the {site} tab | open a new tab | reopen the closed tab | close this tab | go back to the previous tab"
+    roman_ur: "{site} wala tab band karo | {site} wale tab par jao | naya tab kholo | band kiya hua tab wapas kholo | yeh tab band karo"
+    ur: "{site} والا ٹیب بند کرو | نیا ٹیب کھولو | یہ ٹیب بند کرو"
+    hi: "{site} वाला टैब बंद करो | नया टैब खोलो | यह टैब बंद करो"
+  # ------------------------------------------------------------------ files and folders
+  open_folder:
+    risk: low
+    en: "open the {path} folder | go to {path} | show me {path} | open {path} in file explorer | take me to {path}"
+    roman_ur: "{path} folder kholo | {path} mein jao | {path} dikhao | file explorer mein {path} kholo"
+    ur: "{path} فولڈر کھولو | {path} میں جاؤ | مجھے {path} دکھاؤ"
+    hi: "{path} फ़ोल्डर खोलो | {path} में जाओ | मुझे {path} दिखाओ"
+  open_file:
+    risk: low
+    en: "open {file} | open the file {file} | show me {file} | launch {file}"
+    roman_ur: "{file} kholo | file {file} open karo | {file} dikhao"
+    ur: "{file} کھولو | فائل {file} اوپن کرو"
+    hi: "{file} खोलो | फ़ाइल {file} ओपन करो"
+  list_folder:
+    risk: low
+    en: "what is in {path} | list the files in {path} | show the contents of {path} | what files are in {path}"
+    roman_ur: "{path} mein kya hai | {path} ki files dikhao | {path} ka content batao"
+    ur: "{path} میں کیا ہے | {path} کی فائلیں دکھاؤ"
+    hi: "{path} में क्या है | {path} की फ़ाइलें दिखाओ"
+  find_files:
+    risk: low
+    en: "find {file} | search for {file} on my pc | where is {file} | look for the file {file} | find files named {name}"
+    roman_ur: "{file} dhoondo | {file} kahan hai | mere pc mein {file} talash karo | {name} naam ki files dhoondo"
+    ur: "{file} ڈھونڈو | {file} کہاں ہے | {name} نام کی فائلیں تلاش کرو"
+    hi: "{file} ढूँढो | {file} कहाँ है | {name} नाम की फ़ाइलें खोजो"
+  create_folder:
+    risk: medium
+    en: "create a folder called {name} in {path} | make a new folder named {name} | new folder {name} in {path} | create folder {name}"
+    roman_ur: "{path} mein {name} naam ka folder banao | naya folder {name} banao | {name} naam ka folder bana do"
+    ur: "{path} میں {name} نام کا فولڈر بناؤ | نیا فولڈر {name} بناؤ"
+    hi: "{path} में {name} नाम का फ़ोल्डर बनाओ | नया फ़ोल्डर {name} बनाओ"
+  copy_file:
+    risk: medium
+    en: "copy {file} to {path} | make a copy of {file} in {path} | duplicate {file}"
+    roman_ur: "{file} ko {path} mein copy karo | {file} ki copy {path} mein banao"
+    ur: "{file} کو {path} میں کاپی کرو | {file} کی کاپی بناؤ"
+    hi: "{file} को {path} में कॉपी करो | {file} की कॉपी बनाओ"
+  move_file:
+    risk: medium
+    en: "move {file} to {path} | put {file} in {path} | transfer {file} to {path}"
+    roman_ur: "{file} ko {path} mein move karo | {file} {path} mein daal do"
+    ur: "{file} کو {path} میں منتقل کرو | {file} {path} میں ڈالو"
+    hi: "{file} को {path} में मूव करो | {file} को {path} में डालो"
+  rename_file:
+    risk: medium
+    en: "rename {file} to {new_name} | change the name of {file} to {new_name} | call {file} {new_name}"
+    roman_ur: "{file} ka naam {new_name} rakh do | {file} ko rename karke {new_name} karo"
+    ur: "{file} کا نام {new_name} رکھ دو | {file} کو ری نیم کرو"
+    hi: "{file} का नाम {new_name} रख दो | {file} को रीनेम करो"
+  delete_file:
+    risk: high
+    en: "delete {file} | remove the file {file} | delete the folder {name} | get rid of {file} | move {file} to the recycle bin"
+    roman_ur: "{file} delete karo | {file} hata do | {name} folder delete kar do | {file} ko recycle bin mein daal do"
+    ur: "{file} ڈیلیٹ کرو | {file} ہٹا دو | {name} فولڈر ڈیلیٹ کر دو"
+    hi: "{file} डिलीट करो | {file} हटा दो | {name} फ़ोल्डर डिलीट कर दो"
+  restore_file:
+    risk: medium
+    en: "restore {file} from the trash | bring back {file} | undelete {file} | recover the deleted file {file}"
+    roman_ur: "{file} trash se wapas lao | {file} restore karo | delete ki hui {file} wapas karo"
+    ur: "{file} ٹریش سے واپس لاؤ | {file} ریسٹور کرو"
+    hi: "{file} ट्रैश से वापस लाओ | {file} रिस्टोर करो"
+  read_file:
+    risk: low
+    en: "read {file} | read me the file {file} | what does {file} say | show the text in {file}"
+    roman_ur: "{file} padho | {file} mein kya likha hai | {file} ka text sunao"
+    ur: "{file} پڑھو | {file} میں کیا لکھا ہے"
+    hi: "{file} पढ़ो | {file} में क्या लिखा है"
+  write_file:
+    risk: medium
+    slots: [file, typed]
+    en: "write {typed} to {file} | save the text {typed} in {file} | add {typed} to {file}"
+    roman_ur: "{file} mein {typed} likh do | {file} mein {typed} save karo"
+    ur: "{file} میں {typed} لکھ دو"
+    hi: "{file} में {typed} लिख दो"
+  # ------------------------------------------------------------------ system
+  volume_set:
+    risk: low
+    en: "set the volume to {level} | volume {level} | make the volume {level} percent | change volume to {level}"
+    roman_ur: "volume {level} kar do | awaz {level} karo | volume {level} par set karo"
+    ur: "آواز {level} کر دو | والیوم {level} کرو"
+    hi: "आवाज़ {level} कर दो | वॉल्यूम {level} करो"
+  volume_change:
+    risk: low
+    en: "turn the volume up | turn it down | make it louder | a bit quieter | mute | unmute | increase the sound"
+    roman_ur: "awaz barhao | awaz kam karo | awaz thori aur barhao | mute karo | unmute karo | awaz tez karo"
+    ur: "آواز بڑھاؤ | آواز کم کرو | آواز تھوڑی اور بڑھاؤ | میوٹ کرو"
+    hi: "आवाज़ बढ़ाओ | आवाज़ कम करो | आवाज़ थोड़ी और बढ़ाओ | म्यूट करो"
+  brightness_set:
+    risk: low
+    en: "set brightness to {level} | brightness {level} percent | make the screen brighter | dim the screen"
+    roman_ur: "brightness {level} kar do | screen ki roshni barhao | screen dim karo | brightness kam karo"
+    ur: "برائٹنس {level} کر دو | اسکرین کی روشنی بڑھاؤ | اسکرین مدھم کرو"
+    hi: "ब्राइटनेस {level} कर दो | स्क्रीन की रोशनी बढ़ाओ | स्क्रीन डिम करो"
+  wifi_toggle:
+    risk: high
+    en: "turn on wifi | turn off wifi | disconnect from wifi | enable wi-fi"
+    roman_ur: "wifi on karo | wifi band karo | wifi chala do | wifi off kar do"
+    ur: "وائی فائی آن کرو | وائی فائی بند کرو"
+    hi: "वाईफ़ाई चालू करो | वाईफ़ाई बंद करो"
+  bluetooth_toggle:
+    risk: high
+    en: "turn on bluetooth | turn off bluetooth | enable bluetooth | switch bluetooth off"
+    roman_ur: "bluetooth on karo | bluetooth band karo | bluetooth chala do"
+    ur: "بلوٹوتھ آن کرو | بلوٹوتھ بند کرو"
+    hi: "ब्लूटूथ चालू करो | ब्लूटूथ बंद करो"
+  dark_mode:
+    risk: low
+    en: "turn on dark mode | switch to dark theme | enable light mode | turn off dark mode"
+    roman_ur: "dark mode laga do | dark mode on karo | light mode laga do | dark mode band karo"
+    ur: "ڈارک موڈ لگا دو | ڈارک موڈ آن کرو | لائٹ موڈ لگاؤ"
+    hi: "डार्क मोड लगा दो | डार्क मोड चालू करो | लाइट मोड लगाओ"
+  battery_status:
+    risk: low
+    en: "how much battery is left | battery status | what is my battery percentage | is my laptop charging"
+    roman_ur: "battery kitni reh gayi hai | battery ka status batao | laptop charge ho raha hai | battery kitne percent hai"
+    ur: "بیٹری کتنی رہ گئی ہے | بیٹری کا اسٹیٹس بتاؤ"
+    hi: "बैटरी कितनी बची है | बैटरी का स्टेटस बताओ"
+  screenshot:
+    risk: low
+    en: "take a screenshot | capture the screen | screenshot please | grab a picture of my screen"
+    roman_ur: "screenshot lo | screen ki tasveer lo | screenshot le lo | screen capture karo"
+    ur: "اسکرین شاٹ لو | اسکرین کی تصویر لو"
+    hi: "स्क्रीनशॉट लो | स्क्रीन की तस्वीर लो"
+  lock_pc:
+    risk: medium
+    en: "lock my pc | lock the computer | lock the screen | lock my laptop"
+    roman_ur: "mere pc ko lock kar do | computer lock karo | laptop lock kar do | screen lock karo"
+    ur: "میرا پی سی لاک کر دو | کمپیوٹر لاک کرو | لیپ ٹاپ لاک کرو"
+    hi: "मेरा पीसी लॉक कर दो | कंप्यूटर लॉक करो | लैपटॉप लॉक करो"
+  sleep_pc:
+    risk: medium
+    en: "put the pc to sleep | sleep my laptop | go to sleep mode"
+    roman_ur: "pc ko sula do | laptop sleep mode mein daalo | computer sleep karo"
+    ur: "پی سی کو سلا دو | لیپ ٹاپ سلیپ موڈ میں ڈالو"
+    hi: "पीसी को सुला दो | लैपटॉप स्लीप मोड में डालो"
+  shutdown_pc:
+    risk: high
+    en: "shut down the computer | turn off my pc | power off the laptop | shutdown"
+    roman_ur: "computer band kar do | pc shutdown karo | laptop off kar do"
+    ur: "کمپیوٹر بند کر دو | پی سی شٹ ڈاؤن کرو"
+    hi: "कंप्यूटर बंद कर दो | पीसी शटडाउन करो"
+  restart_pc:
+    risk: high
+    en: "restart the computer | reboot my pc | restart my laptop"
+    roman_ur: "computer restart karo | pc dobara start karo | laptop restart kar do"
+    ur: "کمپیوٹر ری اسٹارٹ کرو | پی سی دوبارہ شروع کرو"
+    hi: "कंप्यूटर रीस्टार्ट करो | पीसी दोबारा शुरू करो"
+  keep_awake:
+    risk: low
+    slots: [minutes]
+    en: "keep the pc awake for {minutes} minutes | do not let it sleep for {minutes} minutes | stay awake for {minutes} minutes"
+    roman_ur: "{minutes} minute tak pc ko jagaye rakho | {minutes} minute sleep na hone do"
+    ur: "{minutes} منٹ تک پی سی کو جاگتا رکھو | {minutes} منٹ سلیپ نہ ہونے دو"
+    hi: "{minutes} मिनट तक पीसी को जगाए रखो | {minutes} मिनट स्लीप मत होने दो"
+  # ------------------------------------------------------------------ messages and mail
+  email_compose:
+    risk: medium
+    en: "write an email to {recipient} | email {recipient} about {subject} | compose a mail to {recipient} with subject {subject} | send {recipient} an email"
+    roman_ur: "{recipient} ko email likho | {recipient} ko {subject} ke bare mein mail karo | {recipient} ko mail bhejni hai | email draft karo {recipient} ke liye"
+    ur: "{recipient} کو ای میل لکھو | {recipient} کو {subject} کے بارے میں ای میل کرو"
+    hi: "{recipient} को ईमेल लिखो | {recipient} को {subject} के बारे में ईमेल करो"
+  email_send:
+    risk: high
+    en: "yes send it | send the email now | go ahead and send | send it"
+    roman_ur: "haan bhej do | email abhi bhej do | bhej do | send kar do"
+    ur: "ہاں بھیج دو | ای میل ابھی بھیج دو"
+    hi: "हाँ भेज दो | ईमेल अभी भेज दो"
+  whatsapp_draft:
+    risk: medium
+    en: "message {recipient} on whatsapp that {text} | send a whatsapp to {recipient} saying {text} | whatsapp {recipient} {text}"
+    roman_ur: "{recipient} ko whatsapp pe message bhejo ke {text} | whatsapp par {recipient} ko likho {text}"
+    ur: "{recipient} کو واٹس ایپ پر پیغام بھیجو {text}"
+    hi: "{recipient} को व्हाट्सएप पर मैसेज भेजो {text}"
+  # ------------------------------------------------------------------ other apps, terminal, packages
+  install_app:
+    risk: high
+    en: "install {package} | download and install {package} | get me {package} | install the app {package}"
+    roman_ur: "{package} install karo | {package} download karke install kar do | mujhe {package} chahiye install karo"
+    ur: "{package} انسٹال کرو | {package} ڈاؤن لوڈ کر کے انسٹال کرو"
+    hi: "{package} इंस्टॉल करो | {package} डाउनलोड करके इंस्टॉल करो"
+  terminal_run:
+    risk: medium
+    en: "run {command} | run {command} in the terminal | open a terminal and run {command} | execute {command}"
+    roman_ur: "terminal mein {command} chalao | {command} run karo | terminal kholo aur {command} chalao"
+    ur: "ٹرمینل میں {command} چلاؤ | {command} رن کرو"
+    hi: "टर्मिनल में {command} चलाओ | {command} रन करो"
+  ui_click:
+    risk: medium
+    en: "click {button} | press the {button} button | click on {button} | hit {button}"
+    roman_ur: "{button} par click karo | {button} button dabao | {button} daba do"
+    ur: "{button} پر کلک کرو | {button} بٹن دباؤ"
+    hi: "{button} पर क्लिक करो | {button} बटन दबाओ"
+  ui_type:
+    risk: medium
+    en: "type {typed} in the {field} | write {typed} into the {field} | enter {typed} in the {field}"
+    roman_ur: "{field} mein {typed} type karo | {field} mein {typed} likho"
+    ur: "{field} میں {typed} ٹائپ کرو | {field} میں {typed} لکھو"
+    hi: "{field} में {typed} टाइप करो | {field} में {typed} लिखो"
+  # ------------------------------------------------------------------ knowledge and work
+  research_task:
+    risk: low
+    en: "research {topic} and make me a file | write a report on {topic} | make notes about {topic} | prepare a summary document on {topic} | make a study plan for {topic}"
+    roman_ur: "{topic} par research karke file bana do | {topic} par report likho | {topic} ke notes banao | {topic} ka study plan banao"
+    ur: "{topic} پر ریسرچ کر کے فائل بنا دو | {topic} پر رپورٹ لکھو | {topic} کے نوٹس بناؤ"
+    hi: "{topic} पर रिसर्च करके फ़ाइल बना दो | {topic} पर रिपोर्ट लिखो | {topic} के नोट्स बनाओ"
+  summarise:
+    risk: low
+    en: "summarise this page | give me a summary of {file} | summarize the article | what is this page about"
+    roman_ur: "is page ka summary do | {file} ka khulasa batao | yeh article mukhtasar batao"
+    ur: "اس صفحے کا خلاصہ دو | {file} کا خلاصہ بتاؤ"
+    hi: "इस पेज का सारांश दो | {file} का सारांश बताओ"
+  web_answer:
+    risk: low
+    en: "{question} | tell me {question} | quick question {question} | do you know {question}"
+    roman_ur: "bataiye {question} | mujhe batao {question} | ek sawal hai {question}"
+    ur: "بتاؤ {question} | ایک سوال ہے {question}"
+    hi: "बताओ {question} | एक सवाल है {question}"
+  memory_remember:
+    risk: low
+    en: "remember {thing} is {typed} | save this to memory {thing} is {typed} | note that {thing} is {typed}"
+    roman_ur: "yaad rakho {thing} {typed} hai | memory mein save karo {thing} {typed} hai"
+    ur: "یاد رکھو {thing} {typed} ہے"
+    hi: "याद रखो {thing} {typed} है"
+  memory_recall:
+    risk: low
+    en: "what is {thing} | do you remember {thing} | tell me {thing} from memory | what did i tell you about {thing}"
+    roman_ur: "{thing} kya hai | tumhein {thing} yaad hai | memory se {thing} batao"
+    ur: "{thing} کیا ہے | تمہیں {thing} یاد ہے"
+    hi: "{thing} क्या है | क्या तुम्हें {thing} याद है"
+  reminder:
+    risk: low
+    slots: [time, text]
+    en: "remind me {time} to {text} | set a reminder {time} {text} | remind me about {text} {time}"
+    roman_ur: "mujhe {time} yaad dilana {text} | {time} reminder laga do {text}"
+    ur: "مجھے {time} یاد دلانا {text} | {time} ریمائنڈر لگا دو"
+    hi: "मुझे {time} याद दिलाना {text} | {time} रिमाइंडर लगा दो"
+  chat:
+    risk: low
+    en: "how are you | tell me a joke | who are you | what can you do | good morning | thank you | you are awesome | i am bored"
+    roman_ur: "kaise ho | koi latifa sunao | tum kaun ho | tum kya kar sakte ho | subah bakhair | shukriya | tum bohat acche ho | main bore ho raha hoon"
+    ur: "کیسے ہو | کوئی لطیفہ سناؤ | تم کون ہو | تم کیا کر سکتے ہو | صبح بخیر | شکریہ"
+    hi: "कैसे हो | कोई चुटकुला सुनाओ | तुम कौन हो | तुम क्या कर सकते हो | सुप्रभात | शुक्रिया"
+  # ------------------------------------------------------------------ conversation control
+  correction:
+    risk: low
+    slots: [app, query]
+    en: "!no i meant {app} | !not that one open {app} | !i said {app} not that | !actually play {query} instead | !no no i want {query} | !i did not say that i said {app}"
+    roman_ur: "!nahi maine {app} kaha tha | !yeh nahi {app} kholo | !mera matlab {query} tha | !galat hai {app} chahiye | !nahi nahi {query} chalao"
+    ur: "!نہیں میں نے {app_ur} کہا تھا | !میرا مطلب {app_ur} تھا | !یہ نہیں {app_ur} کھولو"
+    hi: "!नहीं मैंने {app_hi} कहा था | !मेरा मतलब {app_hi} था | !यह नहीं {app_hi} खोलो"
+  follow_up:
+    risk: low
+    en: "open it | close it | do it again | and the next one | go back | the second one | delete that | now do the same for {path} | also open {app}"
+    roman_ur: "isay kholo | isay band karo | phir se karo | aur agla wala | wapas jao | doosra wala | woh delete karo | ab yehi {path} ke liye karo"
+    ur: "اسے کھولو | اسے بند کرو | پھر سے کرو | دوسرا والا | واپس جاؤ"
+    hi: "इसे खोलो | इसे बंद करो | फिर से करो | दूसरा वाला | वापस जाओ"
+  end_task:
+    risk: low
+    en: "end task | that's all | i am done | no thanks that is all | we are finished | you can stop now"
+    roman_ur: "bas khatam | bas itna hi | kaam khatam | nahi shukriya bas | ho gaya | ab rehne do"
+    ur: "بس ختم | بس اتنا ہی | کام ختم | شکریہ بس"
+    hi: "बस खत्म | बस इतना ही | काम खत्म | शुक्रिया बस"
+  stop:
+    risk: low
+    en: "stop | stop it right now | cancel that | abort | wait stop | halt"
+    roman_ur: "ruko | ruk jao | rok do isay | cancel karo | bas karo ruko"
+    ur: "رکو | رک جاؤ | اسے روک دو | کینسل کرو"
+    hi: "रुको | रुक जाओ | इसे रोक दो | कैंसल करो"
+  undo:
+    risk: low
+    en: "undo | undo that | revert the last change | take that back | undo the last thing"
+    roman_ur: "undo karo | woh wapas karo | pichla kaam undo karo | jo kiya wapas kar do"
+    ur: "انڈو کرو | وہ واپس کرو | پچھلا کام انڈو کرو"
+    hi: "अनडू करो | वह वापस करो | पिछला काम अनडू करो"
+  repeat:
+    risk: low
+    en: "say that again | repeat that | what did you say | come again | can you repeat"
+    roman_ur: "dobara bolo | phir se bolo | kya kaha tha | dohrao"
+    ur: "دوبارہ بولو | پھر سے بولو | کیا کہا تھا"
+    hi: "दोबारा बोलो | फिर से बोलो | क्या कहा था"
+  confirm_yes:
+    risk: low
+    en: "yes | yes please | okay do it | go ahead | sure | yeah"
+    roman_ur: "haan | ji haan | theek hai kar do | kar do | bilkul"
+    ur: "ہاں | جی ہاں | ٹھیک ہے کر دو | کر دو"
+    hi: "हाँ | जी हाँ | ठीक है कर दो | कर दो"
+  confirm_no:
+    risk: low
+    en: "no | no thanks | do not do it | cancel it | nope"
+    roman_ur: "nahi | nahi rehne do | mat karo | cancel kar do"
+    ur: "نہیں | نہیں رہنے دو | مت کرو"
+    hi: "नहीं | रहने दो | मत करो"

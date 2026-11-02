@@ -1,0 +1,1023 @@
+{
+ "model": "xlm-roberta-base, int8 ONNX",
+ "test_clean": {
+  "n": 428,
+  "intent_accuracy": 0.8388,
+  "per_language_accuracy": {
+   "en": {
+    "n": 187,
+    "accuracy": 0.845
+   },
+   "hi": {
+    "n": 67,
+    "accuracy": 0.925
+   },
+   "roman_ur": {
+    "n": 114,
+    "accuracy": 0.737
+   },
+   "ur": {
+    "n": 60,
+    "accuracy": 0.917
+   }
+  },
+  "confident_share": 0.841,
+  "accuracy_when_confident": 0.9139,
+  "wrong_and_confident": 31,
+  "slot": {
+   "precision": 0.864,
+   "recall": 0.866,
+   "f1": 0.865,
+   "gold_slots": 367
+  },
+  "per_intent": {
+   "battery_status": {
+    "support": 2,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "bluetooth_toggle": {
+    "support": 2,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "brightness_set": {
+    "support": 6,
+    "precision": 1.0,
+    "recall": 0.667,
+    "f1": 0.8
+   },
+   "browser_tab": {
+    "support": 9,
+    "precision": 0.6,
+    "recall": 1.0,
+    "f1": 0.75
+   },
+   "chat": {
+    "support": 8,
+    "precision": 0.875,
+    "recall": 0.875,
+    "f1": 0.875
+   },
+   "close_app": {
+    "support": 24,
+    "precision": 0.913,
+    "recall": 0.875,
+    "f1": 0.894
+   },
+   "confirm_no": {
+    "support": 4,
+    "precision": 0.667,
+    "recall": 0.5,
+    "f1": 0.571
+   },
+   "confirm_yes": {
+    "support": 5,
+    "precision": 1.0,
+    "recall": 0.6,
+    "f1": 0.75
+   },
+   "copy_file": {
+    "support": 4,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "correction": {
+    "support": 24,
+    "precision": 0.75,
+    "recall": 1.0,
+    "f1": 0.857
+   },
+   "create_folder": {
+    "support": 6,
+    "precision": 0.667,
+    "recall": 1.0,
+    "f1": 0.8
+   },
+   "dark_mode": {
+    "support": 4,
+    "precision": 0.8,
+    "recall": 1.0,
+    "f1": 0.889
+   },
+   "delete_file": {
+    "support": 8,
+    "precision": 1.0,
+    "recall": 0.75,
+    "f1": 0.857
+   },
+   "email_compose": {
+    "support": 6,
+    "precision": 0.857,
+    "recall": 1.0,
+    "f1": 0.923
+   },
+   "email_send": {
+    "support": 2,
+    "precision": 0.5,
+    "recall": 0.5,
+    "f1": 0.5
+   },
+   "end_task": {
+    "support": 6,
+    "precision": 0.6,
+    "recall": 0.5,
+    "f1": 0.545
+   },
+   "find_files": {
+    "support": 8,
+    "precision": 0.714,
+    "recall": 0.625,
+    "f1": 0.667
+   },
+   "follow_up": {
+    "support": 7,
+    "precision": 0.5,
+    "recall": 0.714,
+    "f1": 0.588
+   },
+   "install_app": {
+    "support": 4,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "keep_awake": {
+    "support": 2,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "list_folder": {
+    "support": 4,
+    "precision": 0.667,
+    "recall": 1.0,
+    "f1": 0.8
+   },
+   "lock_pc": {
+    "support": 4,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "media_control": {
+    "support": 6,
+    "precision": 1.0,
+    "recall": 0.667,
+    "f1": 0.8
+   },
+   "memory_recall": {
+    "support": 12,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "memory_remember": {
+    "support": 6,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "move_file": {
+    "support": 4,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "open_app": {
+    "support": 36,
+    "precision": 0.781,
+    "recall": 0.694,
+    "f1": 0.735
+   },
+   "open_file": {
+    "support": 4,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1": 0.667
+   },
+   "open_folder": {
+    "support": 8,
+    "precision": 0.875,
+    "recall": 0.875,
+    "f1": 0.875
+   },
+   "open_website": {
+    "support": 12,
+    "precision": 1.0,
+    "recall": 0.833,
+    "f1": 0.909
+   },
+   "read_file": {
+    "support": 4,
+    "precision": 0.667,
+    "recall": 1.0,
+    "f1": 0.8
+   },
+   "reminder": {
+    "support": 6,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "rename_file": {
+    "support": 6,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "repeat": {
+    "support": 4,
+    "precision": 0.75,
+    "recall": 0.75,
+    "f1": 0.75
+   },
+   "research_task": {
+    "support": 8,
+    "precision": 1.0,
+    "recall": 0.875,
+    "f1": 0.933
+   },
+   "restart_pc": {
+    "support": 2,
+    "precision": 0.222,
+    "recall": 1.0,
+    "f1": 0.364
+   },
+   "restore_file": {
+    "support": 4,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "screenshot": {
+    "support": 2,
+    "precision": 0.667,
+    "recall": 1.0,
+    "f1": 0.8
+   },
+   "shutdown_pc": {
+    "support": 2,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "sleep_pc": {
+    "support": 2,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1": 0.667
+   },
+   "stop": {
+    "support": 5,
+    "precision": 0.571,
+    "recall": 0.8,
+    "f1": 0.667
+   },
+   "summarise": {
+    "support": 2,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "switch_app": {
+    "support": 23,
+    "precision": 1.0,
+    "recall": 0.522,
+    "f1": 0.686
+   },
+   "terminal_run": {
+    "support": 4,
+    "precision": 0.667,
+    "recall": 1.0,
+    "f1": 0.8
+   },
+   "ui_click": {
+    "support": 6,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1": 0.667
+   },
+   "ui_type": {
+    "support": 6,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "undo": {
+    "support": 4,
+    "precision": 1.0,
+    "recall": 0.75,
+    "f1": 0.857
+   },
+   "volume_change": {
+    "support": 6,
+    "precision": 0.857,
+    "recall": 1.0,
+    "f1": 0.923
+   },
+   "volume_set": {
+    "support": 6,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "web_answer": {
+    "support": 12,
+    "precision": 0.923,
+    "recall": 1.0,
+    "f1": 0.96
+   },
+   "web_search": {
+    "support": 8,
+    "precision": 1.0,
+    "recall": 0.875,
+    "f1": 0.933
+   },
+   "whatsapp_draft": {
+    "support": 6,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "wifi_toggle": {
+    "support": 2,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "window_control": {
+    "support": 20,
+    "precision": 1.0,
+    "recall": 0.7,
+    "f1": 0.824
+   },
+   "write_file": {
+    "support": 6,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "youtube_control": {
+    "support": 9,
+    "precision": 0.833,
+    "recall": 0.556,
+    "f1": 0.667
+   },
+   "youtube_now_playing": {
+    "support": 4,
+    "precision": 0.8,
+    "recall": 1.0,
+    "f1": 0.889
+   },
+   "youtube_pause": {
+    "support": 4,
+    "precision": 0.8,
+    "recall": 1.0,
+    "f1": 0.889
+   },
+   "youtube_play": {
+    "support": 10,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "youtube_resume": {
+    "support": 4,
+    "precision": 0.444,
+    "recall": 1.0,
+    "f1": 0.615
+   },
+   "youtube_seek": {
+    "support": 4,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   }
+  },
+  "top_confusions": [
+   {
+    "gold": "open_app",
+    "predicted": "correction",
+    "count": 6
+   },
+   {
+    "gold": "switch_app",
+    "predicted": "browser_tab",
+    "count": 6
+   },
+   {
+    "gold": "window_control",
+    "predicted": "restart_pc",
+    "count": 6
+   },
+   {
+    "gold": "switch_app",
+    "predicted": "open_app",
+    "count": 5
+   },
+   {
+    "gold": "youtube_control",
+    "predicted": "youtube_resume",
+    "count": 4
+   },
+   {
+    "gold": "close_app",
+    "predicted": "follow_up",
+    "count": 3
+   },
+   {
+    "gold": "open_app",
+    "predicted": "close_app",
+    "count": 2
+   },
+   {
+    "gold": "open_app",
+    "predicted": "terminal_run",
+    "count": 2
+   },
+   {
+    "gold": "open_website",
+    "predicted": "open_app",
+    "count": 2
+   },
+   {
+    "gold": "open_file",
+    "predicted": "read_file",
+    "count": 2
+   },
+   {
+    "gold": "find_files",
+    "predicted": "create_folder",
+    "count": 2
+   },
+   {
+    "gold": "delete_file",
+    "predicted": "find_files",
+    "count": 2
+   },
+   {
+    "gold": "open_app",
+    "predicted": "restart_pc",
+    "count": 1
+   },
+   {
+    "gold": "web_search",
+    "predicted": "create_folder",
+    "count": 1
+   },
+   {
+    "gold": "media_control",
+    "predicted": "youtube_pause",
+    "count": 1
+   }
+  ]
+ },
+ "test_noisy": {
+  "n": 428,
+  "intent_accuracy": 0.8294,
+  "per_language_accuracy": {
+   "en": {
+    "n": 187,
+    "accuracy": 0.829
+   },
+   "hi": {
+    "n": 67,
+    "accuracy": 0.925
+   },
+   "roman_ur": {
+    "n": 114,
+    "accuracy": 0.737
+   },
+   "ur": {
+    "n": 60,
+    "accuracy": 0.9
+   }
+  },
+  "confident_share": 0.818,
+  "accuracy_when_confident": 0.9086,
+  "wrong_and_confident": 32,
+  "slot": {
+   "precision": 0.842,
+   "recall": 0.812,
+   "f1": 0.827,
+   "gold_slots": 367
+  },
+  "per_intent": {
+   "battery_status": {
+    "support": 2,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "bluetooth_toggle": {
+    "support": 2,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "brightness_set": {
+    "support": 6,
+    "precision": 1.0,
+    "recall": 0.833,
+    "f1": 0.909
+   },
+   "browser_tab": {
+    "support": 9,
+    "precision": 0.6,
+    "recall": 1.0,
+    "f1": 0.75
+   },
+   "chat": {
+    "support": 8,
+    "precision": 0.875,
+    "recall": 0.875,
+    "f1": 0.875
+   },
+   "close_app": {
+    "support": 24,
+    "precision": 0.955,
+    "recall": 0.875,
+    "f1": 0.913
+   },
+   "confirm_no": {
+    "support": 4,
+    "precision": 0.5,
+    "recall": 0.5,
+    "f1": 0.5
+   },
+   "confirm_yes": {
+    "support": 5,
+    "precision": 1.0,
+    "recall": 0.6,
+    "f1": 0.75
+   },
+   "copy_file": {
+    "support": 4,
+    "precision": 1.0,
+    "recall": 0.75,
+    "f1": 0.857
+   },
+   "correction": {
+    "support": 24,
+    "precision": 0.75,
+    "recall": 1.0,
+    "f1": 0.857
+   },
+   "create_folder": {
+    "support": 6,
+    "precision": 0.6,
+    "recall": 1.0,
+    "f1": 0.75
+   },
+   "dark_mode": {
+    "support": 4,
+    "precision": 0.8,
+    "recall": 1.0,
+    "f1": 0.889
+   },
+   "delete_file": {
+    "support": 8,
+    "precision": 1.0,
+    "recall": 0.75,
+    "f1": 0.857
+   },
+   "email_compose": {
+    "support": 6,
+    "precision": 0.857,
+    "recall": 1.0,
+    "f1": 0.923
+   },
+   "email_send": {
+    "support": 2,
+    "precision": 0.333,
+    "recall": 0.5,
+    "f1": 0.4
+   },
+   "end_task": {
+    "support": 6,
+    "precision": 0.667,
+    "recall": 0.667,
+    "f1": 0.667
+   },
+   "find_files": {
+    "support": 8,
+    "precision": 0.714,
+    "recall": 0.625,
+    "f1": 0.667
+   },
+   "follow_up": {
+    "support": 7,
+    "precision": 0.455,
+    "recall": 0.714,
+    "f1": 0.556
+   },
+   "install_app": {
+    "support": 4,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "keep_awake": {
+    "support": 2,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "list_folder": {
+    "support": 4,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "lock_pc": {
+    "support": 4,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "media_control": {
+    "support": 6,
+    "precision": 1.0,
+    "recall": 0.667,
+    "f1": 0.8
+   },
+   "memory_recall": {
+    "support": 12,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "memory_remember": {
+    "support": 6,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "move_file": {
+    "support": 4,
+    "precision": 0.8,
+    "recall": 1.0,
+    "f1": 0.889
+   },
+   "open_app": {
+    "support": 36,
+    "precision": 0.742,
+    "recall": 0.639,
+    "f1": 0.687
+   },
+   "open_file": {
+    "support": 4,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1": 0.667
+   },
+   "open_folder": {
+    "support": 8,
+    "precision": 0.75,
+    "recall": 0.75,
+    "f1": 0.75
+   },
+   "open_website": {
+    "support": 12,
+    "precision": 1.0,
+    "recall": 0.75,
+    "f1": 0.857
+   },
+   "read_file": {
+    "support": 4,
+    "precision": 0.667,
+    "recall": 1.0,
+    "f1": 0.8
+   },
+   "reminder": {
+    "support": 6,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "rename_file": {
+    "support": 6,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "repeat": {
+    "support": 4,
+    "precision": 0.75,
+    "recall": 0.75,
+    "f1": 0.75
+   },
+   "research_task": {
+    "support": 8,
+    "precision": 1.0,
+    "recall": 0.875,
+    "f1": 0.933
+   },
+   "restart_pc": {
+    "support": 2,
+    "precision": 0.222,
+    "recall": 1.0,
+    "f1": 0.364
+   },
+   "restore_file": {
+    "support": 4,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "screenshot": {
+    "support": 2,
+    "precision": 0.667,
+    "recall": 1.0,
+    "f1": 0.8
+   },
+   "shutdown_pc": {
+    "support": 2,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "sleep_pc": {
+    "support": 2,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1": 0.667
+   },
+   "stop": {
+    "support": 5,
+    "precision": 0.667,
+    "recall": 0.8,
+    "f1": 0.727
+   },
+   "summarise": {
+    "support": 2,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "switch_app": {
+    "support": 23,
+    "precision": 0.857,
+    "recall": 0.522,
+    "f1": 0.649
+   },
+   "terminal_run": {
+    "support": 4,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "ui_click": {
+    "support": 6,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1": 0.667
+   },
+   "ui_type": {
+    "support": 6,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "undo": {
+    "support": 4,
+    "precision": 1.0,
+    "recall": 0.75,
+    "f1": 0.857
+   },
+   "volume_change": {
+    "support": 6,
+    "precision": 0.857,
+    "recall": 1.0,
+    "f1": 0.923
+   },
+   "volume_set": {
+    "support": 6,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "web_answer": {
+    "support": 12,
+    "precision": 0.923,
+    "recall": 1.0,
+    "f1": 0.96
+   },
+   "web_search": {
+    "support": 8,
+    "precision": 1.0,
+    "recall": 0.875,
+    "f1": 0.933
+   },
+   "whatsapp_draft": {
+    "support": 6,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "wifi_toggle": {
+    "support": 2,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "window_control": {
+    "support": 20,
+    "precision": 0.933,
+    "recall": 0.7,
+    "f1": 0.8
+   },
+   "write_file": {
+    "support": 6,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "youtube_control": {
+    "support": 9,
+    "precision": 0.833,
+    "recall": 0.556,
+    "f1": 0.667
+   },
+   "youtube_now_playing": {
+    "support": 4,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "youtube_pause": {
+    "support": 4,
+    "precision": 0.8,
+    "recall": 1.0,
+    "f1": 0.889
+   },
+   "youtube_play": {
+    "support": 10,
+    "precision": 1.0,
+    "recall": 0.9,
+    "f1": 0.947
+   },
+   "youtube_resume": {
+    "support": 4,
+    "precision": 0.4,
+    "recall": 1.0,
+    "f1": 0.571
+   },
+   "youtube_seek": {
+    "support": 4,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   }
+  },
+  "top_confusions": [
+   {
+    "gold": "open_app",
+    "predicted": "correction",
+    "count": 7
+   },
+   {
+    "gold": "switch_app",
+    "predicted": "browser_tab",
+    "count": 6
+   },
+   {
+    "gold": "switch_app",
+    "predicted": "open_app",
+    "count": 5
+   },
+   {
+    "gold": "window_control",
+    "predicted": "restart_pc",
+    "count": 5
+   },
+   {
+    "gold": "youtube_control",
+    "predicted": "youtube_resume",
+    "count": 4
+   },
+   {
+    "gold": "open_website",
+    "predicted": "open_app",
+    "count": 3
+   },
+   {
+    "gold": "find_files",
+    "predicted": "create_folder",
+    "count": 3
+   },
+   {
+    "gold": "open_app",
+    "predicted": "restart_pc",
+    "count": 2
+   },
+   {
+    "gold": "close_app",
+    "predicted": "follow_up",
+    "count": 2
+   },
+   {
+    "gold": "open_file",
+    "predicted": "read_file",
+    "count": 2
+   },
+   {
+    "gold": "delete_file",
+    "predicted": "find_files",
+    "count": 2
+   },
+   {
+    "gold": "open_app",
+    "predicted": "open_folder",
+    "count": 1
+   },
+   {
+    "gold": "open_app",
+    "predicted": "follow_up",
+    "count": 1
+   },
+   {
+    "gold": "open_app",
+    "predicted": "switch_app",
+    "count": 1
+   },
+   {
+    "gold": "open_app",
+    "predicted": "close_app",
+    "count": 1
+   }
+  ]
+ },
+ "regex_matcher_on_test": {
+  "sentences_it_could_be_asked": 324,
+  "answered": 154,
+  "answered_share": 0.475,
+  "correct_of_answered": 116,
+  "accuracy_of_answered": 0.753,
+  "accuracy_over_all": 0.358
+ },
+ "regex_matcher_on_test_noisy": {
+  "sentences_it_could_be_asked": 324,
+  "answered": 140,
+  "answered_share": 0.432,
+  "correct_of_answered": 107,
+  "accuracy_of_answered": 0.764,
+  "accuracy_over_all": 0.33
+ },
+ "cpu_latency": {
+  "runs": 200,
+  "p50_ms": 9.7,
+  "p90_ms": 11.2,
+  "max_ms": 12.7
+ },
+ "train_log": {
+  "epochs": [
+   {
+    "epoch": 1,
+    "loss": 4.1221,
+    "val_intent_acc": 0.8006,
+    "val_slot_token_acc": 0.9818,
+    "seconds": 451
+   },
+   {
+    "epoch": 2,
+    "loss": 0.495,
+    "val_intent_acc": 0.9821,
+    "val_slot_token_acc": 0.9976,
+    "seconds": 2888
+   },
+   {
+    "epoch": 3,
+    "loss": 0.098,
+    "val_intent_acc": 0.9959,
+    "val_slot_token_acc": 0.9994,
+    "seconds": 736
+   },
+   {
+    "epoch": 4,
+    "loss": 0.0332,
+    "val_intent_acc": 0.9917,
+    "val_slot_token_acc": 0.9997,
+    "seconds": 743
+   },
+   {
+    "epoch": 5,
+    "loss": 0.0107,
+    "val_intent_acc": 0.9959,
+    "val_slot_token_acc": 1.0,
+    "seconds": 582
+   }
+  ],
+  "train_rows": 6550,
+  "val_rows": 727,
+  "seconds": 5404,
+  "base": "xlm-roberta-base",
+  "kept_vocab": 17063,
+  "threads": 10
+ },
+ "note": "Seed data was written by one author from templates; the test split is held out by template and by filler value. Real speakers will score lower."
+}

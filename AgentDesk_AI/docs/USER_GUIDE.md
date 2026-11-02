@@ -70,6 +70,34 @@ Changes to files can usually be undone: open the task and press **Undo changes**
 To close a specific tab or pause YouTube, load the browser extension once: Settings → Desktop →
 "Chrome / Edge setup" and follow the page (Load unpacked, then the page says **Paired**). Updates load by themselves.
 
+## 6b. Controlling any app (upgrade U1–U7)
+
+Agent X always tries the cheapest, safest way first: a built-in tool (volume, files, browser), then the app's own
+controls (UI Automation, layer 2), and only then, for apps that expose nothing, it looks at the window (layer 3).
+Each finished task says which layer did the work.
+
+| What you want | Say | Notes |
+|---|---|---|
+| Mis-heard names | "open chrome", "kholo notpad" | Sound-alike matching picks the real app; say "no, I meant X" and it remembers |
+| Click / type in any app | "In Calculator click seven, plus, eight, equals", "in Notepad type hello" | Medium risk: approve. **Delete / pay / send** controls are high risk: click Approve |
+| Several steps | "open Notepad, type hello and save it as hello.txt on the Desktop" | It re-checks after each step and says what failed |
+| Keep talking | after a result it asks "Anything else?" | Say "no", "that's all", or stay silent. Settings can turn this off |
+| Terminal | "open a terminal in Documents", "run git status", "run npm test in my project" | A live PowerShell window shows the command and output. Safe commands run; others ask; dangerous ones (format, wide delete, shutdown) are refused. Settings can hide the window |
+| YouTube / browser | "pause YouTube", "next video", "speed 1.5", "fullscreen", "close the Gmail tab" | Needs the browser extension 1.2.0; results are checked in the page |
+| E-mail | "write an email to Ali about tomorrow's meeting" | Dictate, "change the second line"; it **reads the draft back**; only "yes, send it" sends, then it checks the Sent folder. Connect Gmail or Outlook in Settings → Email |
+| Chat messages | "send Ahmed on WhatsApp that I am late" | Same read-back and "yes, send it" |
+| Apps it cannot read (games, custom-drawn programs) | "click Play in <app>", "what does the screen say?" | It says "This app needs me to look at the screen, a few seconds." A picture of that one window goes to the cloud AI; it points at numbered boxes it detected and checks the screen changed |
+| Stop | "stop" / "ruko" | Ends the running task at once |
+
+Never read aloud, stored or typed by Agent X: passwords, PINs, one-time codes. Text on web pages, e-mails, files and screens is
+treated as information, never as an instruction. Payments are never completed for you.
+
+### Settings added for these features (Settings, Alt+3)
+- **Answer questions with the cloud AI**: required for web answers, e-mail rewriting and looking at windows.
+- **Let the assistant look at app windows** (on by default, still needs the cloud setting): turns layer 3 off completely.
+- **Show a live terminal window**: hide it; commands still run and are read back.
+- **Ask "Anything else?"**, **Follow-up window**, **Email account** (None / Gmail / Outlook).
+
 ## 7. When something goes wrong
 
 | You see | Do this |
@@ -78,6 +106,8 @@ To close a specific tab or pause YouTube, load the browser extension once: Setti
 | "Local agent ko yeh command clear nahi hui" | Say the app/file name and the action, or start with "AI:" (needs a Groq key) |
 | "did not start (autoplay may be blocked)" | Press Play once in the YouTube tab |
 | "No number saved for …" | Add "Name: +92…" on the Memory page or say the full number |
+| "Looking at the screen sends a picture…" | Turn on both cloud answers and "Let the assistant look at app windows" in Settings |
+| "I looked at … but could not tell where to…" | Say the visible text of the button ("click Start"); if it still fails, the app may draw text too small or in a language the OCR lacks |
 | A task says **partially completed** | Some steps worked; the card lists what changed and what can be undone |
 
 Privacy: everything runs on this PC. Only "AI:" requests (with your Groq key) and browser speech recognition

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { apiToken, type ConfigStatus, type Persona, type Preferences, type PreferencesUpdate, type UsageOut } from '../api';
+import { apiToken, mailApi, type MailStatus, type ConfigStatus, type Persona, type Preferences, type PreferencesUpdate, type UsageOut } from '../api';
 import { desktopApi } from '../desktop';
 
 interface SettingsPageProps {
@@ -21,6 +21,43 @@ function Radio<T extends string>({ name, value, current, label, help, onChange }
         <span className="block text-slate-500">{help}</span>
       </label>
     </div>
+  );
+}
+
+function EmailSection({ prefs, onSave }: { prefs: Preferences; onSave: (patch: PreferencesUpdate) => Promise<void> }) {
+  const [status, setStatus] = useState<MailStatus | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+  const load = () => { void mailApi.status().then(setStatus).catch(() => setStatus(null)); };
+  useEffect(() => { load(); const t = window.setInterval(load, 4000); return () => window.clearInterval(t); }, []);
+  const chosen = prefs.mail_provider ?? 'none';
+  const connect = (provider: 'gmail' | 'outlook') => {
+    setNote(null);
+    void mailApi.connect(provider).then((r) => { window.open(r.url, '_blank', 'noopener'); setNote('Finish signing in in the new tab, then come back.'); }).catch((e: Error) => setNote(e.message.replace(/^Request failed \(\d+\): /, '')));
+  };
+  return (
+    <section aria-labelledby="email-heading" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h3 id="email-heading" className="font-semibold">Email</h3>
+      <p className="mt-1 text-xs text-slate-500">Write and send e-mail by voice. You sign in on Google's or Microsoft's own page; the assistant never sees your password and keeps its access only in the Windows Credential Manager. It sends nothing until it has read the recipient, subject and first line back and you say "yes, send it".</p>
+      <div className="mt-3 flex flex-col gap-3">
+        <Radio name="mail" value="none" current={chosen} label="Off" help="No e-mail by voice." onChange={(v) => void onSave({ mail_provider: v })} />
+        {(['gmail', 'outlook'] as const).map((p) => {
+          const s = status?.providers[p];
+          return (
+            <div key={p} className="flex flex-wrap items-start gap-3">
+              <div className="min-w-[14rem] flex-1">
+                <Radio name="mail" value={p} current={chosen} label={p === 'gmail' ? 'Gmail' : 'Outlook / Microsoft 365'}
+                  help={s?.connected ? `Connected${s.account ? ` as ${s.account}` : ''}.` : s?.configured === false ? 'Not set up: add the OAuth client id to backend\\.env (docs/EMAIL_SETUP.md).' : 'Not connected yet.'}
+                  onChange={(v) => void onSave({ mail_provider: v })} />
+              </div>
+              {s?.connected
+                ? <button type="button" className="rounded border border-slate-300 px-3 py-1 text-sm" onClick={() => void mailApi.disconnect(p).then(load)}>Disconnect</button>
+                : <button type="button" className="rounded bg-blue-700 px-3 py-1 text-sm font-semibold text-white disabled:opacity-50" disabled={s?.configured === false} data-testid={`connect-${p}`} onClick={() => connect(p)}>Connect</button>}
+            </div>
+          );
+        })}
+      </div>
+      {note && <p role="status" className="mt-3 text-sm text-slate-700">{note}</p>}
+    </section>
   );
 }
 
@@ -65,6 +102,7 @@ export function SettingsPage({ prefs, config, usage, onSave }: SettingsPageProps
           <label className="text-sm">Speaking language
             <select value={persona.language} onChange={(e) => setPersona({ ...persona, language: e.target.value as Persona['language'] })}
               className="mt-1 w-full rounded border p-2">
+              <option value="auto">Auto (reply in the language I speak)</option>
               <option value="ur-PK">Urdu / Roman Urdu</option>
               <option value="hi-IN">Hindi</option>
               <option value="en-US">English (US)</option>
@@ -107,6 +145,59 @@ export function SettingsPage({ prefs, config, usage, onSave }: SettingsPageProps
             onChange={(v) => void save({ listen_mode: v }, 'Listen mode saved.')} />
         </fieldset>
       </section>
+
+      <section aria-labelledby="speaking-heading" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h3 id="speaking-heading" className="font-semibold">Listening and speaking</h3>
+        <label className="mt-3 flex items-center gap-3 text-sm">
+          <span className="w-44">Follow-up window (seconds)</span>
+          <input type="range" min={0} max={15} value={prefs.follow_up_seconds} aria-label="Follow-up window in seconds" data-testid="follow-up"
+            onChange={(e) => void save({ follow_up_seconds: Number(e.target.value) }, 'Follow-up window saved.')} />
+          <span className="w-8 text-right" data-testid="follow-up-value">{prefs.follow_up_seconds}</span>
+        </label>
+        <p className="ml-1 text-xs text-slate-500">After a spoken reply the microphone stays open this long, so you can say "and close Notepad" without pressing the hotkey. 0 turns it off.</p>
+        <label className="mt-3 flex items-start gap-2 text-sm">
+          <input type="checkbox" className="mt-1" checked={prefs.anything_else !== false} data-testid="anything-else"
+            onChange={(e) => void save({ anything_else: e.target.checked }, 'Saved.')} />
+          <span>Ask "Anything else?" after a finished task. <span className="block text-slate-500">The conversation then stays open until you say "no" or "that's all", or stay silent for the follow-up window.</span></span>
+        </label>
+        <label className="mt-3 flex items-start gap-2 text-sm">
+          <input type="checkbox" className="mt-1" checked={prefs.cloud_answers === true} data-testid="cloud-answers"
+            onChange={(e) => void save({ cloud_answers: e.target.checked }, 'Privacy setting saved.')} />
+          <span>Answer questions with the cloud AI (Groq). <span className="block text-slate-500">When on, the question you ask (and, for web answers, text of the pages read) is sent to Groq. Commands for this PC are not affected. {prefs.cloud_answers === null && 'You have not chosen yet, so questions stay on this PC.'}</span></span>
+        </label>
+        <p className="ml-6 mt-1 text-xs text-slate-500" data-testid="search-status">
+          Web search: Wikipedia {config?.search?.wikipedia ? 'ready' : 'off (needs WIKIPEDIA_CONTACT_EMAIL in backend/.env)'}; Tavily{' '}
+          {config?.search?.tavily ? 'ready' : 'off (needs a key: see docs/SEARCH_SETUP.md)'}.
+        </p>
+        <label className="mt-3 flex items-start gap-2 text-sm">
+          <input type="checkbox" className="mt-1" checked={prefs.screen_vision !== false} data-testid="screen-vision"
+            onChange={(e) => void save({ screen_vision: e.target.checked }, 'Saved.')} />
+          <span>Let the assistant look at app windows. <span className="block text-slate-500">Only for apps it cannot read otherwise (games, custom-drawn programs). A picture of that one window goes to the cloud AI, so it also needs the cloud setting above. Shells and password managers are never looked at.</span></span>
+        </label>
+        <label className="mt-3 flex items-start gap-2 text-sm">
+          <input type="checkbox" className="mt-1" checked={prefs.welcome_back !== false} data-testid="welcome-back"
+            onChange={(e) => void save({ welcome_back: e.target.checked }, 'Saved.')} />
+          <span>Say "welcome back" when I unlock the PC. <span className="block text-slate-500">Windows cannot be unlocked by any app; this only notices that you did, after the PC was locked for a while.</span></span>
+        </label>
+        <label className="mt-3 flex items-start gap-2 text-sm">
+          <input type="checkbox" className="mt-1" checked={prefs.terminal_window !== false} data-testid="terminal-window"
+            onChange={(e) => void save({ terminal_window: e.target.checked }, 'Saved.')} />
+          <span>Show a live terminal window when it runs commands. <span className="block text-slate-500">Off: commands still run and are read back, just without the window.</span></span>
+        </label>
+        <label className="mt-3 flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={prefs.daily_greeting} data-testid="daily-greeting"
+            onChange={(e) => void save({ daily_greeting: e.target.checked }, 'Greeting setting saved.')} />
+          Say a greeting the first time the app opens each day
+        </label>
+        <label className="mt-3 flex items-center gap-3 text-sm">
+          <span className="w-44">Speech volume</span>
+          <input type="range" min={0} max={100} value={prefs.speech_volume} aria-label="Speech volume" data-testid="speech-volume"
+            onChange={(e) => void save({ speech_volume: Number(e.target.value) }, 'Volume saved.')} />
+          <span className="w-8 text-right">{prefs.speech_volume}</span>
+        </label>
+      </section>
+
+      <EmailSection prefs={prefs} onSave={onSave} />
 
       <section aria-labelledby="provider-heading" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <h3 id="provider-heading" className="font-semibold">AI provider</h3>

@@ -29,6 +29,7 @@ INTENTS: tuple[str, ...] = (
     "whatsapp_draft", "app_install",
     "write_file", "edit_file", "compress", "extract", "screenshot", "email_draft", "package_search",
     "download", "multi", "clarify", "unsupported", "chat",
+    "memory", "summarise", "web_answer", "ui_control", "terminal", "screen_control", "device_control", "explorer_view", "document",
 )
 LANGUAGES: tuple[str, ...] = ("en", "ur", "roman_ur", "hi")
 NO_STEP_INTENTS = {"clarify", "unsupported", "chat"}
@@ -65,7 +66,7 @@ class NLUPlan(BaseModel):
                 raise ValueError("Plan has unresolved step references; resolve paths before execution.")
             actions.append(PlanAction(tool=step.tool, args=args, rationale=step.expected_outcome))
         note = self.clarifying_question if self.needs_clarification else (self.reply or None)
-        return Plan(actions=actions, note=note)
+        return Plan(actions=actions, note=note, intent=self.intent)
 
 
 def clean_args(args: dict[str, Any]) -> dict[str, Any]:
@@ -119,7 +120,10 @@ def _strict(schema: Any) -> Any:
                 props[name] = _nullable(prop)
         out["type"] = "object"
         out["properties"] = props
-        out["required"] = list(props)
+        if props:  # Groq rejects "required": [] on a no-argument tool
+            out["required"] = list(props)
+        else:
+            out.pop("required", None)
         out["additionalProperties"] = False
     return out
 
@@ -129,10 +133,10 @@ def tool_args_schema(tool) -> dict[str, Any]:
     return _strict(_inline(raw, raw.get("$defs", {})))
 
 
-def plan_json_schema(registry) -> dict[str, Any]:
-    """Strict schema for NLUPlan with one step variant per registered tool."""
+def plan_json_schema(registry, names: list[str] | None = None) -> dict[str, Any]:
+    """Strict schema for NLUPlan with one step variant per registered tool (or only `names`, the planner's shortlist)."""
     variants = []
-    for name in registry.names():
+    for name in (names if names is not None else registry.model_names()):
         variants.append({
             "type": "object",
             "additionalProperties": False,
@@ -220,6 +224,9 @@ def validate_plan(plan: NLUPlan, registry, check_paths: bool = True) -> Validati
             tool = registry.get(step.tool)
         except UnknownToolError:
             errors.append(f"Step {index}: unknown tool '{step.tool}'.")
+            continue
+        if tool.hidden_from_model:
+            errors.append(f"Step {index}: '{step.tool}' cannot be planned (only the server runs it).")
             continue
         args = clean_args(step.args)
         unknown = sorted(set(args) - set(tool.args_schema.model_fields))

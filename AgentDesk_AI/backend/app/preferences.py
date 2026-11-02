@@ -18,16 +18,50 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy.orm import Session
 
 from .models import MemoryItem, Preference, Task, utcnow
+from .voice import personas
 
 
 class Persona(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: str = Field(default="Agent X", min_length=1, max_length=40)
-    language: Literal["ur-PK", "en-US", "en-GB", "hi-IN"] = "ur-PK"
+    language: Literal["auto", "ur-PK", "en-US", "en-GB", "hi-IN"] = "auto"   # auto = each sentence is answered in the language it was spoken in
     style: Literal["friendly", "brief", "formal"] = "friendly"
     speak_replies: bool = True
     orb_color: Literal["indigo", "emerald", "rose", "amber", "slate"] = "indigo"
+    # M3: character. Changes how it looks, sounds and words things; never what it does (rule 3.9).
+    user_name: str = Field(default="", max_length=40)
+    avatar_id: Literal["nova", "aria", "zara", "orion", "atlas", "kai", "custom"] = "aria"   # catalog index 1: the default character
+    show_avatar: bool = True                      # False = orb only
+    gender: Literal["female", "male", "neutral"] = "female"
+    voice_en: str = "hannah"      # Aria's voice (personas.AVATARS)
+    voice_ur: str = "ur-PK-UzmaNeural"
+    voice_hi: str = "hi-IN-SwaraNeural"
+    personality: Literal["assistant", "mentor", "friend", "coach", "custom"] = "assistant"
+    custom_description: str = Field(default="", max_length=500)
+    formality: int = Field(default=50, ge=0, le=100)
+    humour: int = Field(default=50, ge=0, le=100)
+    verbosity: int = Field(default=50, ge=0, le=100)
+    wake_word: str = Field(default="", max_length=30)
+
+    @field_validator("voice_en")
+    @classmethod
+    def _english_voice(cls, value: str) -> str:
+        if value not in personas.ORPHEUS_VOICES:
+            raise ValueError(f"voice_en must be one of {', '.join(personas.ORPHEUS_VOICES)}")
+        return value
+
+    @field_validator("voice_ur", "voice_hi")
+    @classmethod
+    def _edge_voice(cls, value: str) -> str:
+        if not personas.EDGE_VOICE.match(value):
+            raise ValueError("expected a neural voice name such as ur-PK-UzmaNeural")
+        return value
+
+    @field_validator("user_name", "wake_word", "custom_description")
+    @classmethod
+    def _tidy(cls, value: str) -> str:
+        return " ".join(value.split()) if value else ""
 
 
 class Preferences(BaseModel):
@@ -39,6 +73,15 @@ class Preferences(BaseModel):
     risk_policy: Literal["standard", "strict"] = "standard"
     memory_enabled: bool = True
     onboarded: bool = False
+    follow_up_seconds: int = Field(default=10, ge=0, le=15)  # keep listening this long after a spoken reply
+    mail_provider: Literal["none", "gmail", "outlook"] = "none"   # which account the assistant writes e-mail with (Settings > Email)
+    anything_else: bool = True                    # after a verified result ask "Anything else?" and keep the conversation open
+    speech_volume: int = Field(default=100, ge=0, le=100)
+    cloud_answers: bool | None = None             # None = not asked yet; True = questions/web answers may use the cloud AI
+    screen_vision: bool = True                    # layer 3: may look at a window (picture to the cloud AI) when UI Automation sees nothing; still needs cloud_answers
+    welcome_back: bool = True                     # say "welcome back" when the PC is unlocked after a while
+    terminal_window: bool = True                  # show the live PowerShell window while terminal commands run
+    daily_greeting: bool = False                  # speak a greeting the first time the app opens each day
     conversation_cutoff: str | None = None   # ISO time; older turns are not used as memory
 
 
@@ -53,6 +96,15 @@ class PreferencesUpdate(BaseModel):
     risk_policy: Literal["standard", "strict"] | None = None
     memory_enabled: bool | None = None
     onboarded: bool | None = None
+    follow_up_seconds: int | None = Field(default=None, ge=0, le=15)
+    anything_else: bool | None = None
+    mail_provider: Literal["none", "gmail", "outlook"] | None = None
+    speech_volume: int | None = Field(default=None, ge=0, le=100)
+    daily_greeting: bool | None = None
+    cloud_answers: bool | None = None
+    screen_vision: bool | None = None
+    terminal_window: bool | None = None
+    welcome_back: bool | None = None
 
 
 def get_preferences(db: Session) -> Preferences:
@@ -88,7 +140,8 @@ def forget_conversation(db: Session) -> Preferences:
 
 # ------------------------------------------------------------------ memory items
 _SECRET = re.compile(r"(gsk_[A-Za-z0-9]{8,}|sk-[A-Za-z0-9_-]{12,}|AIza[0-9A-Za-z_-]{16,}|"
-                     r"(?i:password|passcode|api[ _-]?key|token|pin)\s*[:=]?\s*\S{4,})")
+                     r"(?i:password|passcode|api[ _-]?key|token|pin)\s*[:=]?\s*\S{4,})|"
+                     r"(?i:\b(?:passwords?|passcodes?|passwd|api[ _-]?keys?|secret keys?|cvv|otp|pin(?: code| number)?|card number)\b)")
 
 
 class MemoryIn(BaseModel):

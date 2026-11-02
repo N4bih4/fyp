@@ -3,3 +3,8 @@
 -r requirements.txt
 pywebview>=5.0 ; sys_platform == "win32"
 pystray>=0.19 ; sys_platform == "win32"
+edge-tts>=6.1
+pypdf>=4.0
+python-docx>=1.1
+keyring>=24.0
+tiktoken>=0.9

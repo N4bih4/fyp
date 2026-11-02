@@ -18,11 +18,20 @@ test('new user: onboarding -> voice command -> preview card -> approve -> verifi
     await dialog.waitFor();
     await page.getByLabel('Language you will speak').selectOption('en-US');
     await page.getByRole('button', { name: 'Next' }).click();
+    await page.getByRole('heading', { name: 'Choose your character' }).waitFor();
+    await page.getByTestId('onboarding-avatar-orion').click(); // a male character
+    await page.getByRole('button', { name: 'Next' }).click();
+    await page.getByRole('heading', { name: 'Choose a personality' }).waitFor();
+    await page.getByTestId('onboarding-personality-friend').check({ force: true });
+    await page.getByRole('button', { name: 'Next' }).click();
+    await page.getByRole('heading', { name: 'Questions and privacy' }).waitFor();
+    await page.getByTestId('onboarding-cloud-no').check({ force: true }); // the choice is the user's: tested both ways in ui.test.mjs
+    await page.getByRole('button', { name: 'Next' }).click();
     await page.getByRole('heading', { name: 'Microphone' }).waitFor();
     await page.getByRole('button', { name: 'Next' }).click();
     const example = await page.getByTestId('onboarding-example').innerText();
     assert.match(example, /Create a folder called Demo in Documents/);
-    await page.getByRole('button', { name: 'Start' }).click();
+    await page.getByTestId('onboarding').getByRole('button', { name: 'Start', exact: true }).click();
 
     // The orb shows it is listening, then the live transcript shows the words.
     await page.locator('[data-testid="orb"][data-state="listening"]').waitFor();

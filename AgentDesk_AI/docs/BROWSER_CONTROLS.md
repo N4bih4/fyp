@@ -82,3 +82,38 @@ tab creation, identity and closing are real.
 
 Still to check by hand in your own Chrome/Edge profile (not covered by the automated run): YouTube pause/resume
 on a playing video, autoplay blocking, two profiles connected at once, and the 1.0 -> 1.1 upgrade path.
+
+## YouTube and tab controls added in extension 1.2
+
+Say these with a YouTube tab open (the one playing sound, or the one in front, is used; two idle YouTube tabs make the assistant ask):
+
+- skip 10 seconds / forward 30 / skip 1 minute / rewind 10 seconds / go back 10 seconds / 10 second aage karo / 5 second peeche kar do
+- speed 1.5 / playback speed 2x / normal speed
+- youtube volume 40 (the player's volume; plain "volume down" stays the PC's volume) / mute the video / unmute youtube
+- full screen / exit full screen (Chrome may refuse: it only allows it after a real key press, and the assistant says so)
+- next video
+- search YouTube for X, then: read the results / play result 2 / "play the second one" (right after a YouTube search)
+- youtube scroll down / up (scrolling other sites is done with the UI Automation tools: "scroll down in Chrome")
+- switch to YouTube tab / switch to Gmail / what page is this (reads the title of the tab in front)
+
+Every one is verified from the page itself: the extension reads the DOM again after acting and the backend compares it with what was asked
+(the video's real `currentTime`, `playbackRate`, `volume`, `muted`, `fullscreenElement`, the new video id after "next" or "play result N",
+the page's `scrollY`). A page that did not change is reported as not done. All of them are low risk (media and navigation).
+
+Limits: page controls work on YouTube only (the extension has no permission on other sites). Tested with a fake DOM (`browser-extension/tests/test_youtube.cjs`);
+YouTube's own page markup can change, so the selectors (`ytd-video-renderer a#video-title`, `.ytp-next-button`) need a check on the real site.
+An extension older than 1.2 is told to update itself (the backend asks for a reload when it connects).
+
+## Extension 2.0 (F4): reliable connection, full YouTube control, website actions
+
+**Why "extension not connected" happened** (from the code, the status endpoint and a real browser run; I could not see your browser): (1) the app was not running on port 8000, which is the only place the extension connects (`scripts/diagnose_extension.ps1` says so at once); (2) the extension was not paired (badge PAIR); (3) with Chrome and Edge both running the extension, the app refused to guess ("Multiple browser profiles") and every command failed; (4) the browser sleeps the extension's background worker; it used to reconnect only every 30 s with no feedback; (5) the old `play_youtube_video` tool ran in a separate worker process that cannot reach the extension, so it only ever opened the page and never pressed play (fixed: it now runs in the server process).
+
+**What changed**
+- Connection: reconnect with backoff (2, 4, 8 ... 30 s) on every drop, a ping every 15 s that keeps the worker awake and detects a dead link (45 s of silence), state saved for the popup, a 30-second alarm as a watchdog. Optional **native messaging host** (`scripts/install_native_host.ps1`): the browser starts a small helper and keeps the worker alive while the port is open; if it is not installed the WebSocket is used.
+- Popup (`popup.html`): connection, channel, paired, version, browser, backend, last answer, attempts, last problem, **Reconnect now**.
+- Two browsers: the app talks to the browser you used last (the extension reports window focus), or the one the command names; a client silent for 60 s is dropped; if it cannot decide it says so.
+- YouTube (`control_browser`): search-and-play (first real result; no ads, Shorts or channels; playlists/mixes with `kind=playlist`), result N, next, previous, play/pause, seek, speed, volume, mute, full screen, theatre, captions, quality, loop, skip ad, like, subscribe (asks first), now playing. Each is verified from the page (`<video>` state, button `aria-pressed`, the player's own quality).
+- Websites: read the page, click a link/button by its words, fill a named field, scroll, pick a Google/Bing/DuckDuckGo result, reopen the closed tab, bookmarks and history search. A password, card or one-time-code field is never filled; a link that pays, deletes, sends or installs is only clicked when the command names it; page text comes back as data.
+- Without the extension, "play X on YouTube" falls back to the older way (finds the video on the server and opens it) and says "The browser helper is off, so I used a slower method."
+
+**Permissions added** (manifest 2.0): `bookmarks`, `history`, `sessions`, `nativeMessaging`, and access to all http(s) sites (needed to read or fill the page in front). Nothing is sent anywhere except to the local app on 127.0.0.1:8000.

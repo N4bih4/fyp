@@ -18,6 +18,7 @@ State machine (tasks):
 from __future__ import annotations
 
 import concurrent.futures
+import contextvars
 import hashlib
 import json
 import time
@@ -70,6 +71,7 @@ def task_out(task: Task) -> TaskOut:
         updated_at=task.updated_at,
         retry_at=state.get("retry_at"),
         provider_note=state.get("provider_note"),
+        speak_full=bool(state.get("speak_full")),
         partial=_partial_summary(task),
         actions=[_action_out(a) for a in sorted(task.actions, key=lambda x: x.seq)],
     )
@@ -333,11 +335,16 @@ def _run_and_verify(tool, parsed_args, settings: Settings, action_id: str | None
         verification = (Verification.model_validate(outcome.verification) if outcome.verification
                         else Verification(passed=False, checks=[], details=result.error))
         return result, verification, None
-    result = _run_with_timeout(tool, parsed_args, limit)
-    if result.success:
-        verification = tool.verify(parsed_args, result)
-    else:
-        verification = Verification(passed=False, checks=[], details=result.error)
+    from .. import progress
+    token = progress.bind(action_id)         # a long tool in this process can report progress and notice a cancel
+    try:
+        result = _run_with_timeout(tool, parsed_args, limit)
+        if result.success:
+            verification = tool.verify(parsed_args, result)
+        else:
+            verification = Verification(passed=False, checks=[], details=result.error)
+    finally:
+        progress.unbind(token, action_id)
     return result, verification, ("timeout" if (result.output or {}).get("timed_out") else None)
 
 
@@ -345,7 +352,7 @@ def _run_with_timeout(tool, parsed_args, timeout_seconds: int) -> ToolResult:
     limit = timeout_seconds
     # No `with` block: its exit would wait for the worker and defeat the timeout.
     pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-    future = pool.submit(tool.execute, parsed_args)
+    future = pool.submit(contextvars.copy_context().run, tool.execute, parsed_args)      # the progress binding follows the tool into its thread
     try:
         return future.result(timeout=limit)
     except concurrent.futures.TimeoutError:
@@ -360,7 +367,24 @@ def _run_with_timeout(tool, parsed_args, timeout_seconds: int) -> ToolResult:
         pool.shutdown(wait=False)
 
 
+_RUN_MS: contextvars.ContextVar[list | None] = contextvars.ContextVar("run_ms", default=None)
+
+
 def run_task(db: Session, task_id: str, registry: ToolRegistry, settings: Settings) -> Task:
+    """Execute and verify (see `_run_task`); adds the time to the current command's latency row when there is one."""
+    started = time.perf_counter()
+    try:
+        task = _run_task(db, task_id, registry, settings)
+        from . import session
+        session.wrap(db, task)
+        return task
+    finally:
+        box = _RUN_MS.get()
+        if box is not None:
+            box[0] += (time.perf_counter() - started) * 1000
+
+
+def _run_task(db: Session, task_id: str, registry: ToolRegistry, settings: Settings) -> Task:
     """Execute approved actions in order, verifying each one.
 
     Duplicate-execution prevention: terminal tasks are returned unchanged,
@@ -434,13 +458,22 @@ def run_task(db: Session, task_id: str, registry: ToolRegistry, settings: Settin
             if a.status == ActionStatus.APPROVED:
                 a.status = ActionStatus.SKIPPED
         verified_before = any(a.status == ActionStatus.SUCCEEDED for a in task.actions)
-        task.status = TaskStatus.PARTIALLY_COMPLETED if verified_before else TaskStatus.FAILED
         failed_action = next((a for a in runnable if a.status == ActionStatus.FAILED), None)
-        task.error = failed_action.error if failed_action else "One or more actions failed; remaining actions were skipped."
+        error = failed_action.error if failed_action else "One or more actions failed; remaining actions were skipped."
         if failed_action and json.loads(failed_action.result_json or "{}").get("output", {}).get("needs_confirmation"):
+            # "Closest installed apps: ...": ask the user which one. (Setting FAILED first and then AWAITING_INPUT was an illegal
+            # state change: /run answered HTTP 500 and the task stayed "executing" forever.)
             task.status = TaskStatus.AWAITING_INPUT
-            task.plan_note = task.error
+            output = json.loads(failed_action.result_json or "{}").get("output", {})
+            candidates = [str(c) for c in output.get("candidates") or []][:3]
+            asked = str(json.loads(failed_action.args_json or "{}").get("app_name", "")).strip()
+            # a short question the user can read and hear, not the wording meant for the model
+            question = output.get("question")   # tools that ask their own question (ui_act: "Which one do you mean ...?")
+            task.plan_note = (question if question else f"I couldn't find \"{asked}\". Did you mean {' or '.join(candidates)}? Say yes, or the exact name." if candidates else error)
             task.error = None
+        else:
+            task.status = TaskStatus.PARTIALLY_COMPLETED if verified_before else TaskStatus.FAILED
+            task.error = error
     elif task.status == TaskStatus.CANCELLED:
         pass  # keep cancellation
     else:
@@ -478,6 +511,30 @@ def run_task(db: Session, task_id: str, registry: ToolRegistry, settings: Settin
 
 
 # ------------------------------------------------------------------ shared
+# Re-plan from what was observed. When a step ran but the check did not see the result (the window did not appear in time), repeating
+# is only safe for tools that do the same thing twice without harm: opening an app that is already open just brings it forward, and
+# listing a folder changes nothing. Everything else (create, write, delete, send, install, settings) is NEVER repeated by the server:
+# a second run could do the thing twice, so the failure is reported as it is and the user decides.
+RETRY_TOOLS = frozenset({"open_application", "open_folder", "list_folder", "list_trash", "find_files", "find_paths"})
+MAX_RETRIES = 2
+RETRY_WAIT_SECONDS = 1.0
+
+
+def _observe_and_retry(tool, parsed, settings: Settings, action_id: str, result: ToolResult, verification: Verification,
+                       stop_reason: str | None) -> tuple[ToolResult, Verification, str | None, int]:
+    attempts = 1
+    while (attempts <= MAX_RETRIES and tool.name in RETRY_TOOLS and stop_reason is None
+           and result.success and not verification.passed and not (result.output or {}).get("needs_confirmation")):
+        time.sleep(RETRY_WAIT_SECONDS)
+        log_event("action_retry", level=30, action_id=action_id, tool=tool.name, attempt=attempts + 1,
+                  detail="; ".join(verification.checks)[:200])
+        result, verification, stop_reason = _run_and_verify(tool, parsed, settings, action_id)
+        attempts += 1
+    if attempts > 1 and isinstance(result.output, dict):
+        result.output["attempts"] = attempts
+    return result, verification, stop_reason, attempts
+
+
 def _execute_single_action(db: Session, action: Action, tool, parsed, settings: Settings) -> None:
     """Run one approved action with timeout, then verify it. Commits.
 
@@ -513,6 +570,7 @@ def _execute_single_action(db: Session, action: Action, tool, parsed, settings: 
         db.commit()
         return
     result, verification, stop_reason = _run_and_verify(tool, parsed, settings, action.id)
+    result, verification, stop_reason, attempts = _observe_and_retry(tool, parsed, settings, action.id, result, verification, stop_reason)
     action.result_json = result.model_dump_json()
     if stop_reason in ("pause", "cancel"):
         action.verification_json = verification.model_dump_json()
@@ -540,10 +598,13 @@ def _execute_single_action(db: Session, action: Action, tool, parsed, settings: 
     else:
         action.status = ActionStatus.FAILED
         action.error = result.error or f"Verification failed: {'; '.join(verification.checks)}"
+        if attempts > 1:
+            action.error += f" (tried {attempts} times)"
     db.commit()
+    layer = (result.output or {}).get("layer", 1) if isinstance(result.output, dict) else 1
     log_event("action_end", level=20 if action.status == ActionStatus.SUCCEEDED else 30, task_id=action.task_id,
               action_id=action.id, tool=action.tool_name, status=action.status,
-              detail=action.error if action.status != ActionStatus.SUCCEEDED else None)
+              detail=action.error if action.status != ActionStatus.SUCCEEDED else f"layer {layer}")
 
 
 # ------------------------------------------------------------------ agentic loop (Groq)
@@ -611,7 +672,9 @@ def _nlu_fallback(command: str, registry: ToolRegistry) -> Plan | None:
     from ..nlu import THRESHOLD, match, validate_plan
     from ..nlu.schema import STEP_REF
 
-    result = match(command)
+    from ..ai.speech_commands import clean_transcript
+
+    result = match(clean_transcript(command))
     plan = result.plan
     if plan is None or result.confidence < THRESHOLD or plan.intent in _NLU_FALLBACK_INTENTS_SKIP or not plan.steps:
         return None
@@ -629,7 +692,61 @@ def start_task(
     registry: ToolRegistry, settings: Settings,
     auto_approve: bool = False,
 ) -> Task:
+    """Create a task and start the right flow for the configured provider; logs plan / execute+verify times (no command text)."""
+    from ..voice import latency
+    box = [0.0]
+    token = _RUN_MS.set(box)
+    started = time.perf_counter()
+    try:
+        task = _start_task(db, command, idempotency_key, registry, settings, auto_approve)
+    finally:
+        _RUN_MS.reset(token)
+    total = (time.perf_counter() - started) * 1000
+    state = task.agent_state_json or ""
+    if '"matcher": "session"' not in state and '"matcher": "mail"' not in state:
+        from . import session
+        session.wrap(db, task)   # goal, steps done, current app, open items; "Anything else?" after a verified result
+    route = "local" if '"provider": "local"' in state or not state else "cloud"
+    latency.record_task(route, max(0.0, total - box[0]), box[0])
+    return task
+
+
+def _planner_or_question(db: Session, task: Task, command: str, registry: ToolRegistry, settings: Settings, auto_approve: bool) -> Task:
+    """Nothing local could plan this command. Never answer "say it again" before the planner has seen it WITH the last turns; if it is still
+    unsure, ask ONE specific question naming the best guess. The picture of the conversation goes to the cloud only with cloud answers on."""
+    from ..nlu import clarify
+    from ..preferences import get_preferences
+    from ..voice.langdetect import reply_language
+    from . import conversation_flow, planner_mode
+    from .context import recent_memory
+
+    prefs = get_preferences(db)
+    lang = reply_language(command, prefs.persona.language)
+    planned = None
+    if prefs.cloud_answers is True:
+        from .session_context import planner_view
+        planned = planner_mode.fallback_plan(command, registry, settings, recent_memory(db, task), lang, desktop=planner_view(db))
+    if planned is not None:
+        routed = conversation_flow.route_by_intent(db, task, planned, command, registry, settings, auto_approve=auto_approve)
+        if routed is not None:
+            return routed
+        if planned.actions or planned.note:
+            task.agent_state_json = json.dumps({"provider": "local", "matcher": "planner_fallback"})
+            task = plan_task(db, task, registry, settings, auto_approve=auto_approve, preplanned=planned)
+            if task.status == TaskStatus.APPROVED:
+                return run_task(db, task.id, registry, settings)
+            return task
+    return plan_task(db, task, registry, settings, preplanned=Plan(note=clarify.question(command, prefs.persona.language)))
+
+
+def _start_task(
+    db: Session, command: str, idempotency_key: str | None,
+    registry: ToolRegistry, settings: Settings,
+    auto_approve: bool = False,
+) -> Task:
     """Create a task and start the right flow for the configured provider."""
+    from . import planner_mode
+
     is_duplicate = bool(idempotency_key) and db.query(Task).filter(Task.idempotency_key == idempotency_key).first() is not None
     if not is_duplicate:
         usage.check_task(db, settings)  # raises QuotaExceeded before anything is created
@@ -637,10 +754,26 @@ def start_task(
     if not created:
         return task  # idempotency key matched a task made by an earlier or concurrent request
     usage.record(db, "task", task.id)
+    from . import conversation_flow, mail_flow, message_flow, session_commands
+    writing = mail_flow.try_handle(db, task, command, registry, settings) or message_flow.try_handle(db, task, command, registry, settings)
+    if writing is not None:
+        return writing   # an e-mail is being written (or started): its words are the e-mail's, not commands
+    spoken_about_the_conversation = session_commands.try_handle(db, task, command, registry, settings)
+    if spoken_about_the_conversation is not None:
+        return spoken_about_the_conversation   # "repeat that", "undo", "no, that's all": never planned as a command
+    from . import session_context
+    rewritten = session_context.rewrite(db, command)   # "make a folder here" / "go back" inside an open task: the task's own folder
+    if rewritten != command:
+        command, task.command = rewritten, rewritten[:2000]    # the parsers read task.command: what is shown and run is the full command
+        db.commit()
+    handled = conversation_flow.try_conversation(db, task, command, registry, settings, auto_approve=auto_approve, before_local=True)
+    if handled is not None:
+        return handled
     if settings.ai_provider.strip().lower() != "mock":
         from .local_agent import prepare_local_request
         local = prepare_local_request(db, task, registry)
         if local is not None:
+            planner_mode.shadow(command, local, registry, settings)
             if not task.agent_state_json:
                 task.agent_state_json = json.dumps({"provider": "local"})
             task = plan_task(db, task, registry, settings, auto_approve=auto_approve, preplanned=local)
@@ -649,18 +782,38 @@ def start_task(
             return task
         local = _nlu_fallback(command, registry)
         if local is not None:
+            planner_mode.shadow(command, local, registry, settings)
             # The Phase 15 matcher understood what the older local parser did not (e.g. write/overwrite a file).
             task.agent_state_json = json.dumps({"provider": "local", "matcher": "nlu"})
             task = plan_task(db, task, registry, settings, auto_approve=auto_approve, preplanned=local)
             if task.status == TaskStatus.APPROVED:
                 return run_task(db, task.id, registry, settings)
             return task
+        handled = conversation_flow.try_conversation(db, task, command, registry, settings, auto_approve=auto_approve, before_local=False)
+        if handled is not None:
+            return handled
         from ..preferences import get_preferences
 
         if get_preferences(db).provider_mode == "local_only":
             return plan_task(db, task, registry, settings, preplanned=Plan(note="Local-only mode is on (Settings): cloud AI is not used. Say the app/file name and the action, or switch Provider to Auto."))
         if settings.ai_cloud_mode != "automatic" and not command.strip().casefold().startswith(("ai:", "research ", "explain ")):
-            return plan_task(db, task, registry, settings, preplanned=Plan(note="Local agent ko yeh command clear nahi hui. App/file ka naam aur operation batayein. Detailed AI reasoning ke liye 'AI:' ya 'research' se request shuru karein."))
+            return _planner_or_question(db, task, command, registry, settings, auto_approve)
+    structured = planner_mode.structured_plan(command, registry, settings)
+    if structured is None and planner_mode.mode(settings) != "structured":
+        structured = planner_mode.routing_plan(command, registry, settings)  # legacy / shadow: routing intents only
+        routed = conversation_flow.route_by_intent(db, task, structured, command, registry, settings, auto_approve=auto_approve) if structured else None
+        if routed is not None:
+            return routed
+        structured = None
+    if structured is not None:
+        routed = conversation_flow.route_by_intent(db, task, structured, command, registry, settings, auto_approve=auto_approve)
+        if routed is not None:
+            return routed
+        task.agent_state_json = json.dumps({"provider": "local", "matcher": "structured"})
+        task = plan_task(db, task, registry, settings, auto_approve=auto_approve, preplanned=structured)
+        if task.status == TaskStatus.APPROVED:
+            return run_task(db, task.id, registry, settings)
+        return task
     try:
         provider = get_provider(settings)
     except AIError as exc:
@@ -979,6 +1132,8 @@ def _stop_running(task: Task, registry: ToolRegistry | None, reason: str) -> lis
     from . import worker
 
     running = [a for a in task.actions if a.status == ActionStatus.RUNNING]
+    from .. import progress
+    progress.request_cancel([a.id for a in running])       # a long tool in the server process stops at its next step
     if registry is not None:
         running = [a for a in running if registry.get(a.tool_name).interruptible]
     return worker.request_stop([a.id for a in running], reason)

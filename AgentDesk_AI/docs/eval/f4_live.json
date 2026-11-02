@@ -1,0 +1,782 @@
+{
+ "summary": {
+  "browser": "msedge",
+  "commands": 40,
+  "passed": 39,
+  "pct": 97.5,
+  "by_bucket": {
+   "tabs": "4/4",
+   "web": "13/13",
+   "youtube": "22/23"
+  }
+ },
+ "started": "2026-11-02T10:34:27.111Z",
+ "finished": "2026-11-02T10:36:08.979Z",
+ "rows": [
+  {
+   "n": 1,
+   "bucket": "tabs",
+   "command": "list tabs",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "inspect"
+   },
+   "ok": true,
+   "seconds": 0.1,
+   "spoken": null,
+   "extension_note": null,
+   "error": "tab 324239702: about:blank\ntab 324239704: Agent X Browser Setup\ntab 324239712: Test shop",
+   "note": ""
+  },
+  {
+   "n": 2,
+   "bucket": "web",
+   "command": "read this page",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "read_page",
+    "target": "active"
+   },
+   "ok": true,
+   "seconds": 0.1,
+   "spoken": "The page is Test shop. It says: Test shop; Welcome.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 3,
+   "bucket": "web",
+   "command": "scroll down the page",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "web_scroll",
+    "target": "active",
+    "amount": 1
+   },
+   "ok": true,
+   "seconds": 0.4,
+   "spoken": "Scrolled.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 4,
+   "bucket": "web",
+   "command": "scroll up the page",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "web_scroll",
+    "target": "active",
+    "amount": -1
+   },
+   "ok": true,
+   "seconds": 0.4,
+   "spoken": "Scrolled.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 5,
+   "bucket": "web",
+   "command": "fill Zain Bilal in the name field",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "fill",
+    "target": "active",
+    "field": "name",
+    "text": "Zain Bilal"
+   },
+   "ok": true,
+   "seconds": 0.2,
+   "spoken": "Filled it in.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 6,
+   "bucket": "web",
+   "command": "fill hello in the search box",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "fill",
+    "target": "active",
+    "field": "search",
+    "text": "hello"
+   },
+   "ok": true,
+   "seconds": 0.2,
+   "spoken": "Filled it in.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 7,
+   "bucket": "web",
+   "command": "fill the email field with zain@example.com",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "fill",
+    "target": "active",
+    "field": "email",
+    "text": "zain@example.com"
+   },
+   "ok": true,
+   "seconds": 0.2,
+   "spoken": "Filled it in.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 8,
+   "bucket": "web",
+   "command": "(check) the typed values are really in the page",
+   "ok": true,
+   "typed": {
+    "name": "Zain Bilal",
+    "search": "hello",
+    "email": "zain@example.com"
+   }
+  },
+  {
+   "n": 9,
+   "bucket": "web",
+   "command": "fill secret123 in the password field",
+   "expect": "refused",
+   "status": "failed",
+   "verified": false,
+   "tool": "control_browser",
+   "args": {
+    "action": "fill",
+    "target": "active",
+    "field": "password",
+    "text": "secret123"
+   },
+   "ok": true,
+   "seconds": 0.1,
+   "spoken": null,
+   "extension_note": null,
+   "error": "That is a password, card or one-time-code field: the assistant never fills those. Type it yourself.",
+   "note": "a password field is never filled"
+  },
+  {
+   "n": 10,
+   "bucket": "web",
+   "command": "(check) the password field is still empty",
+   "ok": true,
+   "typed": 0
+  },
+  {
+   "n": 11,
+   "bucket": "web",
+   "command": "click the link account",
+   "expect": "refused",
+   "status": "failed",
+   "verified": false,
+   "tool": "control_browser",
+   "args": {
+    "action": "click_link",
+    "target": "active",
+    "name": "account"
+   },
+   "ok": true,
+   "seconds": 0.1,
+   "spoken": null,
+   "extension_note": null,
+   "error": "2 links match \"account\"; say which one.",
+   "note": "\"Delete account\" matches only by the word account: two matches, so it asks which"
+  },
+  {
+   "n": 12,
+   "bucket": "web",
+   "command": "click the link Pricing",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "click_link",
+    "target": "active",
+    "name": "Pricing"
+   },
+   "ok": true,
+   "seconds": 0.7,
+   "spoken": "Clicked Pricing.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 13,
+   "bucket": "web",
+   "command": "read this page",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "read_page",
+    "target": "active"
+   },
+   "ok": true,
+   "seconds": 0,
+   "spoken": "The page is pricing page. It says: pricing.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 14,
+   "bucket": "web",
+   "command": "click the link Delete account",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "click_link",
+    "target": "active",
+    "name": "Delete account"
+   },
+   "ok": true,
+   "seconds": 0.9,
+   "spoken": "Clicked Delete account.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": "named in the command, so it is allowed after approval"
+  },
+  {
+   "n": 15,
+   "bucket": "tabs",
+   "command": "reopen the last closed tab",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "reopen",
+    "target": "active"
+   },
+   "ok": true,
+   "seconds": 0.1,
+   "spoken": "Reopened page2 page.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 16,
+   "bucket": "tabs",
+   "command": "search my history for pricing",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "history",
+    "target": "active",
+    "query": "pricing"
+   },
+   "ok": true,
+   "seconds": 0.1,
+   "spoken": "I found: pricing page.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": "the profile has the local pages in its history"
+  },
+  {
+   "n": 17,
+   "bucket": "tabs",
+   "command": "find bookmarks for python",
+   "expect": "refused",
+   "status": "failed",
+   "verified": false,
+   "tool": "control_browser",
+   "args": {
+    "action": "bookmarks",
+    "target": "active",
+    "query": "python"
+   },
+   "ok": true,
+   "seconds": 0,
+   "spoken": null,
+   "extension_note": null,
+   "error": "No bookmark matches.",
+   "note": "a fresh profile has no bookmarks: it must say so, not invent one"
+  },
+  {
+   "n": 18,
+   "bucket": "youtube",
+   "command": "play atif aslam songs on youtube",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "play_youtube_video",
+   "args": {
+    "query": "atif aslam songs"
+   },
+   "ok": true,
+   "seconds": 68.7,
+   "spoken": "Played the first real result in the browser.",
+   "extension_note": null,
+   "error": "Played the first real result in the browser.",
+   "note": ""
+  },
+  {
+   "n": 19,
+   "bucket": "youtube",
+   "command": "what's playing",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "now_playing",
+    "target": "youtube"
+   },
+   "ok": true,
+   "seconds": 0.1,
+   "spoken": "Best of ATIF ASLAM Songs | Bollywood Romantic Love Songs | Audio Jukebox | Hindi, by Best Of Atif Aslam.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 20,
+   "bucket": "youtube",
+   "command": "pause the video",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "pause",
+    "target": "youtube"
+   },
+   "ok": true,
+   "seconds": 0,
+   "spoken": "",
+   "extension_note": null,
+   "error": "YouTube video pause kar di.",
+   "note": ""
+  },
+  {
+   "n": 21,
+   "bucket": "youtube",
+   "command": "resume the video",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "resume",
+    "target": "youtube"
+   },
+   "ok": true,
+   "seconds": 0.1,
+   "spoken": "",
+   "extension_note": null,
+   "error": "YouTube video resume kar di.",
+   "note": ""
+  },
+  {
+   "n": 22,
+   "bucket": "youtube",
+   "command": "skip 10 seconds",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "seek",
+    "target": "youtube",
+    "seconds": 10
+   },
+   "ok": true,
+   "seconds": 0.3,
+   "spoken": "At 0:17.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 23,
+   "bucket": "youtube",
+   "command": "rewind 5 seconds",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "seek",
+    "target": "youtube",
+    "seconds": -5
+   },
+   "ok": true,
+   "seconds": 0.3,
+   "spoken": "At 0:12.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 24,
+   "bucket": "youtube",
+   "command": "speed 1.5",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "speed",
+    "target": "youtube",
+    "rate": 1.5
+   },
+   "ok": true,
+   "seconds": 0.1,
+   "spoken": "Speed is 1.5x.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 25,
+   "bucket": "youtube",
+   "command": "normal speed",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "speed",
+    "target": "youtube",
+    "rate": 1
+   },
+   "ok": true,
+   "seconds": 0.1,
+   "spoken": "Speed is 1x.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 26,
+   "bucket": "youtube",
+   "command": "youtube volume 40",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "volume",
+    "target": "youtube",
+    "level": 40
+   },
+   "ok": true,
+   "seconds": 0.1,
+   "spoken": "Video volume is 40 percent.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 27,
+   "bucket": "youtube",
+   "command": "mute the video",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "mute",
+    "target": "youtube"
+   },
+   "ok": true,
+   "seconds": 0.1,
+   "spoken": "The video is muted.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 28,
+   "bucket": "youtube",
+   "command": "unmute the video",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "unmute",
+    "target": "youtube"
+   },
+   "ok": true,
+   "seconds": 0.1,
+   "spoken": "The video is unmuted.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 29,
+   "bucket": "youtube",
+   "command": "theatre mode",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "theatre",
+    "target": "youtube",
+    "enable": true
+   },
+   "ok": true,
+   "seconds": 0.5,
+   "spoken": "Theatre is on.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 30,
+   "bucket": "youtube",
+   "command": "turn off theater mode",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "theatre",
+    "target": "youtube",
+    "enable": false
+   },
+   "ok": true,
+   "seconds": 0.5,
+   "spoken": "Theatre is off.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 31,
+   "bucket": "youtube",
+   "command": "turn on captions",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "captions",
+    "target": "youtube",
+    "enable": true
+   },
+   "ok": true,
+   "seconds": 0,
+   "spoken": "Captions is on.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 32,
+   "bucket": "youtube",
+   "command": "turn off captions",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "captions",
+    "target": "youtube",
+    "enable": false
+   },
+   "ok": true,
+   "seconds": 0.5,
+   "spoken": "Captions is off.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 33,
+   "bucket": "youtube",
+   "command": "set quality to 480p",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "quality",
+    "target": "youtube",
+    "quality": "large"
+   },
+   "ok": true,
+   "seconds": 2.1,
+   "spoken": "Quality is large.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 34,
+   "bucket": "youtube",
+   "command": "quality auto",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "quality",
+    "target": "youtube",
+    "quality": "auto"
+   },
+   "ok": true,
+   "seconds": 0.6,
+   "spoken": "Quality is large.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 35,
+   "bucket": "youtube",
+   "command": "loop this video",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "loop",
+    "target": "youtube",
+    "enable": true
+   },
+   "ok": true,
+   "seconds": 0.1,
+   "spoken": "Loop is on.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 36,
+   "bucket": "youtube",
+   "command": "turn off loop",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "loop",
+    "target": "youtube",
+    "enable": false
+   },
+   "ok": true,
+   "seconds": 0.1,
+   "spoken": "Loop is off.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 37,
+   "bucket": "youtube",
+   "command": "like this video",
+   "expect": "refused",
+   "status": "failed",
+   "verified": false,
+   "tool": "control_browser",
+   "args": {
+    "action": "like",
+    "target": "youtube"
+   },
+   "ok": true,
+   "seconds": 0.7,
+   "spoken": null,
+   "extension_note": null,
+   "error": "YouTube did not accept the like (not signed in? it then asks you to sign in).",
+   "note": "the test profile is signed out: YouTube asks to sign in, so it must NOT report liked"
+  },
+  {
+   "n": 38,
+   "bucket": "youtube",
+   "command": "next video",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "control_browser",
+   "args": {
+    "action": "next",
+    "target": "youtube"
+   },
+   "ok": true,
+   "seconds": 0.3,
+   "spoken": "Playing: Best of ATIF ASLAM Songs | Bollywood Romantic Love Songs | Audio Jukeb.",
+   "extension_note": null,
+   "error": "Browser command complete.",
+   "note": ""
+  },
+  {
+   "n": 39,
+   "bucket": "youtube",
+   "command": "previous video",
+   "expect": "completed",
+   "status": "failed",
+   "verified": false,
+   "tool": "control_browser",
+   "args": {
+    "action": "previous",
+    "target": "youtube"
+   },
+   "ok": false,
+   "seconds": 15.9,
+   "spoken": null,
+   "extension_note": null,
+   "error": "There is no previous video to go back to.",
+   "note": ""
+  },
+  {
+   "n": 40,
+   "bucket": "youtube",
+   "command": "search youtube for coke studio",
+   "expect": "completed",
+   "status": "completed",
+   "verified": true,
+   "tool": "web_search",
+   "args": {
+    "query": "youtube for coke studio"
+   },
+   "ok": true,
+   "seconds": 0.6,
+   "spoken": null,
+   "extension_note": null,
+   "error": "Kaam complete: web search.",
+   "note": ""
+  }
+ ]
+}

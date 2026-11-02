@@ -14,7 +14,8 @@ every probe is chosen to be harmless:
   gui      visible launches: Notepad, Explorer on the sandbox, example.com,
            a web search, a YouTube search, a mailto draft, Settings home,
            and a screenshot saved in the sandbox (opt in: --gui)
-  network  download https://example.com into the sandbox (opt in: --network)
+  network  download https://example.com, web answer + summaries (opt in: --network; needs an AI service)
+  memory   remember / recall / forget against the real database, self-cleaning (opt in: --memory)
 
 Never run: setters for volume/brightness/Bluetooth/Wi-Fi/theme, desktop
 clicks/typing/closing, browser tab closing, WinGet downloads.
@@ -27,6 +28,7 @@ Usage (from backend/):
     python scripts/live_check.py                    # sandbox + read-only
     python scripts/live_check.py --gui --network    # everything
     python scripts/live_check.py --only write_text_file --json
+    python scripts/live_check.py --api --only control_browser   # browser probe through the RUNNING app (extension paired there)
 """
 from __future__ import annotations
 
@@ -37,6 +39,7 @@ import shutil
 import sys
 import tempfile
 import threading
+import time
 import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -51,7 +54,7 @@ from app.tools.registry import ToolRegistry  # noqa: E402
 PASS, FAIL, BLOCKED, SKIP = "PASS", "FAIL", "BLOCKED", "SKIP"
 IS_WINDOWS = platform.system() == "Windows"
 PROBE_TIMEOUT_SECONDS = 45
-CATEGORIES = ("sandbox", "read", "gui", "network", "media", "messaging", "install")
+CATEGORIES = ("sandbox", "read", "gui", "network", "media", "messaging", "install", "memory")
 
 
 @dataclass
@@ -235,7 +238,120 @@ def p_desktop_inspect(env: Env) -> Outcome:
     return judge(r, v, bool(r.output), f"inspect output={_short(r.output, 100)}")
 
 
+def p_ui_inspect(env: Env) -> Outcome:
+    r, v = env.run("ui_inspect", {})
+    if not IS_WINDOWS and not r.success:
+        return Outcome(BLOCKED, f"not Windows: {_short(r.error, 100)}")
+    return judge(r, v, bool((r.output or {}).get("window")), f"window={_short((r.output or {}).get('window'), 60)} controls={(r.output or {}).get('count')}")
+
+
+def p_screen_act_read(env: Env) -> Outcome:
+    """screen_act in its read-only form: asks what the front window shows (one picture goes to the cloud model; nothing is clicked)."""
+    r, v = env.run("screen_act", {"goal": "what is the title of this window?"})
+    if not r.success and "cloud answers" in str(r.error):
+        return Outcome(BLOCKED, "cloud answers are off")
+    if not IS_WINDOWS and not r.success:
+        return Outcome(BLOCKED, f"not Windows: {_short(r.error, 100)}")
+    return judge(r, v, bool((r.output or {}).get("answer")), f"answer={_short((r.output or {}).get('answer'), 80)}")
+
+
+def p_device_battery(env: Env) -> Outcome:
+    """device_control in its read-only form: the battery (never locks, sleeps, restarts or changes a mode)."""
+    r, v = env.run("device_control", {"action": "battery"})
+    if not r.success and "no battery" in str(r.error):
+        return Outcome(BLOCKED, "this PC has no battery")
+    if not IS_WINDOWS and not r.success:
+        return Outcome(BLOCKED, f"not Windows: {_short(r.error, 100)}")
+    return judge(r, v, bool((r.output or {}).get("percent") is not None), f"battery={(r.output or {}).get('percent')}")
+
+
+def p_explorer_view(env: Env) -> Outcome:
+    """explorer_view: the details view of the front File Explorer window (BLOCKED when none is open; it changes nothing else)."""
+    r, v = env.run("explorer_view", {"action": "view", "mode": "details"})
+    if not r.success and "No File Explorer window" in str(r.error):
+        return Outcome(BLOCKED, "no File Explorer window is open")
+    if not IS_WINDOWS and not r.success:
+        return Outcome(BLOCKED, f"not Windows: {_short(r.error, 100)}")
+    return judge(r, v, bool((r.output or {}).get("view_now")), f"view={(r.output or {}).get('view_now')}")
+
+
+def p_ui_act_read(env: Env) -> Outcome:
+    """ui_act in its read-only form: reads the first named control of the front window (never clicks, types or scrolls)."""
+    listed, _ = env.run("ui_inspect", {})
+    if not IS_WINDOWS and not listed.success:
+        return Outcome(BLOCKED, f"not Windows: {_short(listed.error, 100)}")
+    named = [c for c in (listed.output or {}).get("controls", []) if c.get("name") and not c.get("password")]
+    if not named:
+        return Outcome(BLOCKED, "the front window lists no named control")
+    r, v = env.run("ui_act", {"action": "read", "control": named[0]["name"], "id": named[0]["id"]})
+    return judge(r, v, bool((r.output or {}).get("text")), f"read {_short(named[0]['name'], 40)}")
+
+
+def p_terminal_read(env: Env) -> Outcome:
+    """run_terminal_command in its read-only form (`echo`): nothing is executed outside this program, nothing is changed."""
+    r, v = env.run("run_terminal_command", {"command": "echo live check"})
+    return judge(r, v, (r.output or {}).get("lines") == ["live check"], f"output={_short((r.output or {}).get('lines'), 60)}")
+
+
+def p_open_terminal(env: Env) -> Outcome:
+    r, v = env.run("open_terminal", {"shell": "cmd"})
+    if not IS_WINDOWS and not r.success:
+        return Outcome(BLOCKED, f"not Windows: {_short(r.error, 100)}")
+    return judge(r, v, bool((r.output or {}).get("pid")), f"folder={_short((r.output or {}).get('folder'), 60)}")
+
+
+def _refusal_probe(env: Env, tool: str, args: dict, needle: str) -> Outcome:
+    """A hidden send tool must REFUSE a call that has no server-issued confirmation: the probe passes only if it refused and nothing was sent."""
+    r, _ = env.run(tool, args)
+    refused = (not r.success) and needle in (r.error or "")
+    return Outcome(PASS if refused else FAIL, f"refused without a confirmation: {refused} ({_short(r.error, 80)})")
+
+
+def p_send_email_refuses(env: Env) -> Outcome:
+    return _refusal_probe(env, "send_email", {"draft_id": "livecheck0000", "confirmation": "no-such-confirmation"}, "Nothing was sent")
+
+
+def p_send_message_refuses(env: Env) -> Outcome:
+    return _refusal_probe(env, "send_message", {"app": "whatsapp", "confirmation": "no-such-confirmation"}, "Nothing was sent")
+
+
+def _api_browser_inspect(base_url: str, client: Any = None) -> Outcome:
+    """control_browser through the running server: the extension's socket lives in that process, not in this script.
+
+    Asks `/browser/status` first (is exactly one browser profile paired?), then runs the read-only command "list tabs"
+    as a normal task (it appears in the task history) and judges the verified result. Never sends input to a page.
+    """
+    import httpx
+
+    http = client or httpx.Client(base_url=base_url, timeout=90)
+    try:
+        status = http.get("/browser/status").json()
+    except (httpx.HTTPError, ValueError) as exc:
+        return Outcome(BLOCKED, f"the app is not reachable at {base_url} ({type(exc).__name__}): start it with START_AGENT_X.cmd")
+    if not status.get("connected"):
+        profiles = status.get("profiles", 0)
+        why = ("no browser extension is paired: open Chrome/Edge setup from the app" if not profiles
+               else f"{profiles} browser profiles are connected: close the extra ones, exactly one is supported")
+        return Outcome(BLOCKED, why)
+    from app.security.token import load_or_create_token
+
+    try:
+        body = http.post("/tasks", json={"command": "list tabs"}, headers={"Authorization": "Bearer " + load_or_create_token()}).json()
+    except (httpx.HTTPError, ValueError) as exc:
+        return Outcome(FAIL, f"the app accepted the connection but the task failed to start ({type(exc).__name__})")
+    actions = body.get("actions") or []
+    action = actions[0] if actions else {}
+    if body.get("status") != "completed" or action.get("tool_name") != "control_browser":
+        return Outcome(FAIL, f"task ended {body.get('status')}: {_short(body.get('error') or body.get('plan_note') or action.get('error'))}")
+    verification = action.get("verification") or {}
+    tabs = (verification.get("evidence") or {}).get("tabs")
+    ok = action.get("status") == "succeeded" and verification.get("passed") is True and isinstance(tabs, int)
+    return Outcome(PASS if ok else FAIL, f"{tabs} tabs, verified by the extension reply" if ok else f"verification did not pass: {_short(verification)}")
+
+
 def p_browser_inspect(env: Env) -> Outcome:
+    if env.state.get("api"):
+        return _api_browser_inspect(env.state["api"], env.state.get("api_client"))
     r, v = env.run("control_browser", {"action": "inspect"})
     blocked = external(r, ("extension", "browser"))
     if blocked:
@@ -255,7 +371,7 @@ def p_package_search(env: Env) -> Outcome:
 # ---------------------------------------------------------------- gui probes
 def _launched(result: ToolResult) -> bool:
     out = result.output or {}
-    return bool(out.get("launched") or out.get("launch_requested") or out.get("pid"))
+    return bool(out.get("launched") or out.get("launch_requested") or out.get("draft_opened") or out.get("pid"))
 
 
 def _gui(env: Env, name: str, args: dict, what: str) -> Outcome:
@@ -267,16 +383,18 @@ def p_open_application(env: Env) -> Outcome:
     r, v = env.run("open_application", {"app_name": "notepad"})
     pid = (r.output or {}).get("pid")
     alive = False
-    if pid:
-        try:
-            import psutil
+    try:
+        import psutil
 
-            alive = psutil.pid_exists(pid)
-            if alive:
-                psutil.Process(pid).terminate()  # close only the process we started
-        except Exception:  # noqa: BLE001 - evidence only
-            pass
-    return judge(r, v, bool(pid) and alive, f"notepad pid={pid} alive={alive}, then terminated")
+        # Windows 11 Notepad is a Store app: the launcher pid exits and a new notepad.exe takes over.
+        started = [p for p in psutil.process_iter(["name", "create_time"])
+                   if (p.info["name"] or "").lower() == "notepad.exe" and p.info["create_time"] >= time.time() - 60]
+        alive = bool(started) or bool(pid and psutil.pid_exists(pid))
+        for p in started:
+            p.terminate()  # close only notepad processes started during this check
+    except Exception:  # noqa: BLE001 - evidence only
+        pass
+    return judge(r, v, alive, f"notepad launcher pid={pid}; notepad.exe running={alive}, then terminated")
 
 
 def p_open_folder(env: Env) -> Outcome:
@@ -361,6 +479,77 @@ def p_install(env: Env) -> Outcome:
     return judge(r, v, bool(v.evidence.get("winget_list_tail")), f"winget list shows {package}")
 
 
+# ---------------------------------------------------------------- memory + knowledge probes
+def _db():
+    from app.database import SessionLocal, init_db
+    init_db()
+    return SessionLocal()
+
+
+def p_memory_remember(env: Env) -> Outcome:
+    from app.models import MemoryItem
+    text = "AgentDesk live check note (safe to delete)"
+    r, v = env.run("memory_remember", {"text": text})
+    with _db() as db:
+        row = db.query(MemoryItem).filter(MemoryItem.text == text).first()
+        stored = row is not None
+        if row is not None:
+            db.delete(row)  # leave the user's real memory exactly as it was
+            db.commit()
+    return judge(r, v, stored, "note found in the database, then removed")
+
+
+def p_memory_recall(env: Env) -> Outcome:
+    from app.models import MemoryItem
+    with _db() as db:
+        before = db.query(MemoryItem).count()
+    r, v = env.run("memory_recall", {})
+    return judge(r, v, (r.output or {}).get("count") == before, f"reported {(r.output or {}).get('count')} of {before} stored notes")
+
+
+def p_memory_forget(env: Env) -> Outcome:
+    from app.models import MemoryItem
+    text = "AgentDesk live check forget probe zebra"
+    with _db() as db:
+        db.add(MemoryItem(kind="fact", text=text))
+        db.commit()
+    r, v = env.run("memory_forget", {"query": "forget probe zebra"})
+    with _db() as db:
+        gone = db.query(MemoryItem).filter(MemoryItem.text == text).first() is None
+        db.query(MemoryItem).filter(MemoryItem.text == text).delete()
+        db.commit()
+    return judge(r, v, gone, "note deleted from the database")
+
+
+def p_summarise_file(env: Env) -> Outcome:
+    note = env.work / "note.txt"
+    if not note.is_file():
+        note.parent.mkdir(parents=True, exist_ok=True)
+        note.write_text(NOTE_TEXT * 3, encoding="utf-8")
+    r, v = env.run("summarise_file", {"path": str(note)})
+    blocked = external(r, ("No AI service", "could not summarise", "busy"))
+    if blocked:
+        return Outcome(BLOCKED, f"needs an AI service: {blocked.evidence}")
+    return judge(r, v, bool((r.output or {}).get("answer")), f"summary: {_short((r.output or {}).get('answer'), 80)}")
+
+
+def p_web_answer(env: Env) -> Outcome:
+    r, v = env.run("web_answer", {"query": "What is the capital of France?"})
+    blocked = external(r, ("Search is busy", "SEARCH_SETUP", "couldn't find any web results", "No AI service", "could not summarise", "Settings", "busy"))
+    if blocked:
+        return Outcome(BLOCKED, f"needs internet and an AI service: {blocked.evidence}")
+    answer = str((r.output or {}).get("answer", ""))
+    return judge(r, v, "paris" in answer.casefold(), f"answer: {_short(answer, 90)}")
+
+
+def p_summarise_page(env: Env) -> Outcome:
+    r, v = env.run("summarise_page", {"url": "https://example.com/"})
+    blocked = external(r, ("couldn't read that page", "No AI service", "could not summarise", "busy"))
+    if blocked:
+        return Outcome(BLOCKED, f"needs internet and an AI service: {blocked.evidence}")
+    return judge(r, v, bool((r.output or {}).get("answer")), f"summary: {_short((r.output or {}).get('answer'), 80)}")
+
+
 PROBES: list[Probe] = [
     Probe("create_folder", "sandbox", p_create_folder),
     Probe("write_text_file", "sandbox", p_write_text_file),
@@ -380,6 +569,15 @@ PROBES: list[Probe] = [
     Probe("manage_system_setting", "read", p_system_get),
     Probe("control_desktop", "read", p_desktop_inspect),
     Probe("control_browser", "read", p_browser_inspect),
+    Probe("ui_inspect", "read", p_ui_inspect),
+    Probe("ui_act", "gui", p_ui_act_read),
+    Probe("screen_act", "gui", p_screen_act_read),
+    Probe("device_control", "gui", p_device_battery),
+    Probe("explorer_view", "gui", p_explorer_view),
+    Probe("run_terminal_command", "read", p_terminal_read),
+    Probe("open_terminal", "gui", p_open_terminal),
+    Probe("send_email", "read", p_send_email_refuses),
+    Probe("send_message", "read", p_send_message_refuses),
     Probe("application_package", "read", p_package_search),
     Probe("open_application", "gui", p_open_application),
     Probe("open_folder", "gui", p_open_folder),
@@ -391,6 +589,12 @@ PROBES: list[Probe] = [
     Probe("open_windows_settings", "gui", p_open_settings, windows_only=True),
     Probe("take_screenshot", "gui", p_take_screenshot),
     Probe("download_web_content", "network", p_download),
+    Probe("memory_remember", "memory", p_memory_remember),
+    Probe("memory_recall", "memory", p_memory_recall),
+    Probe("memory_forget", "memory", p_memory_forget),
+    Probe("summarise_file", "network", p_summarise_file),
+    Probe("web_answer", "network", p_web_answer),
+    Probe("summarise_page", "network", p_summarise_page),
     Probe("media_control", "media", p_media),
     Probe("whatsapp_open_chat", "messaging", p_whatsapp),
     Probe("winget_install", "install", p_install),
@@ -468,7 +672,8 @@ def record(rows: list[dict[str, str]], enabled: set[str]) -> Path:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--gui", action="store_true", help="also run visible launches")
-    parser.add_argument("--network", action="store_true", help="also download example.com into the sandbox")
+    parser.add_argument("--network", action="store_true", help="also download example.com, answer a web question and summarise a page (needs an AI service)")
+    parser.add_argument("--memory", action="store_true", help="also run the memory tools against the real database (each probe cleans up after itself)")
     parser.add_argument("--no-read", action="store_true", help="skip read-only system/desktop/browser/package probes")
     parser.add_argument("--only", nargs="*", help="run only these tool names")
     parser.add_argument("--json", action="store_true", help="print JSON instead of a table")
@@ -477,16 +682,19 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--whatsapp-phone", help="your own number (+country code): pre-fills a test message, never sent")
     parser.add_argument("--install-id", help="exact WinGet ID to really install (high risk; e.g. a small tool you want)")
     parser.add_argument("--record", action="store_true", help="save the run with evidence to docs/live_runs/")
+    parser.add_argument("--api", nargs="?", const="http://127.0.0.1:8000", metavar="URL",
+                        help="probe control_browser through the running app (default http://127.0.0.1:8000)")
     args = parser.parse_args(argv)
 
     enabled = {"sandbox"} | ({"read"} if not args.no_read else set())
     enabled |= {"gui"} if args.gui else set()
     enabled |= {"network"} if args.network else set()
+    enabled |= {"memory"} if args.memory else set()
     enabled |= {"media"} if args.media else set()
     enabled |= {"messaging"} if args.whatsapp_phone else set()
     enabled |= {"install"} if args.install_id else set()
     sandbox = Path(tempfile.mkdtemp(prefix="agentdesk_live_")) if args.keep else None
-    options = {"whatsapp_phone": args.whatsapp_phone, "install_id": args.install_id}
+    options = {"whatsapp_phone": args.whatsapp_phone, "install_id": args.install_id, "api": args.api}
     rows = run_checks(enabled, set(args.only) if args.only else None, sandbox, options=options)
     if args.record:
         record(rows, enabled)

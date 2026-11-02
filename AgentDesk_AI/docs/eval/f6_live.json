@@ -1,0 +1,189 @@
+{
+ "summary": {
+  "cases": 7,
+  "passed": 7,
+  "pct": 100.0
+ },
+ "rows": [
+  {
+   "case": "research docx (brief, English)",
+   "ok": true,
+   "seconds": 13.9,
+   "first_progress_seconds": 0.01,
+   "progress_lines": 8,
+   "error": null,
+   "spoken": "Your file is ready: Solar Energy Research Report. 3 sections, 1 source, saved in Documents\\AgentDesk.",
+   "checks": [
+    "the file exists and can be read again: True",
+    "it has the title: True",
+    "it has all the sections: True",
+    "it has real text: True",
+    "every [n] points at a listed source: True",
+    "every listed source was really read: True"
+   ],
+   "path": "C:\\Users\\HP\\AppData\\Local\\Temp\\agentdesk_f6_uq6qsa0h\\home\\Documents\\AgentDesk\\Solar Energy Research Report 2026-11-02.docx",
+   "sources": 1,
+   "sections": 3,
+   "bytes": 38196,
+   "headings": [
+    "Solar Energy Basics",
+    "Technological Applications",
+    "Future Outlook",
+    "Sources"
+   ],
+   "words": 440,
+   "excerpt": "Solar Energy Research Report Prepared by Agent X on 2026-11-02 17:39. Written by an AI from the sources listed at the end: check important facts there. Solar Energy Basics Solar energy originates from nuclear fusion in the Sun’s core, where hydrogen atoms collide and fuse into helium, releasing vast amounts of energy in the form of electromagnetic radiation [1]. This radiation reaches Earth as visible light, infrared"
+  },
+  {
+   "case": "research markdown (brief)",
+   "ok": true,
+   "seconds": 15.9,
+   "first_progress_seconds": 0.01,
+   "progress_lines": 8,
+   "error": null,
+   "spoken": "Your file is ready: Indus Valley Civilization. 3 sections, 1 source, saved in Documents\\AgentDesk.",
+   "checks": [
+    "the file exists and can be read again: True",
+    "it has the title: True",
+    "it has all the sections: True",
+    "it has real text: True",
+    "every [n] points at a listed source: True",
+    "every listed source was really read: True"
+   ],
+   "path": "C:\\Users\\HP\\AppData\\Local\\Temp\\agentdesk_f6_uq6qsa0h\\home\\Documents\\AgentDesk\\Indus Valley Civilization 2026-11-02.md",
+   "sources": 1,
+   "sections": 3,
+   "bytes": 3068,
+   "headings": [
+    "Origins",
+    "Urban Planning",
+    "Socio‑Economic Structure",
+    "Sources"
+   ],
+   "words": 434,
+   "excerpt": "# Indus Valley Civilization *Prepared by Agent X on 2026-11-02 17:39. Written by an AI from the sources listed at the end: check important facts there.* ## Origins The Indus Valley Civilization emerged in the northern Indian subcontinent, centered along the Indus River basin. Its earliest traces date to around 7000 BCE, with the Pre‑Harappan phase lasting until about 5500 BCE, followed by Early Harappan (5500–2800 BC"
+  },
+  {
+   "case": "research PDF via Edge (brief)",
+   "ok": true,
+   "seconds": 12.8,
+   "first_progress_seconds": 0.03,
+   "progress_lines": 8,
+   "error": null,
+   "spoken": "Your file is ready: Photosynthesis Research Report. 3 sections, 1 source, saved in Documents\\AgentDesk.",
+   "checks": [
+    "the file exists and can be read again: True",
+    "it has the title: True",
+    "it has all the sections: True",
+    "it has real text: True",
+    "every [n] points at a listed source: True",
+    "every listed source was really read: True"
+   ],
+   "path": "C:\\Users\\HP\\AppData\\Local\\Temp\\agentdesk_f6_uq6qsa0h\\home\\Documents\\AgentDesk\\Photosynthesis Research Report 2026-11-02.pdf",
+   "sources": 1,
+   "sections": 3,
+   "bytes": 31823,
+   "headings": [],
+   "words": 292,
+   "excerpt": "Photosynthesis Research Report Prepared by Agent X on 2026-11-02 17:40. Written by an AI from the sources listed at the end: check important facts there. Introduction Photosynthesis is the natural process by which green plants, algae, and some bacteria convert sunlight into chemical energy. In this reaction, plants absorb light through chlorophyll in their chloroplasts, using the energy to combine carbon dioxide from"
+  },
+  {
+   "case": "study plan docx (brief)",
+   "ok": true,
+   "seconds": 5.7,
+   "first_progress_seconds": -0.03,
+   "progress_lines": 6,
+   "error": null,
+   "spoken": "Your file is ready: Study plan for my final exams in physics and mathematics, 4 weeks. 3 sections, saved in Documents\\AgentDesk.",
+   "checks": [
+    "the file exists and can be read again: True",
+    "it has the title: True",
+    "it has all the sections: True",
+    "it has real text: True",
+    "every [n] points at a listed source: True"
+   ],
+   "path": "C:\\Users\\HP\\AppData\\Local\\Temp\\agentdesk_f6_uq6qsa0h\\home\\Documents\\AgentDesk\\Study plan for my final exams in physics and mathematics 4 w 2026-11-02.docx",
+   "sources": 0,
+   "sections": 3,
+   "bytes": 37961,
+   "headings": [
+    "Overview",
+    "Weekly schedule",
+    "Daily routine"
+   ],
+   "words": 522,
+   "excerpt": "Study plan for my final exams in physics and mathematics, 4 weeks Prepared by Agent X on 2026-11-02 17:40. A plan written by an AI from your request: no outside sources were used. Adjust it to your real situation. Overview Overview The goal of this four‑week study plan is to prepare you for your final exams in physics and mathematics by building a solid understanding of core concepts, practicing problem solving, and "
+  },
+  {
+   "case": "research in Urdu (brief)",
+   "ok": true,
+   "seconds": 9.7,
+   "first_progress_seconds": -0.02,
+   "progress_lines": 8,
+   "error": null,
+   "spoken": "Your file is ready: پانی کا چکر: تحقیقاتی رپورٹ. 3 sections, 1 source, saved in Documents\\AgentDesk.",
+   "checks": [
+    "the file exists and can be read again: True",
+    "it has the title: True",
+    "it has all the sections: True",
+    "it has real text: True",
+    "every [n] points at a listed source: True",
+    "every listed source was really read: True"
+   ],
+   "path": "C:\\Users\\HP\\AppData\\Local\\Temp\\agentdesk_f6_uq6qsa0h\\home\\Documents\\AgentDesk\\پانی کا چکر تحقیقاتی رپورٹ 2026-11-02.docx",
+   "sources": 1,
+   "sections": 3,
+   "bytes": 38206,
+   "headings": [
+    "بخار",
+    "کنڈنسیشن",
+    "بارش",
+    "Sources"
+   ],
+   "words": 476,
+   "excerpt": "پانی کا چکر: تحقیقاتی رپورٹ Prepared by Agent X on 2026-11-02 17:40. Written by an AI from the sources listed at the end: check important facts there. بخار بخار کی تشکیل اس وقت ہوتی ہے جب سورج کی حرارت سمندروں، جھیلوں اور ندیوں کی سطح پر موجود پانی کو گرم کرتی ہے اور اس کی سطحی مالیکیولز توانائی حاصل کر کے مائع کی حالت سے گیس کی حالت میں تبدیل ہو جاتی ہیں۔ اس عمل کو ایواپوری ایشن (evaporation) کہا جاتا ہے[1]۔ ایواپور"
+  },
+  {
+   "case": "notes from two files (brief)",
+   "ok": true,
+   "seconds": 5.4,
+   "first_progress_seconds": -0.02,
+   "progress_lines": 8,
+   "error": null,
+   "spoken": "Your file is ready: Notes. 3 sections, 2 sources, saved in Documents\\AgentDesk.",
+   "checks": [
+    "the file exists and can be read again: True",
+    "it has the title: True",
+    "it has all the sections: True",
+    "it has real text: True",
+    "every [n] points at a listed source: True"
+   ],
+   "path": "C:\\Users\\HP\\AppData\\Local\\Temp\\agentdesk_f6_uq6qsa0h\\home\\Documents\\AgentDesk\\Notes 2026-11-02.docx",
+   "sources": 2,
+   "sections": 3,
+   "bytes": 37764,
+   "headings": [
+    "Vectors",
+    "Matrices",
+    "Additional Topics",
+    "Sources"
+   ],
+   "words": 379,
+   "excerpt": "Notes Prepared by Agent X on 2026-11-02 17:41. Written by an AI from the sources listed at the end: check important facts there. Vectors Vectors are fundamental geometric objects that can be added together and scaled by numbers. The dot product of two vectors measures how much they point in the same direction and is defined as the sum of the products of corresponding components. The cross product, defined only in thr"
+  },
+  {
+   "case": "broad topic asks first",
+   "ok": true,
+   "seconds": 0.0,
+   "first_progress_seconds": null,
+   "progress_lines": 0,
+   "error": "\"cricket\" is a wide subject. How detailed should it be (brief, standard or detailed), and in which language? For example say: \"standard, in English\".",
+   "spoken": null,
+   "checks": null,
+   "path": null,
+   "sources": null,
+   "sections": null,
+   "bytes": null
+  }
+ ]
+}

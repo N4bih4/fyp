@@ -71,6 +71,8 @@ export interface ConfigStatus {
   ai_configured: boolean;
   mock_mode: boolean;
   groq_configured?: boolean;
+  speech_ready?: boolean;
+  search?: { wikipedia: boolean; tavily: boolean };
   agent_max_steps?: number;
   fallback_provider?: string;
   fallback_configured?: boolean;
@@ -97,10 +99,51 @@ export type OrbColor = 'indigo' | 'emerald' | 'rose' | 'amber' | 'slate';
 
 export interface Persona {
   name: string;
-  language: 'ur-PK' | 'en-US' | 'en-GB' | 'hi-IN';
+  language: 'auto' | 'ur-PK' | 'en-US' | 'en-GB' | 'hi-IN';
   style: 'friendly' | 'brief' | 'formal';
   speak_replies: boolean;
   orb_color: OrbColor;
+  user_name: string;
+  avatar_id: AvatarId;
+  show_avatar: boolean;
+  gender: 'female' | 'male' | 'neutral';
+  voice_en: string;
+  voice_ur: string;
+  voice_hi: string;
+  personality: PersonalityId;
+  custom_description: string;
+  formality: number;
+  humour: number;
+  verbosity: number;
+  wake_word: string;
+}
+
+export type AvatarId = 'nova' | 'aria' | 'zara' | 'orion' | 'atlas' | 'kai' | 'custom';
+export type PersonalityId = 'assistant' | 'mentor' | 'friend' | 'coach' | 'custom';
+
+export interface CatalogAvatar {
+  id: Exclude<AvatarId, 'custom'>;
+  name: string;
+  gender: 'female' | 'male';
+  style: string;
+  color: string;
+  voice_en: string;
+  voice_ur: string;
+  voice_hi: string;
+}
+
+export interface CatalogPersonality {
+  id: PersonalityId;
+  label: string;
+  tone: string;
+  style: string;
+  direction: string;
+}
+
+export interface Catalog {
+  avatars: CatalogAvatar[];
+  personalities: CatalogPersonality[];
+  voices: { english_female: string[]; english_male: string[]; urdu: string[]; hindi: string[] };
 }
 
 export interface Preferences {
@@ -110,7 +153,27 @@ export interface Preferences {
   risk_policy: 'standard' | 'strict';
   memory_enabled: boolean;
   onboarded: boolean;
+  follow_up_seconds: number;
+  anything_else?: boolean;
+  mail_provider?: 'none' | 'gmail' | 'outlook';
+  speech_volume: number;
+  daily_greeting: boolean;
+  cloud_answers: boolean | null;
+  screen_vision?: boolean;
+  welcome_back?: boolean;
+  terminal_window?: boolean;
   conversation_cutoff?: string | null;
+}
+
+export interface TaskSessionState {
+  open: boolean;
+  dictation?: boolean;
+  goal?: string;
+  current_app?: string | null;
+  current_folder?: string | null;
+  awaiting?: string | null;
+  idle_ask_in?: number;
+  steps_done?: { key: string; tool: string; ok: boolean; verified: boolean }[];
 }
 
 export type PreferencesUpdate = Partial<Omit<Preferences, 'conversation_cutoff'>>;
@@ -155,6 +218,18 @@ export function apiToken(): string {
   }
 }
 
+// In development the Vite proxy adds the token to every API request itself (vite.config.ts), so a tab opened
+// without /#token=... still works and must not show the "no access token" warning.
+declare const __PROXY_AUTH__: boolean | undefined;
+const proxyAuth = typeof __PROXY_AUTH__ !== 'undefined' && __PROXY_AUTH__;
+export const hasApiToken = (): boolean => apiToken() !== '' || proxyAuth;
+
+/** The backend refused the request (401): this tab has no token, or an old one. */
+export class AuthError extends Error {}
+export const authMessage = (): string => hasApiToken()
+  ? 'Access token purana ya galat hai. START_AGENT_X.cmd se app dobara kholein.'
+  : 'Is tab mein access token nahi hai (naya tab ya refresh se token chala jata hai). START_AGENT_X.cmd se app kholein.';
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   let res: Response;
   try {
@@ -172,7 +247,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     );
   }
   if (res.status === 401) {
-    throw new Error('Access token missing. START_AGENT_X.cmd se app dobara kholein (token wala link use hota hai).');
+    throw new AuthError(authMessage());
   }
   if (!res.ok) {
     let detail = '';
@@ -200,6 +275,7 @@ export const api = {
   editMemory: (id: string, kind: MemoryItem['kind'], text: string) =>
     request<MemoryItem>(`/memory/${id}`, { method: 'PUT', body: JSON.stringify({ kind, text }) }),
   deleteMemory: (id: string) => request<{ deleted: string }>(`/memory/${id}`, { method: 'DELETE' }),
+  deleteAllMemory: () => request<{ deleted: number }>('/memory', { method: 'DELETE' }),
   forgetConversation: () => request<Preferences>('/memory/forget-conversation', { method: 'POST' }),
 
   pause: (id: string) => request<TaskOut>(`/tasks/${id}/pause`, { method: 'POST' }),
@@ -239,4 +315,82 @@ export const api = {
   run: (id: string) => request<TaskOut>(`/tasks/${id}/run`, { method: 'POST' }),
 
   cancel: (id: string) => request<TaskOut>(`/tasks/${id}/cancel`, { method: 'POST' }),
+  progress: (id: string) => request<{ status: string; lines: { text: string; step: number | null; of: number | null }[] }>(`/tasks/${id}/progress`),
+};
+
+// ---------------------------------------------------------------- M2 voice endpoints
+export interface VoiceOptions {
+  language: string;
+  gender: 'female' | 'male';
+  voice_en: string;
+  voice_ur?: string | null;
+  voice_hi?: string | null;
+  direction?: string | null;
+}
+
+async function voiceFetch(path: string, init: RequestInit): Promise<Response> {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    ...init,
+    headers: { ...(apiToken() ? { Authorization: `Bearer ${apiToken()}` } : {}), ...(init.headers ?? {}) },
+  });
+  if (res.status === 401) throw new AuthError(authMessage());
+  if (!res.ok) throw new Error(`Voice request failed (${res.status})`);
+  return res;
+}
+
+const jsonInit = (body: unknown): RequestInit => ({
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(body),
+});
+
+export interface MailDraft {
+  id?: string; provider?: string; state: string; to: { name: string; email: string }[]; subject: string; body: string;
+  attachments: { name: string; size: number }[]; candidates: { name: string; email: string }[]; pending?: string | null; dictating?: boolean;
+}
+export interface MailStatus {
+  chosen: 'none' | 'gmail' | 'outlook';
+  providers: Record<'gmail' | 'outlook', { connected: boolean; configured: boolean; account?: string | null; error?: string }>;
+  draft: MailDraft | null;
+}
+
+/** E-mail: connection status, the OAuth round trip (the page opens the provider's own sign-in; no password is typed here), and the live draft. */
+export const mailApi = {
+  status: () => request<MailStatus>('/mail/status'),
+  connect: (provider: 'gmail' | 'outlook') => request<{ url: string }>('/mail/connect', { method: 'POST', body: JSON.stringify({ provider }) }),
+  disconnect: (provider: 'gmail' | 'outlook') => request<{ disconnected: boolean }>('/mail/disconnect', { method: 'POST', body: JSON.stringify({ provider }) }),
+  draft: () => request<MailDraft>('/mail/draft'),
+  cancelDraft: () => request<{ cancelled: boolean }>('/mail/draft/cancel', { method: 'POST' }),
+};
+
+export const voiceApi = {
+  chunks: async (text: string, direction?: string | null) =>
+    ((await (await voiceFetch('/voice/chunks', jsonInit({ text, direction }))).json()) as { chunks: string[] }).chunks,
+  tts: async (text: string, options: VoiceOptions) => {
+    const res = await voiceFetch('/voice/tts', jsonInit({ text, ...options }));
+    return { blob: await res.blob(), engine: res.headers.get('X-TTS-Engine') ?? '' };
+  },
+  /** The phrase to speak. A task yields its closing line ("Done" only if verified); a tool yields the acknowledgement. */
+  welcome: async () => (await (await voiceFetch('/voice/welcome', { method: 'GET' })).json()) as { text: string },
+  greeting: async () => (await (await voiceFetch('/voice/greeting', { method: 'GET' })).json()) as { enabled: boolean; text: string },
+  catalog: async () => (await (await voiceFetch('/voice/catalog', { method: 'GET' })).json()) as Catalog,
+  line: async (body: { task?: TaskOut; tool?: string; args?: Record<string, unknown>; event?: string; language: string; personality?: string; user_name?: string; formality?: number; humour?: number }) =>
+    ((await (await voiceFetch('/voice/line', jsonInit(body))).json()) as { text: string }).text,
+  /** What the conversation is about right now; `open` is false once the user said "that's all" or stayed silent. */
+  session: async () => (await (await voiceFetch('/voice/session', { method: 'GET' })).json()) as TaskSessionState,
+  /** Silence in an open task: the server decides if it is long enough; it answers wait / ask (speak "Shall I end this task?") / ended. */
+  sessionIdle: async (language: string) => (await (await voiceFetch('/voice/session/idle?language=' + encodeURIComponent(language), jsonInit({}))).json()) as { action: 'wait' | 'ask' | 'ended' | 'none'; text: string; open: boolean; retry_in?: number },
+  closeSession: () => voiceFetch('/voice/session/close', jsonInit({})).catch(() => undefined),
+  /** The acknowledgement for a command, from the local fast path (no network, nothing executed); text is null when none is safe. */
+  ack: async (body: { command: string; language: string; personality?: string; user_name?: string; formality?: number; humour?: number }) =>
+    ((await (await voiceFetch('/voice/ack', jsonInit(body))).json()) as { text: string | null }).text,
+  stt: async (wav: Uint8Array, language?: string, prompt?: string) => {
+    const form = new FormData();
+    form.append('audio', new Blob([wav as BlobPart], { type: 'audio/wav' }), 'speech.wav');
+    if (language) form.append('language', language);
+    if (prompt) form.append('prompt', prompt);
+    return ((await (await voiceFetch('/voice/stt', { method: 'POST', body: form })).json()) as { text: string }).text;
+  },
+  latency: (kind: 'local' | 'planned' | 'chat', ms: Record<string, number>) =>
+    voiceFetch('/voice/latency', jsonInit({ kind, ms })).catch(() => undefined),
 };
