@@ -352,6 +352,18 @@ async function pairedToken() {
   return typeof stored.apiToken === 'string' && stored.apiToken.length >= 32 ? stored.apiToken : null;
 }
 
+// Auto-pair: the running app gives its local token to this extension (it checks our extension id), so no setup link is needed.
+async function autoPair() {
+  try {
+    const response = await fetch(`${API}/browser/auto-pair`, { headers: { 'X-AgentX-Bridge': '1' } });
+    if (!response.ok) return null;
+    const { token } = await response.json();
+    if (typeof token !== 'string' || token.length < 32) return null;
+    await chrome.storage.local.set({ apiToken: token });
+    return token;
+  } catch { return null; }
+}
+
 function acceptPairing(message, sender) {
   return Boolean(
     message && message.type === 'agentx-pair' && typeof message.token === 'string' && message.token.length >= 32 &&
@@ -514,6 +526,7 @@ function scheduleReconnect(why) {
   const delay = Math.min(30000, 1000 * 2 ** Math.min(state.attempts, 5));     // 2 s, 4 s ... 30 s
   void setState({ connected: false, via: null, last_error: why || state.last_error });
   retryTimer = setTimeout(() => { retryTimer = null; void connect(); }, delay);
+  if (retryTimer && retryTimer.unref) retryTimer.unref();   // Node (tests) only; browsers return a number
 }
 
 // The browser the user used last: with Chrome and Edge both connected, the app talks to the one that was focused most recently.
@@ -561,13 +574,19 @@ async function connect() {
   if (connecting || nativePort || socket?.readyState === WebSocket.OPEN || socket?.readyState === WebSocket.CONNECTING) return;
   connecting = true;
   try {
-    const apiToken = await pairedToken();
+    let apiToken = await pairedToken();
+    if (!apiToken) apiToken = await autoPair();
     await setState({ paired: !!apiToken });
-    if (!apiToken) { await setState({ connected: false, last_error: 'Not paired yet: open the Agent X setup page from the app.' }); return; }
+    if (!apiToken) { scheduleReconnect('Waiting for the Agent X app to start so the extension can pair itself.'); return; }
     let response;
     try { response = await fetch(`${API}/browser/connect-token`, { headers: { 'X-AgentX-Bridge': '1', Authorization: `Bearer ${apiToken}` } }); }
     catch { scheduleReconnect('The Agent X app is not running on 127.0.0.1:8000.'); return; }
-    if (response.status === 401 || response.status === 403) { scheduleReconnect('The app rejected the saved pairing: pair again from its setup page.'); return; }
+    if (response.status === 401 || response.status === 403) {
+      // Saved token is old (the app made a new one): pair again automatically.
+      await chrome.storage.local.remove('apiToken');
+      scheduleReconnect('The app rejected the saved pairing; pairing again automatically.');
+      return;
+    }
     if (!response.ok) { scheduleReconnect(`The app answered HTTP ${response.status}.`); return; }
     const { token } = await response.json();
     if (await connectNative(token)) {

@@ -27,6 +27,7 @@ function load({ stored = {}, fetchImpl } = {}) {
       storage: { local: {
         get: async key => ({ [key]: store[key] }),
         set: async values => { Object.assign(store, values); },
+        remove: async key => { delete store[key]; },
       } },
       action: { setBadgeText: o => badges.push(o.text), setBadgeBackgroundColor() {}, onClicked: event },
       alarms: { create() {}, onAlarm: event },
@@ -53,11 +54,17 @@ const GOOD_SENDER = { id: 'ext-id', url: 'http://127.0.0.1:8000/browser-extensio
   assert.equal(accept({ type: 'agentx-pair', token: TOKEN }, { ...GOOD_SENDER, id: 'other-ext' }), false, 'other extension');
   assert.equal(accept({ type: 'something-else', token: TOKEN }, GOOD_SENDER), false, 'wrong type');
 
-  // 2. Unpaired: no network call at all, badge asks to pair.
+  // 2. Unpaired: the only call is auto-pair; a too-short answer is not accepted, so it stays unpaired.
   env = load();
   await env.settled;
-  assert.equal(env.fetches.length, 0, 'must not contact the backend when unpaired');
-  assert.ok(env.badges.includes('PAIR'));
+  assert.deepEqual(env.fetches.map(f => f.url), ['http://127.0.0.1:8000/browser/auto-pair']);
+  assert.equal(env.store.apiToken, undefined);
+
+  // 2b. Unpaired but the app hands over a real token: stored, then used for the connection.
+  env = load({ fetchImpl: async url => ({ ok: true, json: async () => ({ token: url.endsWith('auto-pair') ? TOKEN : 'bridge-token' }) }) });
+  await env.settled;
+  assert.equal(env.store.apiToken, TOKEN);
+  assert.equal(env.fetches[1].options.headers.Authorization, `Bearer ${TOKEN}`);
 
   // 3. Paired: the API token is sent to the backend as a Bearer header.
   env = load({ stored: { apiToken: TOKEN } });
@@ -70,7 +77,7 @@ const GOOD_SENDER = { id: 'ext-id', url: 'http://127.0.0.1:8000/browser-extensio
   // 4. A stored value that is too short is ignored.
   env = load({ stored: { apiToken: 'tiny' } });
   await env.settled;
-  assert.equal(env.fetches.length, 0);
+  assert.deepEqual(env.fetches.map(f => f.url), ['http://127.0.0.1:8000/browser/auto-pair']);
 
   // 5. A rejected token (backend 401) leaves no socket open.
   env = load({ stored: { apiToken: TOKEN }, fetchImpl: async () => ({ ok: false, status: 401, json: async () => ({}) }) });
