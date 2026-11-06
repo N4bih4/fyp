@@ -25,7 +25,7 @@ sys.path.insert(0, str(ROOT))
 
 from desktop import autostart  # noqa: E402
 
-ORB_SIZE = 132
+ORB_SIZE = 150
 PANEL_SIZE = (1180, 820)
 
 
@@ -106,8 +106,10 @@ class Shell:
             evaluate(script)
 
     def toggle_listening(self) -> None:
-        self.show_panel()
-        self.run_in_panel("window.__agentx && window.__agentx.toggleVoice()")
+        """The orb window is the microphone: toggle it there, without opening the panel."""
+        evaluate = getattr(self.orb, "evaluate_js", None)
+        if evaluate is not None:
+            evaluate("window.__agentx && window.__agentx.toggleVoice()")
 
     def open_settings(self) -> None:
         self.show_panel()

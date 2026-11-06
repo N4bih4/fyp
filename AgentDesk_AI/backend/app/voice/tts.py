@@ -28,6 +28,7 @@ from .chunking import ORPHEUS_LIMIT, split_for_speech
 log = logging.getLogger(__name__)
 
 COOLDOWN = 300.0
+NETWORK_COOLDOWN = 30.0
 CACHE_SIZE = 64   # repeated phrases ("Done. Chrome is open.") are served without a new synthesis
 Engine = Callable[[str, str], tuple[bytes, str]]
 
@@ -93,9 +94,11 @@ class TTSChain:
             return self._blocked.get(name, 0.0) <= self.clock()
 
     def _trip(self, name: str, exc: Exception) -> None:
-        log.warning("tts engine %s failed (%s); skipping it for %ds", name, type(exc).__name__, int(COOLDOWN))
+        # A dropped connection (Wi-Fi blip) heals quickly: retry in 30 s. A real fault (terms not accepted, bad key) waits the full cool-down.
+        wait = NETWORK_COOLDOWN if isinstance(exc, (OSError, TimeoutError)) or type(exc).__name__.startswith(("ClientConnector", "ClientOS", "Client")) else COOLDOWN
+        log.warning("tts engine %s failed (%s); skipping it for %ds", name, type(exc).__name__, int(wait))
         with self._lock:
-            self._blocked[name] = self.clock() + COOLDOWN
+            self._blocked[name] = self.clock() + wait
 
     def plan(self, choice: VoiceChoice) -> list[tuple[str, Engine | None, str]]:
         """Engines to try, in order, with the voice each one uses."""
@@ -116,6 +119,7 @@ class TTSChain:
                 self._clips.move_to_end(key)
                 return hit
             if engine is None or not self._usable(name):
+                errors.append(f"{name}: {'not installed' if engine is None else 'cooling down after an earlier failure'}")
                 continue
             payload = text
             if name == "orpheus" and choice.direction:

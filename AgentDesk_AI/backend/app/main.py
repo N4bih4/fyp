@@ -11,7 +11,7 @@ import uuid
 from pathlib import Path
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -114,7 +114,7 @@ app.add_middleware(
 
 _LOCAL_HOSTS = {"127.0.0.1", "localhost", "[::1]", "testserver"}
 _SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
-_PROTECTED_PREFIXES = ("/tasks", "/config", "/tools", "/usage", "/browser/connect-token", "/preferences", "/memory", "/metrics", "/voice", "/mail")
+_PROTECTED_PREFIXES = ("/tasks", "/agents", "/config", "/tools", "/usage", "/browser/connect-token", "/preferences", "/memory", "/metrics", "/voice", "/mail")
 
 
 @app.middleware("http")
@@ -291,13 +291,37 @@ def list_tools() -> list[dict]:
 
 # ------------------------------------------------------------------ tasks
 @app.post("/tasks", response_model=TaskOut)
-def create_task(payload: TaskCreate, db: Session = Depends(get_db)) -> TaskOut:
+def create_task(payload: TaskCreate, response: Response, background: bool = Query(default=False), db: Session = Depends(get_db)) -> TaskOut:
+    # Shadow (the team lead) picks the agent: a name at the start ("Scout, ...") is honoured, a busy agent's job moves to a free one.
+    from .agents.dispatcher import get_dispatcher
+    dispatcher = get_dispatcher()
+    assignment, command = dispatcher.choose(db, payload.command)
     # start_task branches on the provider: static planning for mock,
     # the agentic tool-calling loop for Groq.
-    task = executor.start_task(
-        db, payload.command, payload.idempotency_key, _registry(), get_settings(),
-    )
+    if background:
+        # Parallel agents: the job runs in its own thread and the reply comes back at once, so the next request can start.
+        from .agents import runner
+        try:
+            started = runner.submit(command, payload.idempotency_key, _registry(), get_settings())
+        except RuntimeError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        task = executor._get_task(db, started.id)
+    else:
+        task = executor.start_task(
+            db, command, payload.idempotency_key, _registry(), get_settings(),
+        )
+    dispatcher.record(assignment, task.id)
+    response.headers["X-Agent"] = assignment.agent
+    if assignment.note:
+        response.headers["X-Agent-Note"] = assignment.note.encode("ascii", "replace").decode()
     return executor.task_out(task)
+
+
+@app.get("/agents")
+def list_agents(db: Session = Depends(get_db)) -> list[dict]:
+    """The team: every agent, whether it is busy, and what it is doing."""
+    from .agents.dispatcher import get_dispatcher
+    return get_dispatcher().status(db)
 
 
 @app.get("/tasks", response_model=list[TaskOut])

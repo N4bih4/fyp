@@ -8,10 +8,13 @@ interface Params {
   onCommandFailed: () => void;
   /** Called with a new command the moment it is sent, before the task exists: the acknowledgement is spoken while the task runs. */
   onCommandStart?: (command: string) => void;
+  /** Parallel agents: send commands as background jobs; `onBackgroundStarted` fires once the job runs, so the next spoken command can start. */
+  background?: boolean;
+  onBackgroundStarted?: () => void;
 }
 
 /** The active task, the history list and every action that changes a task (run, approve, reject, undo, cancel...). */
-export function useTasks({ setBanner, onCommandFailed, onCommandStart }: Params) {
+export function useTasks({ setBanner, onCommandFailed, onCommandStart, background = false, onBackgroundStarted }: Params) {
   const [command, setCommand] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [activeTask, setActiveTask] = useState<TaskOut | null>(null);
@@ -118,10 +121,11 @@ export function useTasks({ setBanner, onCommandFailed, onCommandStart }: Params)
       if (!isReply) onCommandStart?.(trimmed);
       const t = isReply
         ? await api.replyTask(activeTask!.id, trimmed)
-        : await api.createTask(trimmed, crypto.randomUUID());
+        : await api.createTask(trimmed, crypto.randomUUID(), background);
       setActiveTask(t);
       upsertHistory(t);
       setCommand('');
+      if (background && !isReply && ['created', 'planned', 'approved', 'executing'].includes(t.status)) onBackgroundStarted?.();
     } catch (e) {
       setBanner(errMsg(e));
       onCommandFailed();

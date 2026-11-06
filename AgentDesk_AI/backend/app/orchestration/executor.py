@@ -310,6 +310,13 @@ STOP_MESSAGES = {
 
 
 def _run_and_verify(tool, parsed_args, settings: Settings, action_id: str | None = None) -> tuple[ToolResult, Verification, str | None]:
+    """Execute and verify one action; tools that drive the shared mouse / keyboard / screen take turns across agents."""
+    from ..agents.runner import ui_exclusive
+    with ui_exclusive(getattr(tool, "name", "")):
+        return _run_and_verify_now(tool, parsed_args, settings, action_id)
+
+
+def _run_and_verify_now(tool, parsed_args, settings: Settings, action_id: str | None = None) -> tuple[ToolResult, Verification, str | None]:
     """Execute and verify one action. Returns (result, verification, stop_reason).
 
     Process isolation (default): both run in a worker process that is killed on

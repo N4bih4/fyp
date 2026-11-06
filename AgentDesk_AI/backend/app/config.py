@@ -5,6 +5,7 @@ prints or exposes secret values.
 """
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 from pathlib import Path
 
@@ -48,15 +49,15 @@ class Settings(BaseSettings):
     discovery_directories: str = Field(default="", validation_alias=AliasChoices("AGENTDESK_DISCOVERY_DIRECTORIES", "discovery_directories"))
     ai_timeout_seconds: int = 30
     # Speech models on Groq (used by ai/groq_client.py). STT falls back in order.
-    groq_stt_model: str = "whisper-large-v3-turbo"
-    groq_stt_fallback_model: str = "whisper-large-v3"
+    groq_stt_model: str = "whisper-large-v3"
+    groq_stt_fallback_model: str = "whisper-large-v3-turbo"
     groq_tts_model: str = "canopylabs/orpheus-v1-english"
     groq_tts_voice: str = "autumn"
     ai_max_retries: int = 2
     # Strict-JSON planner rollout: legacy | shadow | structured (see orchestration/planner_mode.py).
     planner_mode: str = "legacy"
     # Bound on agentic-loop tool steps per task (cost + runaway protection).
-    agent_max_steps: int = 10
+    agent_max_steps: int = 40
 
     # Layer 3 (look at the screen): an image-capable Groq model. Checked on 2026-11-02: qwen/qwen3.8-27b accepted a picture and named the right button.
     vision_model: str = "qwen/qwen3.8-27b"
@@ -106,6 +107,9 @@ class Settings(BaseSettings):
         raw = [p.strip() for p in self.allowed_directories.split(",") if p.strip()]
         if not raw:
             raw = [str(Path.home()), str(Path(self.test_dir).resolve())]
+            # Full-PC control: every other fixed drive too (D:, E: ...). The system drive stays limited to the user's home; deletes still need approval.
+            system = (os.environ.get("SystemDrive") or "C:").upper()
+            raw += [f"{d}:\\" for d in "DEFGHIJKLMNOPQRSTUVWXYZ" if f"{d}:" != system and Path(f"{d}:\\").exists()]
         return [Path(p).expanduser() for p in raw]
 
     def resolved_approved_applications(self) -> list[str]:

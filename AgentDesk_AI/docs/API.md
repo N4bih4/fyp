@@ -144,6 +144,12 @@ Plan a command.
 `command` is 1-2000 characters. If `idempotency_key` matches an existing task,
 that task is returned unchanged: no duplicate planning or execution.
 
+### `GET /agents`
+The team (Shadow is the lead): each agent, whether it is busy and what it is doing. `POST /tasks` replies with header `X-Agent` (who got the job) and `X-Agent-Note` (why, when the job moved).
+
+### `GET /tasks/{task_id}/progress`
+Short progress lines of a running task.
+
 ### `GET /tasks`
 History, newest first. Query: `limit` (default 20, max 100).
 

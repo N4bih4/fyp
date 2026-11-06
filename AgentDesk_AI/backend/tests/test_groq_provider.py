@@ -198,7 +198,7 @@ def test_tool_specs_cover_registry(tmp_path):
         "take_screenshot", "web_search", "write_text_file",
         "find_files", "edit_text_file", "media_control", "whatsapp_open_chat", "winget_install",
         "memory_remember", "memory_recall", "memory_forget", "web_answer", "summarise_page", "summarise_file",
-        "ui_inspect", "ui_act", "open_terminal", "run_terminal_command", "screen_act", "device_control", "explorer_view",
+        "ui_inspect", "ui_act", "open_terminal", "run_terminal_command", "screen_act", "device_control", "explorer_view", "make_document", "drive_coding_agent",
     }
     for s in specs:
         assert s["type"] == "function"

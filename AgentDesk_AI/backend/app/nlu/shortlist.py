@@ -77,6 +77,7 @@ TRIGGERS: dict[str, str] = {
     "device_control": r"lock|sleep|restart|reboot|shut ?down|power|awake|battery|charging|airplane|aeroplane|flight mode|do not disturb|dnd|night ?light|unlock|"
                       r"cancel|لاک|ری ?اسٹارٹ|بیٹری|लॉक|रीस्टार्ट|बैटरी",
     "explorer_view": r"sort|view|details|icons|tiles|hidden|properties|search (?:this folder|here)|file explorer|explorer|ترتیب|छिपी|क्रमबद्ध",
+    "drive_coding_agent": r"antigravity|anti ?gravity|codex|claude|cursor|chatgpt|coding agent|prompt|اینٹی ?گریویٹی|کلاڈ|एंटी ?ग्रेविटी|कोडेक्स|क्लॉड|प्रॉम्प्ट|پرامپٹ",
     "screen_act": r"on (?:the )?screen|look at|can you see|what(?:'s| is) (?:on )?(?:the )?screen|visible|canvas|game|doesn'?t respond|isn'?t responding|"
                   r"no accessibility|screen par|screen pe|سکرین|اسکرین|स्क्रीन|dekho|dekh ke|dekh kar",
     "compose_email": r"e-?mail|mail|compose|draft|ای ?میل|ईमेल|@\w",
@@ -92,7 +93,7 @@ TRIGGERS: dict[str, str] = {
 }
 _COMPILED = {tool: re.compile(r"(?<![\w])(?:" + pattern + r")", re.IGNORECASE) for tool, pattern in TRIGGERS.items()}
 # a tool that is usually planned together with another one
-PAIRS = {"winget_install": ("application_package",), "download_web_content": ("web_search",), "ui_act": ("ui_inspect",), "ui_inspect": ("ui_act",), "run_terminal_command": ("find_paths",), "screen_act": ("ui_inspect",)}
+PAIRS = {"drive_coding_agent": ("open_application",), "winget_install": ("application_package",), "download_web_content": ("web_search",), "ui_act": ("ui_inspect",), "ui_inspect": ("ui_act",), "run_terminal_command": ("find_paths",), "screen_act": ("ui_inspect",)}
 
 
 def _scores(command: str, registry_names: set[str], extra: Iterable[str], last_tools: Iterable[str]) -> dict[str, int]:

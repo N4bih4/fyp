@@ -68,7 +68,7 @@ class Preferences(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     persona: Persona = Field(default_factory=Persona)
-    listen_mode: Literal["push_to_talk", "hands_free", "off"] = "push_to_talk"
+    listen_mode: Literal["push_to_talk", "hands_free", "off"] = "hands_free"
     provider_mode: Literal["auto", "local_only"] = "auto"
     risk_policy: Literal["standard", "strict"] = "standard"
     memory_enabled: bool = True

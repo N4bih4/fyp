@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from './api';
+import { isDesktop } from './desktop';
 import { ActionPreview } from './components/ActionPreview';
 import { AppHeader } from './components/AppHeader';
 import { CommandPanel } from './components/CommandPanel';
@@ -55,6 +56,13 @@ export default function App() {
   };
 
   toggleVoiceRef.current = input.toggleVoiceInput;
+  // Hands-free is the default: start listening by itself once the page is ready (no "tap to speak").
+  const autoStartedRef = useRef(false);
+  useEffect(() => {
+    if (autoStartedRef.current || isDesktop() || !prefs?.onboarded || prefs.listen_mode !== 'hands_free' || !config) return;   // in the desktop app the orb window is the microphone
+    autoStartedRef.current = true;
+    if (!voice.handsFreeRef.current) toggleVoiceRef.current();
+  }, [prefs?.onboarded, prefs?.listen_mode, config]);
   // Hooks for the desktop tray (fixed calls only): start/stop listening, open a page.
   useEffect(() => {
     (window as unknown as { __agentx?: unknown }).__agentx = {
