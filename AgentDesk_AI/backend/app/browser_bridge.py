@@ -7,7 +7,7 @@ import threading
 import time
 import uuid
 from functools import lru_cache
-from fastapi import APIRouter, Header, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Header, HTTPException, Request, WebSocket, WebSocketDisconnect
 
 from .logging_setup import log_event
 
@@ -138,6 +138,27 @@ def connect_token(x_agentx_bridge: str | None = Header(default=None)):
     if x_agentx_bridge != "1":
         raise HTTPException(status_code=403, detail="Extension connection only")
     return {"token": bridge.token}
+
+
+# Extension id derived from the public "key" in browser-extension/manifest.json, so it is the same on every PC.
+EXTENSION_ORIGIN = "chrome-extension://ibfgillldmdknbebbfplonomofpmakio"
+
+
+@router.get("/auto-pair")
+def auto_pair(request: Request, origin: str | None = Header(default=None), x_agentx_bridge: str | None = Header(default=None)):
+    """Hand the local API token to the Agent X extension so it pairs itself (no setup link needed).
+    A web page can neither forge Origin nor set Sec-Fetch-Site (browser-controlled): its requests always say
+    cross-site/same-site/same-origin. Chrome sends an extension's own fetch with no Origin and Sec-Fetch-Site "none"."""
+    client = request.client.host if request.client else ""
+    from_extension = origin == EXTENSION_ORIGIN or (
+        origin is None and request.headers.get("sec-fetch-site") == "none" and request.headers.get("sec-fetch-mode") == "cors")
+    if x_agentx_bridge != "1" or not from_extension or client not in {"127.0.0.1", "::1", "testclient"}:
+        raise HTTPException(status_code=403, detail="Agent X extension only")
+    from .security.token import get_api_token
+    token = get_api_token()
+    if not token:
+        raise HTTPException(status_code=404, detail="API token is not required")
+    return {"token": token}
 
 
 @router.websocket("/ws")
