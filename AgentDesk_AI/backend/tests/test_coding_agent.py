@@ -6,6 +6,7 @@ from PIL import Image, ImageDraw
 
 from app.tools import coding_agent as ca
 from app.tools.uia_backend import UiaError, WindowRef
+from app.vision.ocr import OcrUnavailable
 from app.vision.boxes import OcrLine
 
 RECT = (0, 0, 1000, 600)
@@ -101,9 +102,9 @@ def test_unverified_layouts_say_so(monkeypatch, machine):
     clock = iter(x * 1.5 for x in range(1, 200))
     monkeypatch.setattr(ca.time, "monotonic", lambda: next(clock))
     monkeypatch.setattr(ca, "get_screen", lambda: screen)
-    monkeypatch.setattr(ca, "get_service", lambda: FakeService("Claude"))
+    monkeypatch.setattr(ca, "get_service", lambda: FakeService("Cursor"))
     tool = ca.CodingAgentTool.__new__(ca.CodingAgentTool)
-    out = tool.execute(ca.CodingAgentArgs(app="claude", prompt="hello", settle_seconds=3, wait_seconds=5))
+    out = tool.execute(ca.CodingAgentArgs(app="cursor", prompt="hello", settle_seconds=3, wait_seconds=5))
     assert out.success and out.output["layout_verified"] is False and "guess" in out.output["note"]
 
 
@@ -127,3 +128,47 @@ def test_a_renamed_window_is_still_the_same_app(monkeypatch, machine):
     monkeypatch.setattr(ca.time, "monotonic", lambda: next(clock))
     out = run(monkeypatch, screen, service=Renaming())
     assert out.success and out.output["finished"] is True
+
+
+class LinesOcr:
+    def __init__(self, lines):
+        self.lines = lines
+
+    def recognize(self, image):
+        return [OcrLine(text, rect, []) for text, rect in self.lines]
+
+
+def test_prompt_box_is_found_by_its_placeholder_text(monkeypatch):
+    img = pic(20)                                                   # 1000 x 600
+    monkeypatch.setattr(ca, "get_ocr", lambda: LinesOcr([
+        ("Ask anything about your code", (100, 100, 400, 120)),     # quoted high up in the chat: must be ignored
+        ("Ask anything, @ to mention, / for actions", (300, 540, 700, 560)),
+        ("Settings", (10, 580, 80, 596))]))
+    x, y = ca.find_prompt_box(img, ["ask anything"])
+    assert (round(x, 2), round(y, 2)) == (0.5, 0.92)
+
+
+def test_no_match_or_no_ocr_means_the_measured_place_is_used(monkeypatch):
+    img = pic(20)
+    monkeypatch.setattr(ca, "get_ocr", lambda: LinesOcr([("Something else", (300, 540, 700, 560))]))
+    assert ca.find_prompt_box(img, ["ask anything"]) is None
+
+    def broken():
+        raise OcrUnavailable("no language")
+    monkeypatch.setattr(ca, "get_ocr", broken)
+    assert ca.find_prompt_box(img, ["ask anything"]) is None
+
+
+def test_the_click_goes_where_the_placeholder_is(monkeypatch, machine):
+    screen = FakeScreen([pic(20), pic(20, box=True)])
+    clock = iter(x * 1.5 for x in range(1, 200))
+    monkeypatch.setattr(ca.time, "monotonic", lambda: next(clock))
+    monkeypatch.setattr(ca, "get_ocr", lambda: LinesOcr([("Ask anything", (300, 540, 700, 560))]))
+    out = run(monkeypatch, screen)
+    assert out.success and out.output["prompt_box_found_by"] == "ocr" and screen.clicks[0] == (500, 550)
+
+
+def test_claude_and_antigravity_are_measured_profiles_the_rest_are_marked_guesses():
+    assert ca.PROFILES["antigravity"]["verified"] and ca.PROFILES["claude"]["verified"]
+    assert not any(ca.PROFILES[k]["verified"] for k in ("codex", "cursor", "chatgpt"))
+    assert all(ca.PROFILES[k]["hints"] for k in ca.PROFILES)

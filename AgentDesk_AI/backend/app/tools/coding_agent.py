@@ -24,12 +24,21 @@ from .uia_backend import UiaError
 
 # Where the prompt box and the "new conversation" button are, as a share of the window (x, y). Antigravity is measured on a real window;
 # the others are best guesses until someone checks them (the tool says so in its result).
+# `input` / `new_chat`: where the prompt box and the "new conversation" button are, as a share of the window (x, y); the backup when the prompt box
+# cannot be found on screen. `hints`: text the empty prompt box shows (found by OCR first, because the box moves when side panels open or close).
+# Antigravity and Claude were measured on real windows of this PC. Codex, Cursor and ChatGPT are not installed here: their hints and places are
+# best guesses, and the tool says so in its result.
 PROFILES: dict[str, dict[str, Any]] = {
-    "antigravity": {"title": "Antigravity", "input": (0.58, 0.89), "new_chat": (0.08, 0.118), "chat_left": 0.17, "verified": True},
-    "claude": {"title": "Claude", "input": (0.5, 0.9), "new_chat": None, "chat_left": 0.0, "verified": False},
-    "codex": {"title": "Codex", "input": (0.5, 0.9), "new_chat": None, "chat_left": 0.0, "verified": False},
-    "cursor": {"title": "Cursor", "input": (0.85, 0.9), "new_chat": None, "chat_left": 0.7, "verified": False},
-    "chatgpt": {"title": "ChatGPT", "input": (0.5, 0.9), "new_chat": None, "chat_left": 0.0, "verified": False},
+    "antigravity": {"title": "Antigravity", "input": (0.58, 0.89), "new_chat": (0.08, 0.118), "chat_left": 0.17, "verified": True,
+                    "hints": ["ask anything"]},
+    "claude": {"title": "Claude", "input": (0.52, 0.915), "new_chat": None, "chat_left": 0.2, "verified": True,
+               "hints": ["enter to send", "reply to claude", "message claude", "how can i help", "queue for later"]},
+    "codex": {"title": "Codex", "input": (0.5, 0.9), "new_chat": None, "chat_left": 0.0, "verified": False,
+              "hints": ["ask codex", "ask anything", "describe a task", "message codex"]},
+    "cursor": {"title": "Cursor", "input": (0.85, 0.9), "new_chat": None, "chat_left": 0.7, "verified": False,
+               "hints": ["plan, @ for context", "add a follow-up", "ask anything", "@ to mention"]},
+    "chatgpt": {"title": "ChatGPT", "input": (0.5, 0.9), "new_chat": None, "chat_left": 0.0, "verified": False,
+                "hints": ["ask anything", "message chatgpt"]},
 }
 POLL_SECONDS = 2.5
 CHANGED = 0.004                    # share of the window's pixels that must differ for "still working"
@@ -165,6 +174,21 @@ def capture_window(handle: int):
     return image if high - low > 8 else None          # all one colour = a window that did not draw itself
 
 
+def find_prompt_box(image, hints: list[str]) -> tuple[float, float] | None:
+    """Where the empty prompt box is, as (x, y) shares of the picture, by reading its placeholder text. Only the lower 45% is searched, and the
+    lowest match wins (a chat that quotes the placeholder text above must not be clicked). None when OCR is unavailable or nothing matches."""
+    try:
+        lines = get_ocr().recognize(image)
+    except Exception:  # noqa: BLE001 - no OCR language, no winsdk: the measured place is used instead
+        return None
+    floor = image.height * 0.55
+    hits = [l for l in lines if l.rect[1] >= floor and any(h in " ".join(l.text.casefold().split()) for h in hints)]
+    if not hits:
+        return None
+    best = max(hits, key=lambda l: l.rect[1])
+    return ((best.rect[0] + best.rect[2]) / 2 / image.width, (best.rect[1] + best.rect[3]) / 2 / image.height)
+
+
 def _rect_at(rect: tuple[int, int, int, int], fx: float, fy: float) -> tuple[int, int]:
     left, top, right, bottom = rect
     return int(left + (right - left) * fx), int(top + (bottom - top) * fy)
@@ -220,7 +244,10 @@ class CodingAgentTool(BaseTool):
                     screen.click(*_rect_at(rect, *profile["new_chat"]))
                     time.sleep(0.8)
                 before = screen.grab(rect)
-                screen.click(*_rect_at(rect, *profile["input"]))
+                found = find_prompt_box(before, profile["hints"])
+                box = found or profile["input"]
+                box_found_by = "ocr" if found else "measured place"
+                screen.click(*_rect_at(rect, *box))
                 time.sleep(0.3)
                 old_clip = get_clipboard()
                 set_clipboard(a.prompt)
@@ -254,7 +281,7 @@ class CodingAgentTool(BaseTool):
             pass
         return ToolResult(success=True, output={
             "app": name, "prompt_sent": a.prompt[:200], "finished": finished, "watched_seconds": round(seconds),
-            "still_working_when_stopped_watching": not finished, "screen_text": text, "layout_verified": profile["verified"],
+            "still_working_when_stopped_watching": not finished, "screen_text": text, "layout_verified": profile["verified"], "prompt_box_found_by": box_found_by,
             **({"note": "This app's prompt box position is a guess, not measured."} if not profile["verified"] else {})})
 
     @staticmethod
