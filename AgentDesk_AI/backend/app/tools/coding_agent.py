@@ -116,6 +116,55 @@ def ui_lock():
         return nullcontext()
 
 
+USE_PRINTWINDOW = True
+
+
+def capture_window(handle: int):
+    """The window's own picture, even when other windows cover it (PrintWindow with PW_RENDERFULLCONTENT; works for Electron / Chromium
+    windows). None when the window is minimised, gone, or the picture is blank."""
+    if not handle:
+        return None
+    import platform
+    if platform.system() != "Windows":
+        return None
+    from ctypes import wintypes
+
+    from PIL import Image
+    user32, gdi32 = ctypes.windll.user32, ctypes.windll.gdi32
+    if user32.IsIconic(handle):
+        return None
+    rect = wintypes.RECT()
+    if not user32.GetWindowRect(handle, ctypes.byref(rect)):
+        return None
+    width, height = rect.right - rect.left, rect.bottom - rect.top
+    if width <= 0 or height <= 0:
+        return None
+
+    class BITMAPINFOHEADER(ctypes.Structure):
+        _fields_ = [("biSize", wintypes.DWORD), ("biWidth", wintypes.LONG), ("biHeight", wintypes.LONG), ("biPlanes", wintypes.WORD),
+                    ("biBitCount", wintypes.WORD), ("biCompression", wintypes.DWORD), ("biSizeImage", wintypes.DWORD),
+                    ("biXPelsPerMeter", wintypes.LONG), ("biYPelsPerMeter", wintypes.LONG), ("biClrUsed", wintypes.DWORD),
+                    ("biClrImportant", wintypes.DWORD)]
+
+    hdc = user32.GetWindowDC(handle)
+    mem = gdi32.CreateCompatibleDC(hdc)
+    bitmap = gdi32.CreateCompatibleBitmap(hdc, width, height)
+    try:
+        gdi32.SelectObject(mem, bitmap)
+        if not user32.PrintWindow(handle, mem, 2):
+            return None
+        header = BITMAPINFOHEADER(40, width, -height, 1, 32, 0, 0, 0, 0, 0, 0)
+        buffer = ctypes.create_string_buffer(width * height * 4)
+        gdi32.GetDIBits(mem, bitmap, 0, height, buffer, ctypes.byref(header), 0)
+        image = Image.frombuffer("RGBA", (width, height), buffer, "raw", "BGRA", 0, 1).convert("RGB")
+    finally:
+        gdi32.DeleteObject(bitmap)
+        gdi32.DeleteDC(mem)
+        user32.ReleaseDC(handle, hdc)
+    low, high = image.convert("L").getextrema()
+    return image if high - low > 8 else None          # all one colour = a window that did not draw itself
+
+
 def _rect_at(rect: tuple[int, int, int, int], fx: float, fy: float) -> tuple[int, int]:
     left, top, right, bottom = rect
     return int(left + (right - left) * fx), int(top + (bottom - top) * fy)
@@ -131,6 +180,15 @@ def read_screen_text(image, max_chars: int = 1800) -> str:
     lines = get_ocr().recognize(image)
     text = "\n".join(line.text for line in sorted(lines, key=lambda l: (l.rect[1], l.rect[0])) if line.text.strip())
     return text[-max_chars:]
+
+
+def _same_window(window, front) -> bool:
+    """The app's own window is in front. By handle or process, never by title: Antigravity renames its window to the conversation's name."""
+    if window.handle and front.handle:
+        return window.handle == front.handle
+    if window.process and front.process:
+        return window.process.casefold() == front.process.casefold()
+    return window.title.casefold() in front.title.casefold()
 
 
 class CodingAgentTool(BaseTool):
@@ -184,10 +242,14 @@ class CodingAgentTool(BaseTool):
         finished, seconds, steady, last = self._watch(service, screen, window, a, profile)
         text = ""
         try:
-            with ui_lock():
-                screen.focus(window)
-                rect = screen.window_rect(window)
-                text = read_screen_text(screen.grab(_chat_area(rect, profile["chat_left"])))
+            rect = screen.window_rect(window)
+            image = capture_window(window.handle) if USE_PRINTWINDOW else None
+            if image is None:
+                with ui_lock():
+                    screen.focus(window)
+                    image = screen.grab(rect)
+            left = int(image.width * profile["chat_left"])
+            text = read_screen_text(image.crop((left, min(50, image.height // 10), image.width, image.height)))
         except (OcrUnavailable, UiaError, OSError):
             pass
         return ToolResult(success=True, output={
@@ -205,15 +267,17 @@ class CodingAgentTool(BaseTool):
         while time.monotonic() - start < a.wait_seconds:
             progress.check()
             time.sleep(POLL_SECONDS)
-            try:
-                front = service.window(None)
-            except UiaError:
-                front = None
-            if front is None or window.title.casefold() not in front.title.casefold():
-                steady_since = time.monotonic()        # the window is behind another one: a picture of it would show that other window
-                continue
             rect = screen.window_rect(window)
-            picture = screen.grab(rect)
+            image = capture_window(window.handle) if USE_PRINTWINDOW else None
+            if image is None:
+                try:
+                    front = service.window(None)
+                except UiaError:
+                    front = None
+                if front is None or not _same_window(window, front):
+                    steady_since = time.monotonic()    # it cannot draw itself while covered: a screen picture would show the window on top
+                    continue
+            picture = image if image is not None else screen.grab(rect)
             if last is not None and changed_share(last, picture) >= CHANGED:
                 steady_since = time.monotonic()
             last = picture

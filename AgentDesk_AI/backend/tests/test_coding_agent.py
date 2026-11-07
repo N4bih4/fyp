@@ -55,6 +55,7 @@ def machine(monkeypatch):
     monkeypatch.setattr(ca, "get_clipboard", lambda: "old clipboard")
     monkeypatch.setattr(ca, "press", lambda *k: log.append(("press", k)))
     monkeypatch.setattr(ca, "POLL_SECONDS", 0.01)
+    monkeypatch.setattr(ca, "USE_PRINTWINDOW", False)
     monkeypatch.setattr(ca, "get_ocr", lambda: FakeOcr())
     monkeypatch.setattr(ca.time, "sleep", lambda s: None)
     return log
@@ -113,3 +114,16 @@ def test_tool_is_registered_needs_approval_and_is_shown_for_coding_requests():
     tool = reg.get("drive_coding_agent")
     assert tool.requires_approval and tool.isolation == "thread"
     assert "drive_coding_agent" in tools_for("Antigravity kholo aur ye prompt do", reg.model_names(), [], [])
+
+
+def test_a_renamed_window_is_still_the_same_app(monkeypatch, machine):
+    """Antigravity renames its window to the conversation's title after the first reply: the watcher must not think it went behind another window."""
+    class Renaming(FakeService):
+        def window(self, query):
+            return WindowRef("Antigravity" if query else "Ignoring System Instructions", "Antigravity.exe", handle=0)
+
+    screen = FakeScreen([pic(20), pic(20, box=True)])
+    clock = iter(x * 1.5 for x in range(1, 200))
+    monkeypatch.setattr(ca.time, "monotonic", lambda: next(clock))
+    out = run(monkeypatch, screen, service=Renaming())
+    assert out.success and out.output["finished"] is True
