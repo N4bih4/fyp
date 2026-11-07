@@ -82,6 +82,7 @@ class Clip:
 class TTSChain:
     orpheus: Engine | None = None
     edge: Engine | None = None
+    google: Engine | None = None     # Google Translate voice: Urdu / Hindi when the Microsoft online voices are blocked and SAPI has no such voice
     sapi: Engine | None = None
     clock: Callable[[], float] = time.monotonic
     cache: bool = field(default_factory=lambda: os.environ.get("AGENTDESK_TTS_CACHE", "1") != "0")
@@ -104,7 +105,7 @@ class TTSChain:
         """Engines to try, in order, with the voice each one uses."""
         lang = choice.language[:2].lower()
         if lang in ("ur", "hi"):
-            return [("edge", self.edge, choice.edge_voice()), ("sapi", self.sapi, choice.gender)]
+            return [("edge", self.edge, choice.edge_voice()), ("google", self.google, lang), ("sapi", self.sapi, choice.gender)]
         return [("orpheus", self.orpheus, choice.voice_en), ("edge", self.edge, choice.edge_voice()),
                 ("sapi", self.sapi, choice.gender)]
 
@@ -168,6 +169,22 @@ def edge_tts_engine() -> Engine:
                     parts.append(item["data"])
             return b"".join(parts)
         return _run_async(fetch(), timeout=15), "audio/mpeg"
+    return run
+
+
+def google_tts_engine() -> Engine:
+    """Google Translate's speech endpoint (no key, MP3, at most ~200 characters per call). `voice` is the language code: ur, hi, en."""
+    import urllib.parse
+    import urllib.request
+
+    def run(text: str, voice: str) -> tuple[bytes, str]:
+        url = "https://translate.google.com/translate_tts?" + urllib.parse.urlencode({"ie": "UTF-8", "client": "tw-ob", "tl": voice, "q": text[:200]})
+        request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(request, timeout=10) as response:
+            audio = response.read()
+        if len(audio) < 200:
+            raise RuntimeError("Google returned no audio")
+        return audio, "audio/mpeg"
     return run
 
 
@@ -342,5 +359,5 @@ def default_chain(client=None) -> TTSChain:
         edge = edge_tts_engine()
     except ImportError:
         pass
-    return TTSChain(orpheus=groq_orpheus_engine(client) if client is not None else None, edge=edge,
+    return TTSChain(orpheus=groq_orpheus_engine(client) if client is not None else None, edge=edge, google=google_tts_engine(),
                     sapi=sapi_engine() if platform.system() == "Windows" else None)
