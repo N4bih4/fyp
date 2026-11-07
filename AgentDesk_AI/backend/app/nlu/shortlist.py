@@ -56,11 +56,11 @@ TRIGGERS: dict[str, str] = {
                 r"twitter|linkedin|chatgpt|github|netflix|daraz|whatsapp|یوٹیوب|جی ?میل|گوگل|فیس ?بک|ویب ?سائٹ|"
                 r"यूट्यूब|जीमेल|गूगल|फेसबुक|वेबसाइट",
     "play_youtube_video": r"play|chala\w*|gaana|gane|gaane|song|songs|music|video|lofi|youtube|گانا|گانے|چلا\w*|یوٹیوب|"
-                          r"गाना|गाने|चला\w*|यूट्यूब",
+                          r"गाना|गाने|चला\w*|यूट्यूब|میوزک|ميوزک|پلے|ویڈیو|وڈیو|म्यूज़िक|म्यूजिक|प्ले|वीडियो|गुजारिश|گزارش",
     "media_control": r"next|previous|pause|resume|skip|track|song|gaana|agla|pichla|rok do|stop (?:the )?music|اگلا|پچھلا|روک|"
-                     r"अगला|पिछला|रोक|play|music",
+                     r"अगला|पिछला|रोक|play|music|میوزک|پلے|म्यूजिक|प्ले",
     "control_browser": r"tabs?|browser|youtube|gmail|site|close|band|pause|resume|reload|refresh|mute|ٹیب|بند|یوٹیوب|"
-                       r"टैब|बंद|यूट्यूब|ब्राउज़र|براؤزر",
+                       r"टैब|बंद|यूट्यूब|ब्राउज़र|براؤزر|یہ ?صفحہ|اسی|इसी|ऊपर|oper|opar|isi page|same tab|this tab|ishi",
     "control_desktop": r"close|window|minimi[sz]e|maximi[sz]e|restore|switch|focus|bring|band|inspect|what'?s open|open windows|"
                        r"بند|ونڈو|छोटا|बड़ा|बंद|विंडो|ونڈوز",
     "ui_inspect": r"click|press|tap|type|scroll|select|choose|tick|untick|toggle|button|field|menu|checkbox|dropdown|tab|link|sign ?in|log ?in|"
@@ -93,7 +93,7 @@ TRIGGERS: dict[str, str] = {
 }
 _COMPILED = {tool: re.compile(r"(?<![\w])(?:" + pattern + r")", re.IGNORECASE) for tool, pattern in TRIGGERS.items()}
 # a tool that is usually planned together with another one
-PAIRS = {"drive_coding_agent": ("open_application",), "winget_install": ("application_package",), "download_web_content": ("web_search",), "ui_act": ("ui_inspect",), "ui_inspect": ("ui_act",), "run_terminal_command": ("find_paths",), "screen_act": ("ui_inspect",)}
+PAIRS = {"delete_file": ("list_trash",), "drive_coding_agent": ("open_application",), "winget_install": ("application_package",), "download_web_content": ("web_search",), "ui_act": ("ui_inspect",), "ui_inspect": ("ui_act",), "run_terminal_command": ("find_paths",), "screen_act": ("ui_inspect",)}
 
 
 def _scores(command: str, registry_names: set[str], extra: Iterable[str], last_tools: Iterable[str]) -> dict[str, int]:

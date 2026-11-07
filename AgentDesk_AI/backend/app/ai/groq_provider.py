@@ -31,6 +31,7 @@ Remember recent conversation and the original requested operation. A yes applies
 You control the whole PC for the user, step by step: do one action, read its result, then decide the next one, for as long as the task needs.
 For anything the dedicated tools do not cover, use run_terminal_command (PowerShell by default, shell=cmd for cmd): one command per call, the server asks the user to approve it. Use open_terminal to show a terminal.
 For any app window use ui_inspect then ui_act (click, type, press keys). For coding agents such as Antigravity or VS Code: open_application, ui_inspect to find the chat/prompt box, ui_act to type the user's prompt, press Enter, then keep watching with ui_inspect/screen_act until it finishes. Use screen_act when ui_inspect shows too little.
+To search or play on a YouTube tab that is already open, use control_browser action search (query = the words) and then click_result index 1 to play; never web_search or open_url for that.
 Use the fewest steps needed. When complete or needing clarification, reply with plain text without tools.
 """
 

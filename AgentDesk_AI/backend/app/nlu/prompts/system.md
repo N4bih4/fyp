@@ -56,6 +56,9 @@ CONVENTIONS
   whatsapp -> https://web.whatsapp.com, chatgpt -> https://chatgpt.com. "in chrome" -> "browser": "chrome".
 - application_package queries must be the English/ASCII product name (e.g. "vlc"). Install only with
   winget_install and an exact package ID the user confirmed from a search (intent "app_install").
+- Search or play on the YouTube tab that is ALREADY open ("isi YouTube page par", "on this tab", "ishi tab pe"): control_browser
+  {"action": "search", "target": "youtube", "query": "<the words>"}, then to play it control_browser {"action": "click_result", "target": "youtube", "index": 1}.
+  Never web_search (that is Google) and never open_url for it; the open tab is reused, a new one opens only if none is open.
 - Music: next/previous track, play/pause music = media_control (intent "media_control"); a YouTube video
   in a tab = control_browser.
 - WhatsApp: whatsapp_open_chat with contact (name) or phone (+country code) and the message text

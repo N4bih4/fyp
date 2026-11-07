@@ -878,8 +878,8 @@ def _session_user_message(db: Session, task: Task) -> str:
         for action in sorted(prior.actions, key=lambda a: a.seq)[-6:]:
             observations.append({"tool": action.tool_name, "args": json.loads(action.args_json or "{}"),
                                  "status": action.status, "result": _compact_observation(json.loads(action.result_json or "{}"))})
-        blocks.append(f"User: {prior.command}\nAssistant: {reply[:2000] or prior.status}\nObserved tools: "
-                      + json.dumps(observations, ensure_ascii=False)[:2000])
+        blocks.append(f"User: {prior.command[:300]}\nAssistant: {reply[:400] or prior.status}\nObserved tools: "
+                      + json.dumps(observations, ensure_ascii=False)[:500])
     return (
         "Recent conversation (if the user is confirming a suggested app, file, "
         "folder, window, or next step, perform that original work now):\n"
@@ -896,7 +896,7 @@ def start_agent_task(
     from ..ai.groq_provider import GroqProvider, SYSTEM_PROMPT
 
     assert isinstance(provider, GroqProvider)
-    specs = GroqProvider.build_tool_specs(tool_metadata(registry, task.command))
+    specs = GroqProvider.build_tool_specs(tool_metadata(registry, task.command, _recent_tools(db, task)))
     state = {
         "provider": "groq",
         "auto_approve": auto_approve,
@@ -927,6 +927,40 @@ def start_agent_task(
         return task
 
 
+def _recent_tools(db: Session, task: Task) -> list[str]:
+    """The tools of the previous task: "yes, that one" and "close it" need them even though the words say nothing."""
+    previous = db.query(Task).filter(Task.id != task.id).order_by(Task.created_at.desc()).first()
+    return [a.tool_name for a in previous.actions] if previous is not None else []
+
+
+def _stuck_reason(task: Task) -> str | None:
+    """Three failed steps in a row, or one tool used six times: the agent is going in circles. Returns the message to show, else None."""
+    actions = sorted(task.actions, key=lambda a: a.seq)
+    if len(actions) >= 3 and all(a.status == ActionStatus.FAILED for a in actions[-3:]):
+        names = ", ".join(dict.fromkeys(a.tool_name for a in actions[-3:]))
+        detail = (actions[-1].error or "").strip()[:160]
+        return f"The last 3 steps failed ({names}). I stopped so the AI quota is not wasted. {detail}".strip()
+    if actions and sum(a.tool_name == actions[-1].tool_name for a in actions) >= 6:
+        return f"I used {actions[-1].tool_name} 6 times without finishing. I stopped so the AI quota is not wasted; please say it a different way."
+    return None
+
+
+def _too_large(exc: Exception) -> bool:
+    text = str(exc)
+    return "413" in text or "Request too large" in text or "request_too_large" in text
+
+
+def _shrink_messages(messages: list[dict]) -> list[dict]:
+    """The same conversation with long user messages cut to their last 1,500 characters (the latest request is at the end)."""
+    out = []
+    for message in messages:
+        content = message.get("content")
+        if message.get("role") == "user" and isinstance(content, str) and len(content) > 1500:
+            message = {**message, "content": "..." + content[-1500:]}
+        out.append(message)
+    return out
+
+
 def _agent_loop(db, task, registry, provider, settings, specs, state) -> Task:
     max_steps = settings.agent_max_steps
     while state["steps"] < max_steps:
@@ -937,7 +971,16 @@ def _agent_loop(db, task, registry, provider, settings, specs, state) -> Task:
         # May raise AIError -> caught by the caller, task fails loudly.
         usage.check_ai(db, settings)  # AIQuotaExceeded -> task waits (waiting_retry) until the period resets
         try:
-            resp = provider.complete(state["messages"], tools=specs)
+            try:
+                resp = provider.complete(state["messages"], tools=specs)
+            except Exception as exc:
+                if not _too_large(exc):
+                    raise
+                # HTTP 413: this one request is bigger than the per-minute token limit. Send the smallest useful tool set and a shorter history.
+                from ..ai.groq_provider import GroqProvider
+                from ..ai.tool_selection import RETRY_BUDGET
+                specs = GroqProvider.build_tool_specs(tool_metadata(registry, task.command, budget=RETRY_BUDGET))
+                resp = provider.complete(_shrink_messages(state["messages"]), tools=specs)
         except AIConfigError:
             raise  # nothing was sent to a provider
         except Exception:
@@ -1043,6 +1086,14 @@ def _agent_loop(db, task, registry, provider, settings, specs, state) -> Task:
         db.refresh(task)
         if paused:
             return task
+        stuck = _stuck_reason(task)
+        if stuck:
+            # Every further step re-sends the whole request to the AI: stop instead of burning the token quota on a path that is not working.
+            task.status = TaskStatus.FAILED
+            task.error = stuck
+            _save_agent_state(db, task, state)
+            db.refresh(task)
+            return task
     task.status = TaskStatus.FAILED
     task.error = (
         f"Agent exceeded the maximum of {max_steps} tool steps without finishing. "
@@ -1070,7 +1121,7 @@ def continue_agent_task(db: Session, task_id: str, registry: ToolRegistry, provi
         )
     from ..ai.groq_provider import GroqProvider
 
-    specs = GroqProvider.build_tool_specs(tool_metadata(registry, task.command))
+    specs = GroqProvider.build_tool_specs(tool_metadata(registry, task.command, _recent_tools(db, task)))
     # Execute newly-approved actions and report rejections back to the model.
     for action in sorted(task.actions, key=lambda x: x.seq):
         if action.status == ActionStatus.APPROVED and action.call_id:

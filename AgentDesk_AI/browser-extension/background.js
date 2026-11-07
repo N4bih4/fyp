@@ -6,10 +6,10 @@ const seen = new Map();
 const VERSION = chrome.runtime.getManifest ? chrome.runtime.getManifest().version : '0';
 const CAPABILITIES = ['inspect', 'open', 'close', 'pause', 'resume', 'reload', 'switch', 'read', 'seek', 'speed', 'volume', 'mute', 'unmute',
   'fullscreen', 'next', 'results', 'click_result', 'scroll', 'previous', 'theatre', 'captions', 'quality', 'loop', 'skip_ad', 'like', 'subscribe',
-  'now_playing', 'results_kind', 'read_page', 'click_link', 'fill', 'web_results', 'web_click_result', 'web_scroll', 'reopen', 'bookmarks', 'history', 'ping', 'status'];
+  'now_playing', 'search', 'results_kind', 'read_page', 'click_link', 'fill', 'web_results', 'web_click_result', 'web_scroll', 'reopen', 'bookmarks', 'history', 'ping', 'status'];
 // Everything that needs the page itself (the DOM) on YouTube. Each is checked afterwards by reading the page again.
 const PAGE_ACTIONS = ['seek', 'speed', 'volume', 'mute', 'unmute', 'fullscreen', 'next', 'results', 'click_result', 'scroll', 'previous', 'theatre',
-  'captions', 'quality', 'loop', 'skip_ad', 'like', 'subscribe', 'now_playing'];
+  'captions', 'quality', 'loop', 'skip_ad', 'like', 'subscribe', 'now_playing', 'search'];
 // Page actions on ANY http(s) site (never an incognito tab, never a password / card / one-time-code field).
 const WEB_ACTIONS = ['read_page', 'click_link', 'fill', 'web_results', 'web_click_result', 'web_scroll'];
 const YOUTUBE_HOSTS = ['www.youtube.com', 'm.youtube.com', 'youtube.com'];
@@ -455,6 +455,23 @@ async function command(message) {
                error: moved ? null : 'The click did not change the page.' };
     }
     return { success: false, error: 'No page state returned.' };
+  }
+  if (message.action === 'search') {
+    // Search on the YouTube tab that is already open: the same tab goes to the results page (no new tab, no Google).
+    if (!YOUTUBE_HOSTS.includes(new URL(tab.url).hostname)) throw new Error('Search in this tab is limited to YouTube.');
+    const query = String(message.query || '').replace(/\s+/g, ' ').trim().slice(0, 100);
+    if (!query) throw new Error('Say what to search for.');
+    const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+    await chrome.tabs.update(tab.id, { url, active: true });
+    let now = await chrome.tabs.get(tab.id);
+    for (let i = 0; i < 50 && !(now.status === 'complete' && (now.url || '').includes('/results')); i++) {      // up to 10 s for the results page
+      await new Promise((r) => setTimeout(r, 200));
+      now = await chrome.tabs.get(tab.id);
+    }
+    let searched = '';
+    try { searched = new URL(now.url || now.pendingUrl || '').searchParams.get('search_query') || ''; } catch { searched = ''; }
+    return { success: searched === query, tab_id: tab.id, searched, url: `https://www.youtube.com/results`, title: now.title || '',
+             error: searched === query ? null : 'The tab did not show the search results.' };
   }
   if (PAGE_ACTIONS.includes(message.action)) {
     if (!YOUTUBE_HOSTS.includes(new URL(tab.url).hostname)) throw new Error('Media and page controls are limited to YouTube.');

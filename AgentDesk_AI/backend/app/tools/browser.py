@@ -1,6 +1,6 @@
 """Exact browser tab matching and idempotent YouTube pause/resume."""
 from typing import Literal
-from urllib.parse import urlsplit
+from urllib.parse import urlencode, urlsplit
 from pydantic import BaseModel, Field, model_validator
 from ..browser_bridge import bridge
 from ..verification import failed_result, verdict
@@ -47,7 +47,7 @@ def public_tab(tab: dict) -> dict:
 
 # What each new action needs, and what the page must show afterwards (the extension reads the page again and sends what it saw).
 PAGE_ACTIONS = {"seek", "speed", "volume", "mute", "unmute", "fullscreen", "next", "results", "click_result", "scroll", "previous", "theatre",
-                "captions", "quality", "loop", "skip_ad", "like", "subscribe", "now_playing"}
+                "captions", "quality", "loop", "skip_ad", "like", "subscribe", "now_playing", "search"}
 YOUTUBE_ONLY = PAGE_ACTIONS | {"pause", "resume"}
 # Seconds the app waits for the extension's answer: these actions wait for the page itself (a video to load, a player to settle) on slow connections.
 SLOW_ACTIONS = {"next": 40, "previous": 40, "click_result": 75, "resume": 20, "pause": 20, "quality": 25, "results": 20, "click_link": 20, "web_click_result": 20, "subscribe": 20, "like": 20}
@@ -59,7 +59,7 @@ QUALITIES = ("auto", "tiny", "small", "medium", "large", "hd720", "hd1080", "hd1
 class BrowserControlArgs(BaseModel):
     action: Literal["inspect", "close", "pause", "resume", "switch", "read", "seek", "speed", "volume", "mute", "unmute", "fullscreen", "next",
                     "results", "click_result", "scroll", "previous", "theatre", "captions", "quality", "loop", "skip_ad", "like", "subscribe", "now_playing",
-                    "read_page", "click_link", "fill", "web_results", "web_click_result", "web_scroll", "reopen", "bookmarks", "history"]
+                    "read_page", "click_link", "fill", "web_results", "web_click_result", "web_scroll", "reopen", "bookmarks", "history", "search"]
     target: str = Field(default="youtube", max_length=500)
     tab_id: int | None = Field(default=None, ge=0)
     seconds: int | None = Field(default=None, ge=-3600, le=3600, description="seek: seconds forward (+) or back (-)")
@@ -98,6 +98,8 @@ class BrowserControlArgs(BaseModel):
 def _spoken(a: BrowserControlArgs, out: dict) -> str:
     """One short sentence to say aloud. Only what the page showed, never what was merely asked."""
     title = str(out.get("title") or "")[:70]
+    if a.action == "search":
+        return f"Searched YouTube for {out.get('searched')} in the open tab."
     if a.action == "seek":
         return f"At {int(out.get('time') or 0) // 60}:{int(out.get('time') or 0) % 60:02d}."
     if a.action == "speed":
@@ -210,11 +212,20 @@ class BrowserControlTool(BaseTool):
                 matches = audible
             elif len(matches) > 1 and len(active) == 1:
                 matches = active
+        if a.action == "search" and not matches:
+            # No YouTube tab is open: the results page opens in a new one.
+            url = "https://www.youtube.com/results?" + urlencode({"search_query": " ".join((a.query or "").split())})
+            opened = bridge.request("open", url=url)
+            if not opened.get("success"):
+                return ToolResult(success=False, error=opened.get("error", "Browser could not open YouTube."))
+            output = {"action": "search", "tab_id": opened.get("tab_id"), "searched": " ".join((a.query or "").split()), "opened_new_tab": True}
+            output["spoken"] = _spoken(a, output)
+            return ToolResult(success=True, output=output)
         if len(matches) != 1:
             shown = "; ".join(f"tab {t['id']}: {t.get('title', '')}" for t in matches)
             return ToolResult(success=False, output={"candidates": [public_tab(t) for t in matches], "needs_confirmation": True}, error="Matching tab nahi mila; unrelated tab ko touch nahi kiya." if not matches else "Multiple matching tabs. Exact title ya tab ID batayein: " + shown)
         tab = matches[0]
-        extra = {k: v for k, v in a.model_dump().items() if k in {"seconds", "position", "rate", "level", "index", "amount", "exit", "name", "field", "text", "max_chars"}
+        extra = {k: v for k, v in a.model_dump().items() if k in {"seconds", "position", "rate", "level", "index", "amount", "exit", "name", "field", "text", "max_chars", "query"}
                  and v is not None and v is not False}
         if a.action in {"results", "click_result"}:
             extra["kind"] = a.kind
@@ -234,7 +245,7 @@ class BrowserControlTool(BaseTool):
         keep = {"success", "closed", "paused", "error", "title", "url", "active", "time", "duration", "rate", "volume", "muted", "fullscreen", "video_id",
                 "previous_video_id", "changed", "target", "results", "clicked_title", "wanted_video_id", "moved", "scroll_y", "scroll_max",
                 "playing", "theatre", "captions", "quality", "requested", "available", "loop", "ad_gone", "liked", "already_liked", "subscribed",
-                "already_subscribed", "channel", "video_title", "text", "headings", "chars", "clicked", "navigated", "field", "filled_chars", "matches"}
+                "already_subscribed", "searched", "channel", "video_title", "text", "headings", "chars", "clicked", "navigated", "field", "filled_chars", "matches"}
         output = {"action": a.action, "tab_id": tab["id"], "title": tab.get("title"), **{k: v for k, v in result.items() if k in keep}}
         output["spoken"] = _spoken(a, output)
         return ToolResult(success=True, output=output)
@@ -326,6 +337,8 @@ class BrowserControlTool(BaseTool):
             checks.append(("the video shows as liked", out.get("liked") is True))
         elif a.action == "subscribe":
             checks.append(("the channel shows as subscribed", out.get("subscribed") is True))
+        elif a.action == "search":
+            checks.append(("the open tab shows the results for the search", bool(a.query) and out.get("searched") == " ".join(a.query.split())))
         elif a.action == "now_playing":
             checks.append(("a title was read from the page", bool(out.get("video_title") or out.get("title"))))
         elif a.action == "read_page":
