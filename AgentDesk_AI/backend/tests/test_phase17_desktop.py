@@ -172,3 +172,12 @@ def test_run_starts_webview_and_tray(shell):
     import time
     time.sleep(0.1)
     assert started == ["tray"] and s.webview.started == {"private_mode": False}
+
+
+def test_microphone_grant_is_skipped_where_webview2_is_not_available():
+    """In tests (a fake window with no .native) the grant does nothing and never raises; the shell still builds both windows."""
+    from desktop.shell import allow_microphone
+    assert allow_microphone(FakeWindow("t", "http://x"), "http://127.0.0.1:8000") is False
+    shell = Shell(FakeWebview(), "http://127.0.0.1:8000", "tok")
+    shell.create_windows(start_minimized=True)
+    assert shell.orb is not None and shell.panel is not None

@@ -28,7 +28,7 @@ This is a deterministic local agent, not a newly trained language model. It has 
 
 ## Cloud policy
 
-AI_CLOUD_MODE=explicit is the default. Unknown PC commands ask for clarification. Prefix AI:, research or explain for requests needing cloud reasoning. Set AI_CLOUD_MODE=automatic only if you want unmatched commands to use cloud AI automatically. Groq and optional backups retain their existing limits, keys and quota handling.
+`.env.example` ships AI_CLOUD_MODE=automatic: a command no local rule understands goes to the AI agent loop (up to 40 tool steps, each result read before the next). Set AI_CLOUD_MODE=explicit (also the built-in default when the variable is missing) to make unknown PC commands ask for clarification, and prefix AI:, research or explain for requests needing cloud reasoning. Settings > Provider > Local only turns the cloud off in either mode. Groq and optional backups retain their existing limits, keys and quota handling.
 
 ## Boundaries
 

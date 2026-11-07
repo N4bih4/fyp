@@ -122,4 +122,6 @@ def test_tool_selection_keeps_discovery_and_destructive_approval_tools(tmp_path)
     names = {tool["name"] for tool in selected}
     assert {"find_paths", "open_folder", "delete_file", "list_trash"} <= names
     assert len(selected) < len(registry.metadata())
-    assert tool_metadata(registry, "haan woh wala") == registry.metadata()
+    # a confirmation has no tool words: the previous task's tools plus the generic ones, never the whole catalogue (that alone is ~8,100 tokens)
+    confirm = tool_metadata(registry, "haan woh wala", ["delete_file"])
+    assert "delete_file" in {tool["name"] for tool in confirm} and len(confirm) < len(registry.metadata())

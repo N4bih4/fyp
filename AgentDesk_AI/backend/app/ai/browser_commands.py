@@ -197,6 +197,35 @@ def youtube_followup(raw, recent):
     return None
 
 
+_YT_WORDS = {"youtube", "یوٹیوب", "یو", "ٹیوب", "यूट्यूब", "यू", "ट्यूब", "yt"}
+_SAME_TAB = {"ishi", "isi", "usi", "same", "this", "current", "existing", "already", "khuli", "khule", "khula", "اسی", "اسی", "इसी", "उसी", "खुले", "کھلے"}
+_PAGE_WORDS = {"page", "tab", "ٹیب", "پیج", "صفحہ", "पेज", "टैब"}
+_SEARCH_VERBS = {"search", "serch", "find", "dhoondo", "dhundo", "dhoond", "talash", "سرچ", "تلاش", "ڈھونڈو", "सर्च", "खोजो", "ढूंढो"}
+_PLAY_VERBS = {"play", "chala", "chalao", "chalado", "chalade", "laga", "lagao", "sunao", "چلا", "چلاؤ", "چلادو", "پلے", "لگاؤ", "चला", "चलाओ", "प्ले", "लगाओ", "सुनाओ"}
+_QUERY_FILLER = {"ab", "ke", "ki", "ka", "ko", "par", "pe", "oper", "upar", "ooper", "andar", "mein", "me", "karo", "kar", "do", "dena", "de", "please", "plz", "i", "say",
+                 "you", "the", "on", "in", "a", "an", "and", "aur", "phir", "abhi", "tum", "ye", "yeh", "then", "now", "for", "to",
+                 "اب", "کے", "کی", "کا", "کو", "پر", "پہ", "اوپر", "میں", "کرو", "کر", "دو", "تم", "یہ", "और", "अब", "के", "की", "का", "को", "पर", "ऊपर", "उपर", "में", "करो", "कर", "दो", "तुम", "ये"}
+
+
+def youtube_tab_search_plan(raw):
+    """"search / play X on this (already open) YouTube page": the open YouTube tab goes to the results (and plays the first one), never a Google search.
+    Needs a YouTube word, a same-tab or page / tab word, and a search or play verb, so "play X on YouTube" keeps its own flow."""
+    words = [w for w in re.split(r"[\s,.;:!?।۔،]+", raw.casefold()) if w]    # split on spaces, not \w: Devanagari vowel signs are not word characters
+    if not (set(words) & _YT_WORDS) or not (set(words) & (_SAME_TAB | _PAGE_WORDS)):
+        return None
+    searching, playing = set(words) & _SEARCH_VERBS, set(words) & _PLAY_VERBS
+    if not (searching or playing):
+        return None
+    drop = _YT_WORDS | _SAME_TAB | _PAGE_WORDS | _SEARCH_VERBS | _PLAY_VERBS | _QUERY_FILLER
+    query = " ".join(w for w in words if w not in drop).strip()
+    if len(query) < 2 or len(query) > 100:
+        return None
+    actions = [PlanAction(tool="control_browser", args={"action": "search", "target": "youtube", "query": query})]
+    if playing:
+        actions.append(PlanAction(tool="control_browser", args={"action": "click_result", "target": "youtube", "index": 1}))
+    return Plan(actions=actions)
+
+
 def browser_plan(command):
     raw = command.strip().rstrip("۔।!?")
     if any(word in NEGATIONS for word in normalize_speech(raw).split()):
@@ -238,6 +267,9 @@ def browser_plan(command):
     player = youtube_player_plan(raw)
     if player is not None:
         return player
+    in_tab = youtube_tab_search_plan(raw)
+    if in_tab is not None:
+        return in_tab
     text = normalize_speech(raw)
     tab_media = re.fullmatch(r"(pause|resume|play) (?:video in )?tab (\d+)", text)
     if tab_media:

@@ -275,6 +275,26 @@ def p_explorer_view(env: Env) -> Outcome:
     return judge(r, v, bool((r.output or {}).get("view_now")), f"view={(r.output or {}).get('view_now')}")
 
 
+def p_make_document_checks_its_arguments(env: Env) -> Outcome:
+    """make_document without writing anything: a notes request with no files is refused by the argument check, a research request is accepted."""
+    tool = env.registry.get("make_document")
+    try:
+        tool.validate_args({"kind": "notes"})
+        return Outcome(FAIL, "a notes request with no files was accepted")
+    except ValueError:
+        pass
+    ok = tool.validate_args({"kind": "research", "topic": "chairs"}).kind == "research"
+    return Outcome(PASS if ok else FAIL, "empty notes refused, research request accepted (nothing written)")
+
+
+def p_coding_agent_refuses_unknown_app(env: Env) -> Outcome:
+    """drive_coding_agent without touching any window: an app it does not know is refused before any click or key press."""
+    tool = env.registry.get("drive_coding_agent")
+    result = tool.execute(tool.validate_args({"app": "notarealapp", "prompt": "hello"}))
+    refused = not result.success and "do not know" in str(result.error)
+    return Outcome(PASS if refused else FAIL, f"unknown app refused: {_short(result.error, 80)}")
+
+
 def p_ui_act_read(env: Env) -> Outcome:
     """ui_act in its read-only form: reads the first named control of the front window (never clicks, types or scrolls)."""
     listed, _ = env.run("ui_inspect", {})
@@ -570,6 +590,8 @@ PROBES: list[Probe] = [
     Probe("control_desktop", "read", p_desktop_inspect),
     Probe("control_browser", "read", p_browser_inspect),
     Probe("ui_inspect", "read", p_ui_inspect),
+    Probe("make_document", "read", p_make_document_checks_its_arguments),
+    Probe("drive_coding_agent", "read", p_coding_agent_refuses_unknown_app),
     Probe("ui_act", "gui", p_ui_act_read),
     Probe("screen_act", "gui", p_screen_act_read),
     Probe("device_control", "gui", p_device_battery),

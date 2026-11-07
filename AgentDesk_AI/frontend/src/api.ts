@@ -45,6 +45,15 @@ export interface ActionOut {
   rollback_detail?: string | null;
 }
 
+export interface AgentRow {
+  name: string;
+  role: string;
+  lead: boolean;
+  busy: boolean;
+  task_id: string | null;
+  doing: string | null;
+}
+
 export interface TaskOut {
   id: string;
   command: string;
@@ -287,14 +296,17 @@ export const api = {
   health: () => request<HealthOut>('/health'),
   config: () => request<ConfigStatus>('/config/status'),
 
-  createTask: (command: string, idempotency_key?: string) =>
-    request<TaskOut>('/tasks', {
+  /** `background`: the job runs on its own thread and the reply comes back at once, so several agents can work in parallel. */
+  createTask: (command: string, idempotency_key?: string, background = false) =>
+    request<TaskOut>(background ? '/tasks?background=true' : '/tasks', {
       method: 'POST',
       body: JSON.stringify({
         command,
         ...(idempotency_key ? { idempotency_key } : {}),
       }),
     }),
+
+  agents: () => request<AgentRow[]>('/agents'),
 
   listTasks: (limit = 20) => request<TaskOut[]>(`/tasks?limit=${limit}`),
 

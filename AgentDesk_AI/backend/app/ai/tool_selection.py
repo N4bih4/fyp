@@ -1,31 +1,41 @@
-"""Keep common request prompts small without weakening registry validation."""
-import re
+"""Keep the AI request small enough for the provider's per-minute token limit, in every language the user speaks.
+
+Groq's free tier allows 8,000 tokens per minute for one request on openai/gpt-oss-120b. All 47 tool descriptions alone are ~8,100 tokens, so
+sending the whole catalogue made every request fail with HTTP 413 ("Request too large ... Limit 8000, Requested 8985"). The old word list here
+knew only English words, so every Urdu / Hindi / Roman Urdu command got the whole catalogue. Now the multilingual shortlist
+(nlu/shortlist.py, English, Roman Urdu, Urdu, Hindi) picks the tools, and `fit_to_budget` is a hard limit on top of it.
+This only narrows what the MODEL may name; the server still validates every call against the full registry and decides risk and approval.
+"""
+from __future__ import annotations
+
+import json
+
+TOOLS_BUDGET = 3500          # tokens for tool descriptions on a normal request (the rest: prompt ~500, conversation ~1000, answer ~1500)
+RETRY_BUDGET = 1800          # after an HTTP 413: the smallest useful set
+_CHARS_PER_TOKEN = 3.8       # measured on this catalogue: 30,913 characters = 8,134 tokens
+MIN_TOOLS = 4
 
 
-def tool_metadata(registry, command):
-    text = command.casefold()
-    groups = [
-        (r"download|install|package", {"application_package", "download_web_content", "web_search", "open_url"}),
-        (r"email|e-mail|compose|draft", {"compose_email", "open_application"}),
-        (r"brightness|volume|bluetooth|awaz|roshni", {"manage_system_setting"}),
-        (r"copy|move|rename|delete|trash|restore|folder|file|document|zip|extract", {"find_paths", "find_files", "list_folder", "open_folder", "open_file"}),
-        (r"create|folder|directory", {"create_folder"}),
-        (r"copy", {"copy_file"}), (r"move", {"move_file"}),
-        (r"rename", {"rename_file"}), (r"delete|trash", {"delete_file", "list_trash"}),
-        (r"restore", {"restore_file", "list_trash"}),
-        (r"write|edit|read|text", {"write_text_file", "edit_text_file", "read_text_file"}),
-        (r"compress|zip", {"compress_folder"}), (r"extract|unzip", {"extract_file"}),
-        (r"open|close|window|tab|minimize|maximize|click|type|press|scroll", {"open_application", "control_desktop"}),
-        (r"search|website|browser|youtube|play", {"web_search", "open_url", "play_youtube_video"}),
-        (r"tab|browser|youtube|video|pause|resume", {"control_browser"}),
-        (r"screenshot", {"take_screenshot"}),
-        (r"remember|forget|memory", {"memory_remember", "memory_recall", "memory_forget"}),
-        (r"summari[sz]e|summary|news|latest|weather|who|what|why|how", {"web_answer", "summarise_page", "summarise_file", "read_text_file"}),
-    ]
-    selected = set()
-    for pattern, names in groups:
-        if re.search(r"\b(?:" + pattern + r")\b", text):
-            selected.update(names)
-    # Unrecognized languages, confirmations and requests retain the full catalogue.
-    metadata = registry.metadata()
-    return [item for item in metadata if item["name"] in selected] if selected else metadata
+def estimate_tokens(obj) -> int:
+    return int(len(json.dumps(obj, ensure_ascii=False)) / _CHARS_PER_TOKEN) + 1
+
+
+def fit_to_budget(items: list, budget: int, name=lambda item: item["name"], keep: tuple[str, ...] = ()) -> list:
+    """Drop the heaviest tool descriptions (never one in `keep`) until the rest fits `budget` tokens; at least MIN_TOOLS stay."""
+    items = list(items)
+    while len(items) > MIN_TOOLS and estimate_tokens(items) > budget:
+        droppable = [i for i in items if name(i) not in keep]
+        if not droppable:
+            break
+        items.remove(max(droppable, key=estimate_tokens))
+    return items
+
+
+def tool_metadata(registry, command, last_tools=(), budget: int = TOOLS_BUDGET):
+    """Descriptions of the tools the model may use for this command: the multilingual shortlist, cut to `budget` tokens."""
+    from ..nlu.shortlist import tools_for
+
+    names = tools_for(command, registry.model_names(), (), last_tools)
+    by_name = {item["name"]: item for item in registry.metadata()}
+    chosen = [by_name[n] for n in names if n in by_name]
+    return fit_to_budget(chosen, budget, keep=("open_application", "open_url"))

@@ -25,8 +25,36 @@ sys.path.insert(0, str(ROOT))
 
 from desktop import autostart  # noqa: E402
 
-ORB_SIZE = 132
+ORB_SIZE = 150
 PANEL_SIZE = (1180, 820)
+
+
+def allow_microphone(window: Any, origin: str) -> bool:
+    """Give the microphone to our own page (the local server at `origin`) without a permission dialog.
+
+    WebView2 asks "Allow microphone?" the first time; in the 150 px orb window that dialog is easy to miss, and without an answer the orb never
+    listens. Only the microphone, only for pages of `origin`. Returns False where WebView2 is not available (tests, other platforms)."""
+    native = getattr(window, "native", None)
+    if native is None:
+        return False
+    try:
+        from System import Action  # type: ignore[import-not-found]
+        from Microsoft.Web.WebView2.Core import CoreWebView2PermissionKind, CoreWebView2PermissionState  # type: ignore[import-not-found]
+
+        def attach() -> None:
+            core = native.browser.webview.CoreWebView2
+
+            def on_permission(sender, args) -> None:
+                if args.PermissionKind == CoreWebView2PermissionKind.Microphone and str(args.Uri).startswith(origin):
+                    args.State = CoreWebView2PermissionState.Allow
+
+            window._agentdesk_mic_handler = on_permission   # keep a reference: the event holds only a weak one
+            core.PermissionRequested += on_permission
+
+        native.Invoke(Action(attach))        # WebView2 must be touched on the window's own thread
+        return True
+    except Exception:  # noqa: BLE001 - the user can still answer the dialog by hand
+        return False
 
 
 class DesktopApi:
@@ -82,6 +110,20 @@ class Shell:
             transparent=True, easy_drag=True, resizable=False, js_api=self.api)
         self.panel_visible = not start_minimized
         self.panel.events.closing += self._on_panel_closing
+        for window in (self.panel, self.orb):
+            self._grant_microphone_on_load(window)
+
+    def _grant_microphone_on_load(self, window) -> None:
+        loaded = getattr(getattr(window, "events", None), "loaded", None)
+        if loaded is None:
+            return
+        done: list[bool] = []
+
+        def on_loaded(*_args) -> None:
+            if not done and allow_microphone(window, self.url):
+                done.append(True)
+
+        window.events.loaded += on_loaded
 
     def _on_panel_closing(self) -> bool:
         """Closing the panel hides it to the tray; only Quit ends the app."""
@@ -106,8 +148,10 @@ class Shell:
             evaluate(script)
 
     def toggle_listening(self) -> None:
-        self.show_panel()
-        self.run_in_panel("window.__agentx && window.__agentx.toggleVoice()")
+        """The orb window is the microphone: toggle it there, without opening the panel."""
+        evaluate = getattr(self.orb, "evaluate_js", None)
+        if evaluate is not None:
+            evaluate("window.__agentx && window.__agentx.toggleVoice()")
 
     def open_settings(self) -> None:
         self.show_panel()

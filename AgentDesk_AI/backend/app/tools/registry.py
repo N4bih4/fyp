@@ -23,6 +23,7 @@ from .device import device_tools
 from .documents import document_tools
 from .explorer_view import explorer_tools
 from .screen import screen_tools
+from .coding_agent import coding_agent_tools
 
 
 class UnknownToolError(ValueError):
@@ -52,6 +53,7 @@ class ToolRegistry:
         tools.extend(device_tools(self.ctx))
         tools.extend(document_tools(self.ctx))
         tools.extend(explorer_tools(self.ctx))
+        tools.extend(coding_agent_tools(self.ctx))
         self._tools: dict[str, BaseTool] = {t.name: t for t in tools}
 
     def get(self, name: str) -> BaseTool:

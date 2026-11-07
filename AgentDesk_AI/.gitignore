@@ -36,3 +36,8 @@ dist-release/
 ml/out/
 ml/*.log
 models/
+
+# Your own spoken commands (private): collected by ml/collect_history.py, never committed
+data/real/history*.jsonl
+data/review/
+data/real/SPEAK_THESE.md

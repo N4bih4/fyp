@@ -191,12 +191,23 @@ APP_WORDS: dict[str, str] = {
     "explorer": "explorer", "file-explorer": "explorer", "windows-explorer": "explorer",
     "powershell": "powershell", "power-shell": "powershell", "پاور-شیل": "powershell", "پاورشیل": "powershell", "पावरशेल": "powershell", "पावर-शेल": "powershell",
     "edge": "microsoft edge", "microsoft-edge": "microsoft edge", "intellij": "intellij", "cursor": "cursor",
+    # Coding agents and common PC apps, said in Urdu / Hindi script (Whisper writes what it hears in the script of the sentence).
+    "antigravity": "antigravity", "anti-gravity": "antigravity", "اینٹی-گریویٹی": "antigravity", "انٹی-گریویٹی": "antigravity", "اینٹیگریویٹی": "antigravity",
+    "اینٹی-گروٹی": "antigravity", "एंटी-ग्रेविटी": "antigravity", "एंटीग्रेविटी": "antigravity", "एंटी-ग्रैविटी": "antigravity", "एन्टी-ग्रेविटी": "antigravity",
+    "codex": "codex", "کوڈیکس": "codex", "کوڈکس": "codex", "कोडेक्स": "codex", "कोडेक्क्स": "codex",
+    "claude": "claude", "claude-code": "claude", "کلاڈ": "claude", "کلاؤڈ": "claude", "کلود": "claude", "क्लॉड": "claude", "क्लाउड": "claude", "क्लोड": "claude",
+    "کرسر": "cursor", "कर्सर": "cursor", "कर्सोर": "cursor",
+    "file-manager": "explorer", "فائل-مینیجر": "explorer", "فائل-مینجر": "explorer", "فائل-ایکسپلورر": "explorer", "फाइल-मैनेजर": "explorer", "फाइल-एक्सप्लोरर": "explorer",
+    "command-prompt": "cmd", "cmd": "cmd", "کمانڈ-پرامپٹ": "cmd", "कमांड-प्रॉम्प्ट": "cmd", "कमांड-प्रोम्प्ट": "cmd",
+    "terminal": "windows terminal", "ٹرمینل": "windows terminal", "टर्मिनल": "windows terminal",
+    "ورڈ-پریس": "wordpress", "پینٹ": "paint", "पेंट": "paint", "سیٹنگز": "settings", "सेटिंग्स": "settings",
 }
 SITE_WORDS: dict[str, str] = {
     "youtube": "youtube", "یوٹیوب": "youtube", "यूट्यूब": "youtube",
     "gmail": "gmail", "جی-میل": "gmail", "जीमेल": "gmail",
     "whatsapp": "whatsapp", "واٹس-ایپ": "whatsapp", "واٹساپ": "whatsapp", "व्हाट्सएप": "whatsapp", "whatsapp-web": "whatsapp",
-    "chatgpt": "chatgpt", "chat-gpt": "chatgpt", "چیٹ-جی-پی-ٹی": "chatgpt",
+    "chatgpt": "chatgpt", "chat-gpt": "chatgpt", "چیٹ-جی-پی-ٹی": "chatgpt", "چیٹ-جی-پی-ٹی": "chatgpt", "چیٹ-جیپیٹی": "chatgpt",
+    "चैट-जीपीटी": "chatgpt", "चैट-जी-पी-टी": "chatgpt", "चैटजीपीटी": "chatgpt", "چیٹجی-پی-ٹی": "chatgpt",
     "google-drive": "google drive", "گوگل-ڈرائیو": "google drive", "गूगल-ड्राइव": "google drive",
 }
 # Known package names that people say in Urdu/Hindi script.

@@ -95,6 +95,11 @@ APP_ALIASES = {
     "anitgravity": "antigravity",
     "انٹیگریٹی": "antigravity",
     "انٹی گریوٹی": "antigravity",
+    # Coding agents (speech recognisers split or respell these)
+    "codex": "codex",
+    "code x": "codex",
+    "claude": "claude",
+    "claude code": "claude",
     # IntelliJ
     "intellij": "intellij",
     "intellij idea": "intellij",
@@ -123,6 +128,8 @@ APP_ALIASES = {
     "vs code": "visual studio code",
     "cursor": "cursor",
 }
+
+_SQUASHED_ALIASES = {re.sub(r"[^a-z0-9]+", "", key): value for key, value in APP_ALIASES.items() if re.sub(r"[^a-z0-9]+", "", key)}
 
 _DARWIN_APP_PATHS = {
     "chrome": ["/Applications/Google Chrome.app"],
@@ -186,8 +193,13 @@ class OpenApplicationTool(BaseTool):
 
     @staticmethod
     def _canonical_app_name(app_name: str) -> str:
-        normalized = app_name.strip().lower()
-        return APP_ALIASES.get(normalized, normalized)
+        """Alias lookup that ignores trailing punctuation and spacing: Whisper writes "Anti-gravity," or "anti gravity" for Antigravity."""
+        normalized = app_name.strip().strip(".,!?;:'\"").lower()
+        hit = APP_ALIASES.get(normalized)
+        if hit:
+            return hit
+        squashed = re.sub(r"[^a-z0-9]+", "", normalized)
+        return _SQUASHED_ALIASES.get(squashed, normalized)
 
     @staticmethod
     def _normalize_search_name(name: str) -> str:

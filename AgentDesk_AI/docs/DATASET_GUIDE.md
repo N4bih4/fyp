@@ -48,3 +48,19 @@ the real numbers appear only after real sentences are in `data/real/`. The Groq 
 ## Learning from your corrections (with consent)
 `backend\.venv\Scripts\python ml\collect_corrections.py --i-consent` turns the "no, I said Firefox" corrections stored on the Memory page into `open_app` training sentences
 (`data/real/corrections.jsonl`). It reads only your local database and runs only with the flag. Then `ml\retrain.ps1`.
+
+
+## Collect from your own use (no hand labelling): `ml/collect_history.py`
+Every command you speak is already in the app's database: the sentence exactly as Whisper wrote it, and the tool that finally did the job. A tool is a label
+(`play_youtube_video` = `youtube_play`, `open_application` = `open_app` ...) and the slot words are found inside the sentence.
+
+1. `backend\.venv\Scripts\python ml\collect_history.py --checklist 3` writes `data/real/SPEAK_THESE.md`: safe commands (nothing that deletes, powers off, installs or sends)
+   in English, Roman Urdu, Urdu and Hindi. Say them into the orb, in your own words if you prefer.
+2. `backend\.venv\Scripts\python ml\collect_history.py --i-consent` writes `data/real/history.jsonl` and prints which intents still lack examples.
+3. `backend\.venv\Scripts\python ml\validate_dataset.py data\real\history.jsonl`, then `ml\retrain.ps1`.
+
+What keeps the data clean: only tasks that COMPLETED with a succeeded action; tasks made by test scripts, `AI:` requests and sentences with an e-mail address,
+a long number, a password word or a Windows user-name path are skipped; a slot is kept only if its words are in the sentence. A success only shows the app DID
+something, not that it was what you asked for, so the local model is asked too: when it is sure (80%+) of a different intent, the sentence goes to
+`data/review/history_review.jsonl` instead (look at it, fix `intent`, move the good lines into `data/real/`). `--no-model-check` turns that off.
+`history.jsonl` and the review file are in `.gitignore`: they are your private commands and stay on this PC.

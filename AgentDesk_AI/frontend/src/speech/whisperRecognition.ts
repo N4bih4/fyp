@@ -50,6 +50,7 @@ export class WhisperRecognition {
   private utterance: Float32Array[] = [];
   private sampleRate = 48000;
   private stopped = true;
+  private noiseFloor = 0;
 
   static get supported(): boolean {
     return typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia && typeof AudioContext !== 'undefined';
@@ -68,6 +69,9 @@ export class WhisperRecognition {
     }
     if (this.stopped) return this.release();
     this.ctx = new AudioContext();
+    void this.ctx.resume().catch(() => undefined); // started without a click (auto hands-free): resume on the first gesture too
+    const resume = () => { void this.ctx?.resume(); window.removeEventListener('pointerdown', resume); window.removeEventListener('keydown', resume); };
+    window.addEventListener('pointerdown', resume); window.addEventListener('keydown', resume);
     this.sampleRate = this.ctx.sampleRate;
     const source = this.ctx.createMediaStreamSource(this.stream);
     this.node = this.ctx.createScriptProcessor(2048, 1, 1);
@@ -103,9 +107,12 @@ export class WhisperRecognition {
     const frameMs = (frame.length / this.sampleRate) * 1000;
     const level = rms(frame);
     this.onlevel?.(level);
+    // Follow this microphone's own background noise: speech must be clearly above it (a quiet mic is not missed, a noisy room is not "speech").
+    if (!this.vad.inSpeech) this.noiseFloor = this.noiseFloor === 0 ? level : level < this.noiseFloor ? level : this.noiseFloor * 0.98 + level * 0.02;
+    const adaptive = Math.min(0.08, Math.max(0.006, this.noiseFloor * 3));
     this.vad.options = {
       ...DEFAULT_VAD,
-      threshold: DEFAULT_VAD.threshold * (this.assistantSpeaking ? SPEAKING_THRESHOLD_FACTOR : 1),
+      threshold: adaptive * (this.assistantSpeaking ? SPEAKING_THRESHOLD_FACTOR : 1),
     };
     const wasSpeaking = this.vad.inSpeech;
     const event = this.vad.feed(level, frameMs);

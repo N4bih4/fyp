@@ -14,7 +14,7 @@ from app.tools.registry import ToolRegistry
 
 def test_defaults_and_partial_update(client):
     body = client.get("/preferences").json()
-    assert body["risk_policy"] == "standard" and body["listen_mode"] == "push_to_talk"
+    assert body["risk_policy"] == "standard" and body["listen_mode"] == "hands_free"
     assert body["persona"]["name"] == "Agent X" and body["onboarded"] is False
     body = client.put("/preferences", json={"listen_mode": "hands_free", "persona": {"name": "Zara", "language": "en-US",
                                                                                     "style": "brief", "speak_replies": False,
