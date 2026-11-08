@@ -335,13 +335,25 @@ class OpenApplicationTool(BaseTool):
         ]
         if not matches:
             return None
-        try:
-            active = pyautogui.getActiveWindow()
-            target = active if active in matches else matches[0]
-            target.activate()
-        except Exception:  # noqa: BLE001 - pygetwindow raises "Error code from Windows: 18" while windows come and go
+        import threading
+        outcome: dict = {"title": matches[0].title}
+
+        def bring_forward() -> None:
+            try:
+                active = pyautogui.getActiveWindow()
+                target = active if active in matches else matches[0]
+                target.activate()
+                outcome["title"] = target.title
+                outcome["done"] = True
+            except Exception:  # noqa: BLE001 - pygetwindow raises "Error code from Windows: 18" while windows come and go
+                outcome["failed"] = True
+
+        worker = threading.Thread(target=bring_forward, daemon=True)
+        worker.start()
+        worker.join(4)   # a window that is still starting (Word's splash) can block activation for a long time
+        if outcome.get("failed"):
             return None    # not brought forward: start the app instead of failing
-        return target.title
+        return outcome["title"]   # activated, or open but busy: either way the app is already running
 
     def risk_for_args(self, args: BaseModel | None) -> RiskLevel:
         if args is None:

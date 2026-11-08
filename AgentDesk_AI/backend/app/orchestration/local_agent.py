@@ -169,7 +169,10 @@ def _resolve(task, intent, registry):
             return _ask(task, intent, "Yeh naam nahi mila. File/folder ka exact path batayein.")
         # A time-limited search over every drive may not finish: that only matters for destructive operations.
         unfinished = result.output.get("truncated") and op not in {"open", "list"}
-        sure = result.output.get("confident") and op in {"open", "list"}   # one clearly best match: just do it
+        # Opening is harmless: with several folders of exactly this name, open the one touched most recently and say
+        # which others exist. Anything that changes files still asks.
+        sure = (result.output.get("confident") or result.output.get("exact")) and op in {"open", "list"}
+        others = candidates[1:4] if sure and len(candidates) > 1 else []
         if not sure and (len(candidates) > 1 or unfinished or result.output.get("alias_matches")):
             candidates = candidates[:6]   # never read out dozens of paths
             intent["candidates"] = candidates
@@ -191,7 +194,10 @@ def _resolve(task, intent, registry):
         return _action("compress_folder", {"folder_path": source})
     if op == "extract":
         return _action("extract_file", {"zip_path": source})
-    return _action("list_folder" if op == "list" else "open_folder" if intent["kind"] == "folder" else "open_file", {"path": source})
+    plan = _action("list_folder" if op == "list" else "open_folder" if intent["kind"] == "folder" else "open_file", {"path": source})
+    if others:
+        plan.note = f"{source} khol diya (sabse haal ka). Aur bhi mile: " + "; ".join(others)
+    return plan
 
 
 def _apply_correction(db, spoken, recent):

@@ -216,9 +216,16 @@ def find_path_candidates(query: str, roots: list[Path], is_dir_only: bool = True
         matches = {p: s for p, s in matches.items() if s >= 0.95}   # a folder with exactly this name beats every partial match
     junk = re.compile(r"backup|copy|\(\d+\)|\bold\b|archive|temp|tmp|\.bak", re.IGNORECASE)
 
+    def modified(p: str) -> float:
+        try:
+            return os.stat(p).st_mtime
+        except OSError:
+            return 0.0
+
     def rank(p: str):
-        # best name match, then the folder that is not a backup/copy, then the one nearest the top of its drive
-        return (-round(matches[p], 2), bool(junk.search(p)), len(Path(p).parts), p.casefold())
+        # best name match, then not a backup/copy, then the one touched most recently (the one you are working on),
+        # then the one nearest the top of its drive
+        return (-round(matches[p], 2), bool(junk.search(p)), -modified(p) if matches[p] >= 0.95 else 0.0, len(Path(p).parts), p.casefold())
     ordered = sorted(matches, key=rank)
     confident = False
     if ordered:
@@ -226,7 +233,7 @@ def find_path_candidates(query: str, roots: list[Path], is_dir_only: bool = True
         tied = [p for p in ordered if round(matches[p], 2) == top]
         # One clearly best folder (or the only real one beside backups/copies): safe to open without asking.
         confident = top >= 0.95 and (len(tied) == 1 or (not junk.search(tied[0]) and all(junk.search(p) for p in tied[1:])))
-    return {"candidates": ordered[:30], "confident": confident, "truncated": truncated or len(ordered) > 30,
+    return {"candidates": ordered[:30], "confident": confident, "exact": bool(ordered) and matches[ordered[0]] >= 0.95, "truncated": truncated or len(ordered) > 30,
             "alias_matches": [path for path in ordered[:30] if path in alias_matches]}
 
 
