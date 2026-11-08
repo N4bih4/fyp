@@ -232,8 +232,8 @@ def find_path_candidates(query: str, roots: list[Path], is_dir_only: bool = True
         top = round(matches[ordered[0]], 2)
         tied = [p for p in ordered if round(matches[p], 2) == top]
         # One clearly best folder (or the only real one beside backups/copies): safe to open without asking.
-        confident = top >= 0.95 and (len(tied) == 1 or (not junk.search(tied[0]) and all(junk.search(p) for p in tied[1:])))
-    return {"candidates": ordered[:30], "confident": confident, "exact": bool(ordered) and matches[ordered[0]] >= 0.95, "truncated": truncated or len(ordered) > 30,
+        confident = top >= 0.95 and ordered[0] not in alias_matches and (len(tied) == 1 or (not junk.search(tied[0]) and all(junk.search(p) for p in tied[1:])))
+    return {"candidates": ordered[:30], "confident": confident, "exact": bool(ordered) and matches[ordered[0]] >= 1.0 and ordered[0] not in alias_matches, "truncated": truncated or len(ordered) > 30,
             "alias_matches": [path for path in ordered[:30] if path in alias_matches]}
 
 

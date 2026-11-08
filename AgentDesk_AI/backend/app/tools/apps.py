@@ -456,17 +456,19 @@ class OpenApplicationTool(BaseTool):
             except Exception:  # noqa: BLE001 - this lookup is only a fallback
                 return None
         keys = {k for k in (self._normalize_search_name(app_name), self._normalize_search_name(self._canonical_app_name(app_name))) if len(k) >= 3}
-        best, best_score = None, 0.0
+        scored = []
         for app in cache["apps"]:
             label = self._normalize_search_name(str(app.get("Name", "")))
             if not label or not app.get("AppID"):
                 continue
-            score = max((1.0 if k == label else 0.9 if (len(k) >= 4 and (label.startswith(k) or k in label)) else SequenceMatcher(None, k, label).ratio()) for k in keys)
-            if score > best_score:
-                best, best_score = app, score
-        if best and best_score >= 0.85:
-            self._last_score = best_score
-            return "shell:AppsFolder\\" + str(best["AppID"])
+            score = max((1.0 if k == label else 0.9 if (len(k) >= 4 and len(k) / len(label) >= 0.7 and (label.startswith(k) or k in label))
+                         else SequenceMatcher(None, k, label).ratio()) for k in keys)
+            scored.append((score, app))
+        scored.sort(key=lambda s: -s[0])
+        # Only a clear winner: "microsoft" matches a dozen Microsoft apps, so it must not open one of them.
+        if scored and scored[0][0] >= 0.85 and (len(scored) == 1 or scored[1][0] < 0.85 or (scored[0][0] == 1.0 and scored[1][0] < 1.0)):
+            self._last_score = scored[0][0]
+            return "shell:AppsFolder\\" + str(scored[0][1]["AppID"])
         return None
 
     _SKIP_EXE = ("unins", "uninst", "update", "updater", "crash", "setup", "install", "vc_redist", "helper", "elevate", "notification")
@@ -483,7 +485,7 @@ class OpenApplicationTool(BaseTool):
 
         def folder_ok(name: str) -> bool:
             norm = self._normalize_search_name(name)
-            return len(norm) >= 4 and any(k in norm or norm in k or SequenceMatcher(None, k, norm).ratio() >= 0.8 for k in keys)
+            return len(norm) >= 4 and any((k in norm and len(k) / len(norm) >= 0.7) or norm in k or SequenceMatcher(None, k, norm).ratio() >= 0.8 for k in keys)
 
         def exe_in(folder: Path) -> Path | None:
             try:
@@ -497,6 +499,7 @@ class OpenApplicationTool(BaseTool):
             return str(min(exes, key=rank)) if exes else None
 
         skip = {"windows", "$recycle.bin", "system volume information", "programdata", "users", "appdata"}
+        hits: dict[str, str] = {}   # program folder -> its exe
         for root in roots:
             try:
                 level1 = [d for d in root.iterdir() if d.is_dir() and d.name.casefold() not in skip]
@@ -506,7 +509,7 @@ class OpenApplicationTool(BaseTool):
                 if folder_ok(d.name):
                     found = exe_in(d)
                     if found:
-                        return found
+                        hits[str(d)] = found
             for d in level1:                        # vendor\\product, e.g. JetBrains\\IntelliJ IDEA
                 if d.name.startswith((".", "$")):
                     continue
@@ -515,10 +518,13 @@ class OpenApplicationTool(BaseTool):
                         if sub.is_dir() and folder_ok(sub.name):
                             found = exe_in(sub)
                             if found:
-                                return found
+                                hits[str(sub)] = found
                 except OSError:
                     continue
-        return None
+        if len(hits) > 1:   # "microsoft" fits many program folders: only a folder named exactly like the app may be chosen
+            exact = {d: e for d, e in hits.items() if self._normalize_search_name(Path(d).name) in keys}
+            hits = exact if len(exact) == 1 else {}
+        return next(iter(hits.values())) if len(hits) == 1 else None
 
     def execute(self, args: BaseModel) -> ToolResult:
         try:

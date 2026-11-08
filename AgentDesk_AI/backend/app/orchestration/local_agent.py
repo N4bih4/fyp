@@ -161,6 +161,7 @@ def _resolve(task, intent, registry):
             return _ask(task, intent, "Folder ka simple naam aur parent ka exact path batayein; misal: create folder Lab in Documents.")
         return _action("create_folder", {"path": str(dest / name)})
     source = _path(intent["source"])
+    others: list[str] = []
     if not Path(source).is_absolute():
         tool = registry.get("find_paths")
         result = tool.execute(tool.validate_args({"name": source, "kind": intent["kind"]}))
