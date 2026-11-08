@@ -161,7 +161,9 @@ def _resolve(task, intent, registry):
         candidates = result.output.get("candidates", [])
         if not result.success or not candidates:
             return _ask(task, intent, "Yeh naam nahi mila. File/folder ka exact path batayein.")
-        if len(candidates) > 1 or result.output.get("truncated") or result.output.get("alias_matches"):
+        # A time-limited search over every drive may not finish: that only matters for destructive operations.
+        unfinished = result.output.get("truncated") and op not in {"open", "list"}
+        if len(candidates) > 1 or unfinished or result.output.get("alias_matches"):
             intent["candidates"] = candidates
             note = "Kaunsa path? Number ya exact address batayein. Preview ke liye 'preview 1' keh sakti hain.\n"
             return _ask(task, intent, note + "\n".join(f"{i+1}. {p}" for i, p in enumerate(candidates)))

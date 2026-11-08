@@ -121,6 +121,12 @@ APP_ALIASES = {
     "code": "visual studio code",
     "vscode": "visual studio code",
     "vs code": "visual studio code",
+    "vs kod": "visual studio code",
+    "vscode editor": "visual studio code",
+    "visual studio code": "visual studio code",
+    "visual studio": "visual studio code",
+    "calculater": "calc",
+    "calculator app": "calc",
     "cursor": "cursor",
 }
 
@@ -220,7 +226,9 @@ class OpenApplicationTool(BaseTool):
         if not ranked:
             return None
         best_score, paths = ranked[0]
-        unique = len(paths) == 1 and (len(ranked) == 1 or best_score - ranked[1][0] >= entity_match.GAP)
+        # The same shortcut often sits in both the user's and the all-users Start Menu ("Visual Studio Code.lnk" twice): one app.
+        one_app = len({p.stem.casefold() for p in paths}) == 1
+        unique = one_app and (len(ranked) == 1 or best_score - ranked[1][0] >= entity_match.GAP)
         if unique and best_score >= entity_match.SAY:  # 0.60-0.85: opened, and the reply says what was understood
             self._last_score = best_score
             return paths[0]
@@ -367,6 +375,12 @@ class OpenApplicationTool(BaseTool):
                     if root
                 ),
             ]
+        if system == "Windows" and app == "visual studio code":
+            # Per-user installs have no Start Menu entry the matcher can rely on: look in the usual folders first.
+            for root in (os.environ.get("LOCALAPPDATA"), os.environ.get("ProgramFiles"), os.environ.get("ProgramFiles(x86)")):
+                exe = Path(root) / ("Programs" if root == os.environ.get("LOCALAPPDATA") else "") / "Microsoft VS Code" / "Code.exe" if root else None
+                if exe and exe.is_file():
+                    return str(exe)
         for candidate in candidates:
             found = shutil.which(candidate)
             if found:

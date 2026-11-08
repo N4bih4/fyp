@@ -29,7 +29,7 @@ EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[A-Za-z]{2,}$")
 ROMAN_MARKERS = set(
     "karo kar kardo krdo kro kr do dein dena kholo khol kholna kholdo band bnd mein main pe par ka ki ke ko hai hain "
     "awaz awaaz aawaz roshni barha barhao badha badhao zyada ziada ziyada jyada kam thora thori thoda aur naya naam "
-    "banao bana dikhao dhoondo dhundo dhoondho mita chalao chala rok roko dobara laga lagao kitna kitni batao parho "
+    "banao bana dikhao dhoondo dhundo dhoondho mita chalao bajao baja chala rok roko dobara laga lagao kitna kitni batao parho "
     "lo le isay ise isko usay doosra dusra pehla wala wali bhejo salam shukriya bilkul poori aadhi kaise ho yeh".split()
 )
 

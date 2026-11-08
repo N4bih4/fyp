@@ -5,6 +5,7 @@ prints or exposes secret values.
 """
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 from pathlib import Path
 
@@ -113,6 +114,10 @@ class Settings(BaseSettings):
 
     def resolved_discovery_directories(self) -> list[Path]:
         extra = [Path(p.strip()).expanduser() for p in self.discovery_directories.split(",") if p.strip()]
+        if not extra and os.name == "nt":
+            # "open my FYP folder": look on every local drive (C:, D:, E: ...), not just the home folder.
+            # Searching only names the user can then open; changes to files stay limited to the allowed directories.
+            extra = [Path(f"{letter}:/") for letter in "CDEFGHIJKLMNOPQRSTUVWXYZ" if Path(f"{letter}:/").exists()]
         return list(dict.fromkeys([*self.resolved_allowed_directories(), *extra]))
 
     @property

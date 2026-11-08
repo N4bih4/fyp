@@ -174,6 +174,8 @@ def r_media(ctx: _Ctx):
         return None
     if not ctx.has("MUSIC", "NEXT", "PREVIOUS"):
         return None
+    if _spoken_play_query(ctx, ctx.norm.text):   # a named song/video ("play song Guzarish") is a YouTube search, not the media key
+        return None
     if ctx.has("NEXT"):
         action = "next"
     elif ctx.has("PREVIOUS"):
@@ -349,6 +351,40 @@ def r_followup(ctx: _Ctx):
     return _special(ctx, "clarify", "clarify_target", "followup.unclear")
 
 
+_KIND = r"(?:song|songs|gaana|gana|gaane|video|cartoon|naat|nasheed|drama|episode|music)"
+_PLAY_GENERIC = {"song", "songs", "gaana", "gana", "video", "cartoon", "music", "it", "this", "that", "youtube", "something",
+                 "kuch", "koi", "next", "previous", "pause", "resume", "stop", "naat", "drama", "episode", "nasheed",
+                 "agla", "agli", "agle", "pichla", "pichli", "pichle", "pehla", "ek", "dusra", "dosra", "teesra", "purana", "naya",
+                 "ye", "yeh", "wo", "woh", "isko", "usko", "band", "bund", "off", "on"}
+
+
+def _spoken_play_query(ctx: _Ctx, text: str) -> str | None:
+    """"play Doraemon", "play song Guzarish", "Guzarish bajao", "gujarish gana chalao": what to look up on YouTube.
+    A bare "<name> chalao/lagao" is left alone (it is usually an app: "calculator chalao")."""
+    if ctx.prefixed("APP:"):
+        return None
+    name = None
+    m = re.match(rf"^play (?:the |a |some )?(?:{_KIND} )?(.+)$", text, re.I)
+    if m:
+        name = m.group(1)
+    if name is None:
+        m = re.match(r"^(?:{k} )?(.+?)(?: {k})? (?:bajao|baja do|bajana|play karo|play kar do|play kro)$".replace("{k}", _KIND), text, re.I)
+        if m:
+            name = m.group(1)
+    if name is None:
+        m = re.match(r"^(?:{k} )?(.+?) {k} (?:chalao|chala do|lagao|laga do|chalana|lagana)$".replace("{k}", _KIND), text, re.I)
+        if m:
+            name = m.group(1)
+    if name is None:
+        m = re.match(r"^{k} (.+?) (?:chalao|chala do|lagao|laga do|bajao|baja do)$".replace("{k}", _KIND), text, re.I)
+        if m:
+            name = m.group(1)
+    name = re.sub(r"\s+(?:on|par|pe|per) youtube$|\s+(?:please|plz|karo|kar do)$", "", (name or "").strip(), flags=re.I).strip()
+    if not name or name.casefold() in _PLAY_GENERIC:
+        return None
+    return name
+
+
 def r_browser(ctx: _Ctx):
     sites = ctx.prefixed("SITE:")
     text = ctx.norm.text
@@ -370,6 +406,9 @@ def r_browser(ctx: _Ctx):
         m = re.match(pattern, text, re.I)
         if m:
             return _plan(ctx, "play_youtube", [step("play_youtube_video", query=m.group(1).strip())], BASE, "youtube.play")
+    query = _spoken_play_query(ctx, text)
+    if query:
+        return _plan(ctx, "play_youtube", [step("play_youtube_video", query=query)], BASE, "youtube.play")
     m = re.match(r"^search youtube for (.+)$", text, re.I)
     if m:
         return _plan(ctx, "web_search", [step("web_search", query=m.group(1).strip(), site="youtube.com")], BASE, "search.site")
