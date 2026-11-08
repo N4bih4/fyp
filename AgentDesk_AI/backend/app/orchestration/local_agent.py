@@ -114,6 +114,10 @@ def _parse(command):
         (r"(?:folder|file) (.+?) (?:delete|remove) (?:kar do|karo)", "roman_delete"),
         (r"(.+?) (folder|file) (?:kholo|khol do|खोल दो|کھول دو)", "roman_open"),
         (r"(?:create|make)(?: a| new)? folder(?: called| named)? (.+?) (?:in|on) (.+)", "create"),
+        (r"(?:zip|compress)(?: up)?(?: the| my)?(?: folder)? (.+)", "compress"),
+        (r"(?:unzip|extract)(?: the| my)?(?: zip| file| archive| folder)? (.+)", "extract"),
+        (r"(.+?)(?: folder)? (?:ko )?(?:zip|compress) (?:kar do|karo|kro|kardo|kar dein)", "compress"),
+        (r"(.+?)(?: zip| file| archive)? (?:ko )?(?:unzip|extract) (?:kar do|karo|kro|kardo|kar dein)", "extract"),
     ]
     for pattern, mode in patterns:
         m = re.fullmatch(pattern, raw, re.IGNORECASE)
@@ -129,6 +133,8 @@ def _parse(command):
         if mode == "create":
             name, destination = groups
             return {"op": "create", "name": name, "destination": destination}
+        if mode in {"compress", "extract"}:
+            return {"op": mode, "kind": "folder" if mode == "compress" else "file", "source": groups[0].strip()}
         if mode == "roman_delete":
             return {"op": "delete", "kind": "folder", "source": groups[0]}
         if mode == "roman_open":
@@ -163,7 +169,9 @@ def _resolve(task, intent, registry):
             return _ask(task, intent, "Yeh naam nahi mila. File/folder ka exact path batayein.")
         # A time-limited search over every drive may not finish: that only matters for destructive operations.
         unfinished = result.output.get("truncated") and op not in {"open", "list"}
-        if len(candidates) > 1 or unfinished or result.output.get("alias_matches"):
+        sure = result.output.get("confident") and op in {"open", "list"}   # one clearly best match: just do it
+        if not sure and (len(candidates) > 1 or unfinished or result.output.get("alias_matches")):
+            candidates = candidates[:6]   # never read out dozens of paths
             intent["candidates"] = candidates
             note = "Kaunsa path? Number ya exact address batayein. Preview ke liye 'preview 1' keh sakti hain.\n"
             return _ask(task, intent, note + "\n".join(f"{i+1}. {p}" for i, p in enumerate(candidates)))
@@ -179,6 +187,10 @@ def _resolve(task, intent, registry):
         return _action("rename_file", {"path": source, "new_name": intent["new_name"].strip().strip('"')})
     if op == "delete":
         return _action("delete_file", {"path": source, "include_contents": intent.get("include_contents", False)})
+    if op == "compress":
+        return _action("compress_folder", {"folder_path": source})
+    if op == "extract":
+        return _action("extract_file", {"zip_path": source})
     return _action("list_folder" if op == "list" else "open_folder" if intent["kind"] == "folder" else "open_file", {"path": source})
 
 

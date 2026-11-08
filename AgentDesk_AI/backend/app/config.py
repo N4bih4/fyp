@@ -107,6 +107,10 @@ class Settings(BaseSettings):
         raw = [p.strip() for p in self.allowed_directories.split(",") if p.strip()]
         if not raw:
             raw = [str(Path.home()), str(Path(self.test_dir).resolve())]
+            if os.name == "nt":
+                # Your other drives (D:, E: ...) hold project and semester folders: zip, extract, copy, move and rename
+                # work there too. C: stays limited to your user folder; deleting still needs approval and a drive root is never deleted.
+                raw += [f"{letter}:/" for letter in "DEFGHIJKLMNOPQRSTUVWXYZ" if Path(f"{letter}:/").exists()]
         return [Path(p).expanduser() for p in raw]
 
     def resolved_approved_applications(self) -> list[str]:

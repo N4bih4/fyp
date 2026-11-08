@@ -157,7 +157,9 @@ def find_path_candidates(query: str, roots: list[Path], is_dir_only: bool = True
     count = 0
     truncated = False
     skip = {".git", "node_modules", ".venv", "appdata", ".agentdesk_trash", "$recycle.bin", "windows", "program files",
-            "program files (x86)", "programdata", "system volume information", "site-packages", "__pycache__", "$windows.~bt"}
+            "program files (x86)", "programdata", "system volume information", "site-packages", "__pycache__", "$windows.~bt",
+            "resources", "extensions", "dist-packages", "venv", "env", "windowsapps", ".gradle", "cache", "caches"}
+    skip = {s for s in skip if _name_key(s) != key}   # unless that is exactly what the user asked for
     deadline = time.monotonic() + SCAN_SECONDS
     # Breadth-first across all roots together: shallow folders (E:\FYP, Documents\7th Semester) are seen
     # before the scan budget runs out, whichever drive they are on.
@@ -203,15 +205,28 @@ def find_path_candidates(query: str, roots: list[Path], is_dir_only: bool = True
                 continue
             normalized = _name_key(name)
             score = 1.0 if key == normalized else max(SequenceMatcher(None, key, normalized).ratio(), _sounds_like(query, name))
-            if key in normalized:
+            if len(key) >= 4 and key in normalized:   # "is" must not match "native-is-elevated" or "Cisco"
                 score = max(score, 0.85)
             if alias_key and alias_key == search_name_key(name) and key != normalized:
                 score = max(score, 0.95)
                 alias_matches.add(str(path / name))
             if score >= 0.75:
                 matches[str(path / name)] = score
-    ordered = sorted(matches, key=lambda p: (-matches[p], p.casefold()))
-    return {"candidates": ordered[:30], "truncated": truncated or len(ordered) > 30,
+    if any(score >= 0.95 for score in matches.values()):
+        matches = {p: s for p, s in matches.items() if s >= 0.95}   # a folder with exactly this name beats every partial match
+    junk = re.compile(r"backup|copy|\(\d+\)|\bold\b|archive|temp|tmp|\.bak", re.IGNORECASE)
+
+    def rank(p: str):
+        # best name match, then the folder that is not a backup/copy, then the one nearest the top of its drive
+        return (-round(matches[p], 2), bool(junk.search(p)), len(Path(p).parts), p.casefold())
+    ordered = sorted(matches, key=rank)
+    confident = False
+    if ordered:
+        top = round(matches[ordered[0]], 2)
+        tied = [p for p in ordered if round(matches[p], 2) == top]
+        # One clearly best folder (or the only real one beside backups/copies): safe to open without asking.
+        confident = top >= 0.95 and (len(tied) == 1 or (not junk.search(tied[0]) and all(junk.search(p) for p in tied[1:])))
+    return {"candidates": ordered[:30], "confident": confident, "truncated": truncated or len(ordered) > 30,
             "alias_matches": [path for path in ordered[:30] if path in alias_matches]}
 
 
@@ -225,8 +240,10 @@ def _fuzzy_find_path(query_name: str, allowed: list[Path], is_dir_only: bool = T
     roots = allowed or [Path.home()]
     result = find_path_candidates(query_name, roots, is_dir_only)
     candidates = result["candidates"]
-    if len(candidates) > 1 or result["truncated"]:
-        raise AmbiguousPathError(result)
+    if result.get("confident") and is_dir_only:
+        return Path(candidates[0])
+    if len(candidates) > 1 or (result["truncated"] and not candidates):
+        raise AmbiguousPathError({**result, "candidates": candidates[:6]})
     return Path(candidates[0]) if candidates else None
 
 

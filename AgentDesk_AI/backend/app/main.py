@@ -432,7 +432,13 @@ def reply_task(task_id: str, payload: TaskReply, db: Session = Depends(get_db)) 
         from .ai.command_intents import canonical_command
         routed = canonical_command(payload.message)
         explicit = local_plan(routed) or browser_plan(routed)
-        if (explicit is not None and explicit.actions) or close_request(routed) is not None:
+        # "open fyp folder", "zip X folder", "X folder kholo" typed while an older folder question is still open is a new
+        # command, not an answer to that question (it was read as a reply about the earlier "DevOps" folder).
+        from .orchestration.local_agent import _parse as _parse_file_command
+        from .ai.command_language import command_grammar
+        file_command = _parse_file_command(command_grammar(routed))
+        new_file_command = bool(file_command) and file_command.get("op") in {"open", "list", "compress", "extract", "delete", "copy", "move", "rename", "create"}
+        if new_file_command or (explicit is not None and explicit.actions) or close_request(routed) is not None:
             executor.cancel_task(db, task_id)
             return executor.task_out(executor.start_task(db, payload.message, None, _registry(), get_settings()))
         if task.status == "awaiting_input" or (task.agent_state_json and json.loads(task.agent_state_json).get("provider") == "local"):
@@ -468,4 +474,20 @@ browser_extension = resource_root() / "browser-extension"
 if browser_extension.is_dir():
     app.mount("/browser-extension", StaticFiles(directory=str(browser_extension), html=True), name="browser-extension")
 if (frontend_dist / "index.html").is_file():
+    from fastapi.responses import HTMLResponse
+
+    @app.get("/", include_in_schema=False)
+    @app.get("/index.html", include_in_schema=False)
+    def ui_page(request: Request):
+        """The UI page. Opened by typing 127.0.0.1:8000 (no #token=... in the address), it still works: this PC's own
+        browser tab gets the local token with the page. A page on another site cannot read this response (CORS), and
+        a request marked cross-site/same-site by the browser is not given the token."""
+        html = (frontend_dist / "index.html").read_text(encoding="utf-8")
+        token = get_api_token()
+        site = request.headers.get("sec-fetch-site", "none")
+        if token and site in {"none", "same-origin"}:
+            snippet = f"<script>try{{sessionStorage.setItem('agentdesk_api_token',{json.dumps(token)})}}catch(e){{}}</script>"
+            html = html.replace("<head>", "<head>" + snippet, 1) if "<head>" in html else snippet + html
+        return HTMLResponse(html, headers={"Cache-Control": "no-store"})
+
     app.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="frontend")
