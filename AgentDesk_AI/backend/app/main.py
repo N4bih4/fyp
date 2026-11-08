@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 import platform
+import re
 import json
 import secrets
 import threading
@@ -438,7 +439,13 @@ def reply_task(task_id: str, payload: TaskReply, db: Session = Depends(get_db)) 
         from .ai.command_language import command_grammar
         file_command = _parse_file_command(command_grammar(routed))
         new_file_command = bool(file_command) and file_command.get("op") in {"open", "list", "compress", "extract", "delete", "copy", "move", "rename", "create"}
-        if new_file_command or (explicit is not None and explicit.actions) or close_request(routed) is not None:
+        # "open calculator", "open antigravity", "close word", "play ..." are new commands too: a leftover folder question
+        # ("1. E:\fyp 2. ...") must never answer them. Only a number / "open 2" / "preview 1" / a path is a reply.
+        spoken = routed.strip()
+        is_choice = bool(re.fullmatch(r"(?:(?:preview|open)\s+)?\d+", spoken, re.IGNORECASE)) or ":" in spoken or "\\" in spoken
+        new_verb_command = (not is_choice) and bool(re.match(
+            r"(?i)^(?:please\s+)?(?:open|close|launch|start|run|play|kholo|khol|band|chalao|zip|unzip|extract|compress|search|create|make|delete|copy|move|rename)\b\s*\S", spoken))
+        if new_file_command or new_verb_command or (explicit is not None and explicit.actions) or close_request(routed) is not None:
             executor.cancel_task(db, task_id)
             return executor.task_out(executor.start_task(db, payload.message, None, _registry(), get_settings()))
         if task.status == "awaiting_input" or (task.agent_state_json and json.loads(task.agent_state_json).get("provider") == "local"):
