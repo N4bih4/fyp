@@ -1188,4 +1188,5 @@ def test_an_app_installed_per_user_is_opened_through_its_start_menu_shortcut(mon
     tool = apps.OpenApplicationTool(ToolContext())
     monkeypatch.setattr(tool, "_windows_registered_app_path", lambda c: None)
     monkeypatch.setattr(tool, "_match_start_menu_shortcut", lambda name: lnk)
+    tool._last_score = 1.0   # a confident shortcut match (the matcher sets this); a weak one is not trusted over a real install
     assert tool._find_executable("antigravity") == lnk

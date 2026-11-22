@@ -8,7 +8,7 @@ import re
 import time
 import shutil
 import webbrowser
-from difflib import SequenceMatcher
+from difflib import SequenceMatcher, get_close_matches
 from pathlib import Path
 from typing import Literal
 from urllib.parse import parse_qs, quote_plus, urlencode, urlsplit
@@ -94,6 +94,9 @@ APP_ALIASES = {
     "antigravity": "antigravity",
     "integrity": "antigravity",
     "anti gravity": "antigravity",
+    "antigravity ide": "antigravity",
+    "anti gravity ide": "antigravity",
+    "google antigravity": "antigravity",
     "anitgravity": "antigravity",
     "انٹیگریٹی": "antigravity",
     "انٹی گریوٹی": "antigravity",
@@ -128,6 +131,12 @@ APP_ALIASES = {
     "code": "visual studio code",
     "vscode": "visual studio code",
     "vs code": "visual studio code",
+    "vs kod": "visual studio code",
+    "vscode editor": "visual studio code",
+    "visual studio code": "visual studio code",
+    "visual studio": "visual studio code",
+    "calculater": "calc",
+    "calculator app": "calc",
     "cursor": "cursor",
 }
 
@@ -217,12 +226,17 @@ class OpenApplicationTool(BaseTool):
 
     @staticmethod
     def _canonical_app_name(app_name: str) -> str:
-        """Alias lookup that ignores trailing punctuation and spacing: Whisper writes "Anti-gravity," or "anti gravity" for Antigravity."""
         normalized = app_name.strip().strip(".,!?;:'\"").lower()
         hit = APP_ALIASES.get(normalized)
         if hit:
             return hit
         squashed = re.sub(r"[^a-z0-9]+", "", normalized)
+        if squashed in _SQUASHED_ALIASES:
+            return _SQUASHED_ALIASES[squashed]
+        if len(normalized) >= 5 and normalized.isascii():   # a misheard spelling: "antigraavity ide" -> antigravity
+            close = get_close_matches(normalized, [k for k in APP_ALIASES if len(k) >= 5 and k.isascii()], n=1, cutoff=0.86)
+            if close:
+                return APP_ALIASES[close[0]]
         return _SQUASHED_ALIASES.get(squashed, normalized)
 
     @staticmethod
@@ -256,7 +270,9 @@ class OpenApplicationTool(BaseTool):
         if not ranked:
             return None
         best_score, paths = ranked[0]
-        unique = len(paths) == 1 and (len(ranked) == 1 or best_score - ranked[1][0] >= entity_match.GAP)
+        # The same shortcut often sits in both the user's and the all-users Start Menu ("Visual Studio Code.lnk" twice): one app.
+        one_app = len({p.stem.casefold() for p in paths}) == 1
+        unique = one_app and (len(ranked) == 1 or best_score - ranked[1][0] >= entity_match.GAP)
         if unique and best_score >= entity_match.SAY:  # 0.60-0.85: opened, and the reply says what was understood
             self._last_score = best_score
             return paths[0]
@@ -351,12 +367,14 @@ class OpenApplicationTool(BaseTool):
         }
         shortcut = self._match_start_menu_shortcut(app_name)
         terms = [app_name, self._canonical_app_name(app_name), *aliases.get(app_name, ())]
-        if shortcut:
+        # Only a confident shortcut name may be searched for among open windows: a fuzzy guess once turned "calc"
+        # into "Google Chrome", which "opened" the Chrome window and never started Calculator.
+        if shortcut and getattr(self, "_last_score", 0.0) >= 0.85:
             terms.append(shortcut.stem)
         normalized_terms = {
             self._normalize_search_name(term)
             for term in terms
-            if self._normalize_search_name(term)
+            if len(self._normalize_search_name(term)) >= 4
         }
         matches = [
             window
@@ -371,10 +389,24 @@ class OpenApplicationTool(BaseTool):
             matches = self._windows_of_process(self._canonical_app_name(app_name))           # an Electron app renames its window after the conversation: find it by its process
         if not matches:
             return None
-        active = pyautogui.getActiveWindow()
-        target = active if active in matches else matches[0]
-        _bring_to_front(target)
-        return target.title
+        import threading
+        outcome: dict = {"title": matches[0].title}
+
+        def bring_forward() -> None:
+            try:
+                active = pyautogui.getActiveWindow()
+                target = active if active in matches else matches[0]
+                _bring_to_front(target)
+                outcome["title"] = target.title
+            except Exception:  # noqa: BLE001 - pygetwindow raises "Error code from Windows: 18" while windows come and go
+                outcome["failed"] = True
+
+        worker = threading.Thread(target=bring_forward, daemon=True)
+        worker.start()
+        worker.join(4)   # a window that is still starting (Word's splash) can block activation for a long time
+        if outcome.get("failed"):
+            return None    # not brought forward: start the app instead of failing
+        return outcome["title"]   # activated, or open but busy: either way the app is already running
 
     def risk_for_args(self, args: BaseModel | None) -> RiskLevel:
         if args is None:
@@ -385,6 +417,8 @@ class OpenApplicationTool(BaseTool):
             return RiskLevel.LOW
         if app in self.ctx.approved_applications or self._match_start_menu_shortcut(app) is not None:
             return RiskLevel.LOW
+        if self._uwp_app(app) is not None or self._discover_installed_exe(app) is not None:
+            return RiskLevel.LOW   # an app that is installed on this PC opens without asking
         return RiskLevel.HIGH
 
     @staticmethod
@@ -422,6 +456,12 @@ class OpenApplicationTool(BaseTool):
                     if root
                 ),
             ]
+        if system == "Windows" and app == "visual studio code":
+            # Per-user installs have no Start Menu entry the matcher can rely on: look in the usual folders first.
+            for root in (os.environ.get("LOCALAPPDATA"), os.environ.get("ProgramFiles"), os.environ.get("ProgramFiles(x86)")):
+                exe = Path(root) / ("Programs" if root == os.environ.get("LOCALAPPDATA") else "") / "Microsoft VS Code" / "Code.exe" if root else None
+                if exe and exe.is_file():
+                    return str(exe)
         for candidate in candidates:
             found = shutil.which(candidate)
             if found:
@@ -431,16 +471,113 @@ class OpenApplicationTool(BaseTool):
                 if registered:
                     return registered
         if system == "Windows" and candidates:
-            shortcut = self._match_start_menu_shortcut(app)      # installed per user (no PATH entry, no App Paths): the Start Menu knows it
-            if shortcut is not None:
+            # Not on PATH / App Paths: a Start Menu shortcut, or the program's own folder (D:\Antigravity IDE ...), may know it.
+            shortcut = self._match_start_menu_shortcut(app)
+            if shortcut is not None and getattr(self, "_last_score", 0.0) >= 0.85:
                 return shortcut
-            # Let Windows resolve it via PATH / App Paths.
+            found = self._discover_installed_exe(app)
+            if found:
+                return found
+            # Last resort: let Windows resolve it via PATH / App Paths (built-ins such as calc.exe).
             return candidates[0]
         if system == "Windows":
-            return self._match_start_menu_shortcut(app)
+            found = self._match_start_menu_shortcut(app) or self._uwp_app(app) or self._discover_installed_exe(app)
+            if found:
+                return found
+            return None
         if system == "Darwin" and app in _DARWIN_APP_PATHS:
             return _DARWIN_APP_PATHS[app][0]
         return None
+
+    _start_apps_cache: dict = {"at": 0.0, "apps": []}
+
+    def _uwp_app(self, app_name: str) -> str | None:
+        """Any app Windows lists in its Start menu, including Store apps (Calculator, WhatsApp, Spotify, Settings):
+        returns the shell address ("shell:AppsFolder\\<id>") that starts it."""
+        if platform.system() != "Windows":
+            return None
+        import json
+        import subprocess
+        import time
+        cache = OpenApplicationTool._start_apps_cache
+        if not cache["apps"] or time.monotonic() - cache["at"] > 600:
+            try:
+                out = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", "Get-StartApps | ConvertTo-Json -Compress"],
+                                     capture_output=True, text=True, timeout=25, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+                data = json.loads(out.stdout or "[]")
+                cache.update(at=time.monotonic(), apps=[data] if isinstance(data, dict) else data)
+            except Exception:  # noqa: BLE001 - this lookup is only a fallback
+                return None
+        keys = {k for k in (self._normalize_search_name(app_name), self._normalize_search_name(self._canonical_app_name(app_name))) if len(k) >= 3}
+        scored = []
+        for app in cache["apps"]:
+            label = self._normalize_search_name(str(app.get("Name", "")))
+            if not label or not app.get("AppID"):
+                continue
+            score = max((1.0 if k == label else 0.9 if (len(k) >= 4 and len(k) / len(label) >= 0.7 and (label.startswith(k) or k in label))
+                         else SequenceMatcher(None, k, label).ratio()) for k in keys)
+            scored.append((score, app))
+        scored.sort(key=lambda s: -s[0])
+        # Only a clear winner: "microsoft" matches a dozen Microsoft apps, so it must not open one of them.
+        if scored and scored[0][0] >= 0.85 and (len(scored) == 1 or scored[1][0] < 0.85 or (scored[0][0] == 1.0 and scored[1][0] < 1.0)):
+            self._last_score = scored[0][0]
+            return "shell:AppsFolder\\" + str(scored[0][1]["AppID"])
+        return None
+
+    _SKIP_EXE = ("unins", "uninst", "update", "updater", "crash", "setup", "install", "vc_redist", "helper", "elevate", "notification")
+
+    def _discover_installed_exe(self, app_name: str) -> str | None:
+        """An installed program that has no Start Menu shortcut or PATH entry (D:\\Antigravity IDE\\Antigravity IDE.exe):
+        look at the program folders and the top two levels of every drive for a folder named like the app."""
+        keys = {k for k in (self._normalize_search_name(app_name), self._normalize_search_name(self._canonical_app_name(app_name))) if len(k) >= 4}
+        if not keys or platform.system() != "Windows":
+            return None
+        roots = [Path(p) for p in (os.environ.get("ProgramFiles"), os.environ.get("ProgramFiles(x86)"),
+                                   os.path.join(os.environ.get("LOCALAPPDATA", ""), "Programs")) if p]
+        roots += [Path(f"{letter}:/") for letter in "CDEFGHIJKLMNOPQRSTUVWXYZ" if Path(f"{letter}:/").exists()]
+
+        def folder_ok(name: str) -> bool:
+            norm = self._normalize_search_name(name)
+            return len(norm) >= 4 and any((k in norm and len(k) / len(norm) >= 0.7) or norm in k or SequenceMatcher(None, k, norm).ratio() >= 0.8 for k in keys)
+
+        def exe_in(folder: Path) -> Path | None:
+            try:
+                exes = [p for p in list(folder.glob("*.exe")) + list(folder.glob("bin/*.exe"))
+                        if not p.stem.casefold().startswith(self._SKIP_EXE)]
+            except OSError:
+                return None
+            def rank(p: Path):
+                stem = self._normalize_search_name(p.stem)
+                return (not any(k in stem or stem in k for k in keys), not stem or p.parent != folder, len(p.stem))
+            return str(min(exes, key=rank)) if exes else None
+
+        skip = {"windows", "$recycle.bin", "system volume information", "programdata", "users", "appdata"}
+        hits: dict[str, str] = {}   # program folder -> its exe
+        for root in roots:
+            try:
+                level1 = [d for d in root.iterdir() if d.is_dir() and d.name.casefold() not in skip]
+            except OSError:
+                continue
+            for d in level1:
+                if folder_ok(d.name):
+                    found = exe_in(d)
+                    if found:
+                        hits[str(d)] = found
+            for d in level1:                        # vendor\\product, e.g. JetBrains\\IntelliJ IDEA
+                if d.name.startswith((".", "$")):
+                    continue
+                try:
+                    for sub in d.iterdir():
+                        if sub.is_dir() and folder_ok(sub.name):
+                            found = exe_in(sub)
+                            if found:
+                                hits[str(sub)] = found
+                except OSError:
+                    continue
+        if len(hits) > 1:   # "microsoft" fits many program folders: only a folder named exactly like the app may be chosen
+            exact = {d: e for d, e in hits.items() if self._normalize_search_name(Path(d).name) in keys}
+            hits = exact if len(exact) == 1 else {}
+        return next(iter(hits.values())) if len(hits) == 1 else None
 
     def execute(self, args: BaseModel) -> ToolResult:
         try:
@@ -502,8 +639,20 @@ class OpenApplicationTool(BaseTool):
                     success=False,
                     error=f"Application '{app}' was not found on this system ({system}).",
                 )
+            if isinstance(exe, str) and exe.startswith("shell:AppsFolder"):
+                _platform.open_path_with_os(exe)
+                return ToolResult(success=True, output={"app": app, "launched": True, "matched_shortcut": a.app_name})
             if isinstance(exe, Path) and exe.suffix.lower() == ".lnk":
-                _platform.open_path_with_os(str(exe))
+                try:
+                    _platform.open_path_with_os(str(exe))
+                except OSError:
+                    # A stale Start Menu shortcut (its program was moved, e.g. to D:\): find the program itself.
+                    moved = self._discover_installed_exe(a.app_name) or self._discover_installed_exe(exe.stem)
+                    if moved is None:
+                        raise
+                    proc = _platform.launch_program(moved)
+                    return ToolResult(success=True, output={"app": app, "pid": proc.pid, "launched": True, "exe": Path(moved).name,
+                                                            "path": moved})
                 output = {"app": app, "matched_shortcut": exe.stem, "launched": True}
                 if getattr(self, "_last_score", 1.0) < 0.85:
                     output.update({"heard": a.app_name, "understood": exe.stem})
@@ -511,7 +660,7 @@ class OpenApplicationTool(BaseTool):
             proc = _platform.launch_program(exe)
         except Exception as exc:  # noqa: BLE001 - report honestly
             return ToolResult(success=False, error=f"Could not launch '{app}': {exc}")
-        return ToolResult(success=True, output={"app": app, "pid": proc.pid, "launched": True})
+        return ToolResult(success=True, output={"app": app, "pid": proc.pid, "launched": True, "exe": Path(str(exe)).name})
 
     def verify(self, args: BaseModel, result: ToolResult) -> Verification:
         if not result.success:
@@ -526,8 +675,13 @@ class OpenApplicationTool(BaseTool):
             return verdict([("Chrome window shows Gmail", seen)], windows)
         pid = out.get("pid")
         alive = bool(pid) and current().process_alive(int(pid))
-        titles = _APP_TITLES.get(app, [app])
-        processes = _APP_PROCESSES.get(app, {f"{app.replace(' ', '')}.exe"})
+        titles = list(_APP_TITLES.get(app, [app]))
+        processes = set(_APP_PROCESSES.get(app, {f"{app.replace(' ', '')}.exe"}))
+        if out.get("exe"):                      # the program that was really started (found on a drive, not in the table)
+            processes.add(str(out["exe"]).casefold())
+            titles.append(Path(str(out["exe"])).stem.casefold())
+        if out.get("matched_shortcut"):
+            titles.append(str(out["matched_shortcut"]).casefold())
         seen, windows = window_check(title_contains=titles, processes=processes, match="any", focus=True)
         return verdict([("app window is open", seen)], {"pid": pid, "pid_alive": alive, **windows},
                        details=None if seen else "The app did not show a window in time.")

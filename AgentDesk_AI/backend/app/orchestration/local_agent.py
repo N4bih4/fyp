@@ -122,6 +122,10 @@ def _parse(command):
         (r"(?:folder|file) (.+?) (?:delete|remove) (?:kar do|karo)", "roman_delete"),
         (r"(.+?) (folder|file) (?:kholo|khol do|खोल दो|کھول دو)", "roman_open"),
         (r"(?:create|make)(?: a| new)? folder(?: called| named)? (.+?) (?:in|on) (.+)", "create"),
+        (r"(?:zip|compress)(?: up)?(?: the| my)?(?: folder)? (.+)", "compress"),
+        (r"(?:unzip|extract)(?: the| my)?(?: zip| file| archive| folder)? (.+)", "extract"),
+        (r"(.+?)(?: folder)? (?:ko )?(?:zip|compress) (?:kar do|karo|kro|kardo|kar dein)", "compress"),
+        (r"(.+?)(?: zip| file| archive)? (?:ko )?(?:unzip|extract) (?:kar do|karo|kro|kardo|kar dein)", "extract"),
     ]
     for pattern, mode in patterns:
         m = re.fullmatch(pattern, raw, re.IGNORECASE)
@@ -137,6 +141,8 @@ def _parse(command):
         if mode == "create":
             name, destination = groups
             return {"op": "create", "name": name, "destination": destination}
+        if mode in {"compress", "extract"}:
+            return {"op": mode, "kind": "folder" if mode == "compress" else "file", "source": groups[0].strip()}
         if mode == "roman_delete":
             return {"op": "delete", "kind": "folder", "source": groups[0]}
         if mode == "roman_open":
@@ -163,13 +169,21 @@ def _resolve(task, intent, registry):
             return _ask(task, intent, "Folder ka simple naam aur parent ka exact path batayein; misal: create folder Lab in Documents.")
         return _action("create_folder", {"path": str(dest / name)})
     source = _path(intent["source"])
+    others: list[str] = []
     if not Path(source).is_absolute():
         tool = registry.get("find_paths")
         result = tool.execute(tool.validate_args({"name": source, "kind": intent["kind"]}))
         candidates = result.output.get("candidates", [])
         if not result.success or not candidates:
             return _ask(task, intent, "Yeh naam nahi mila. File/folder ka exact path batayein.")
-        if len(candidates) > 1 or result.output.get("truncated") or result.output.get("alias_matches"):
+        # A time-limited search over every drive may not finish: that only matters for destructive operations.
+        unfinished = result.output.get("truncated") and op not in {"open", "list"}
+        # Opening is harmless: with several folders of exactly this name, open the one touched most recently and say
+        # which others exist. Anything that changes files still asks.
+        sure = (result.output.get("confident") or result.output.get("exact")) and op in {"open", "list"}
+        others = candidates[1:4] if sure and len(candidates) > 1 else []
+        if not sure and (len(candidates) > 1 or unfinished or result.output.get("alias_matches")):
+            candidates = candidates[:6]   # never read out dozens of paths
             intent["candidates"] = candidates
             note = "Kaunsa path? Number ya exact address batayein. Preview ke liye 'preview 1' keh sakti hain.\n"
             return _ask(task, intent, note + "\n".join(f"{i+1}. {p}" for i, p in enumerate(candidates)))
@@ -185,7 +199,14 @@ def _resolve(task, intent, registry):
         return _action("rename_file", {"path": source, "new_name": intent["new_name"].strip().strip('"')})
     if op == "delete":
         return _action("delete_file", {"path": source, "include_contents": intent.get("include_contents", False)})
-    return _action("list_folder" if op == "list" else "open_folder" if intent["kind"] == "folder" else "open_file", {"path": source})
+    if op == "compress":
+        return _action("compress_folder", {"folder_path": source})
+    if op == "extract":
+        return _action("extract_file", {"zip_path": source})
+    plan = _action("list_folder" if op == "list" else "open_folder" if intent["kind"] == "folder" else "open_file", {"path": source})
+    if others:
+        plan.note = f"{source} khol diya (sabse haal ka). Aur bhi mile: " + "; ".join(others)
+    return plan
 
 
 def _apply_correction(db, spoken, recent):

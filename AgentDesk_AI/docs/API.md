@@ -122,6 +122,9 @@ and existing destination files are never overwritten.
 
 ## Authentication and request guard
 
+### `GET /` and `GET /index.html`
+The UI page (served only when the frontend is built). Open without a token. When the request is not cross-site, the page gets the local API token in the browser session so the UI works when opened by typing the address; cross-site requests never get it. Requests with an unexpected `Host` header are refused (DNS rebinding), so the token is never handed to another site.
+
 `/tasks*`, `/config*` and `/tools` require `Authorization: Bearer <token>` (`401` otherwise).
 `/health`, CORS preflight, the static UI and `/browser/*` do not. The token is a random
 per-user secret stored in `%LOCALAPPDATA%\AgentDesk\api_token` (override: `AGENTDESK_TOKEN_FILE`).

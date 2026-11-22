@@ -28,7 +28,7 @@ from app.tools.web import _validate_public_url
 
 
 # ====================================================================== 1. auth
-OPEN_PATHS = {"/health", "/browser/status", "/docs", "/redoc", "/openapi.json", "/docs/oauth2-redirect", "/browser/ws"}
+OPEN_PATHS = {"/health", "/browser/status", "/docs", "/redoc", "/openapi.json", "/docs/oauth2-redirect", "/browser/ws", "/index.html"}
 
 
 def test_every_api_route_requires_the_token(client, monkeypatch):

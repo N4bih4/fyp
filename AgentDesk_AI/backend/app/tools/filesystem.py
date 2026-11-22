@@ -10,8 +10,10 @@ import json
 import os
 import re
 import shutil
+import time
 import uuid
 import zipfile
+from collections import deque
 from pathlib import Path
 from typing import Any
 
@@ -120,9 +122,31 @@ def _sounds_like(spoken: str, name: str) -> float:
     return value if value >= 0.8 else 0.0
 
 
+_NUMBER_WORDS = {w: str(i) for i, ws in enumerate(
+    [("zero",), ("one", "first", "pehla", "pehle", "ek"), ("two", "second", "dusra", "do"), ("three", "third", "teesra", "teen"),
+     ("four", "fourth", "chautha", "char"), ("five", "fifth", "panchwa", "panch"), ("six", "sixth", "chatha", "chhe", "chay"),
+     ("seven", "seventh", "satwa", "saat"), ("eight", "eighth", "aathwa", "aath"), ("nine", "ninth", "nawa", "nau"),
+     ("ten", "tenth", "dasva", "das"), ("eleven", "eleventh"), ("twelve", "twelfth")]) for w in ws}
+
+
+def _name_key(text: str) -> str:
+    """Letters and digits only, with "seven"/"7th"/"seventh" all becoming "7" so "seven semester" finds "7th Semester"."""
+    words = re.findall(r"[^\W\d_]+|\d+", text.casefold())
+    out = []
+    for i, word in enumerate(words):
+        if word in ("st", "nd", "rd", "th") and i and words[i - 1].isdigit():
+            continue
+        out.append(_NUMBER_WORDS.get(word, word) if word in _NUMBER_WORDS and len(words) > 1 else word)
+    return "".join(out)
+
+
+MAX_SCAN_DIRS = 150_000   # folders looked at per search (all drives together)
+SCAN_SECONDS = 8.0        # hard time budget per search
+
+
 def find_path_candidates(query: str, roots: list[Path], is_dir_only: bool = True) -> dict:
     """Bounded search; return all discovered matches rather than silently choosing one."""
-    key = "".join(c for c in Path(query).name.casefold() if c.isalnum())
+    key = _name_key(Path(query).name)
     if not key:
         return {"candidates": [], "truncated": False}
     matches = {}
@@ -132,43 +156,84 @@ def find_path_candidates(query: str, roots: list[Path], is_dir_only: bool = True
     visited = set()
     count = 0
     truncated = False
-    skip = {".git", "node_modules", ".venv", "appdata", ".agentdesk_trash", "$recycle.bin"}
+    skip = {".git", "node_modules", ".venv", "appdata", ".agentdesk_trash", "$recycle.bin", "windows", "program files",
+            "program files (x86)", "programdata", "system volume information", "site-packages", "__pycache__", "$windows.~bt",
+            "resources", "extensions", "dist-packages", "venv", "env", "windowsapps", ".gradle", "cache", "caches"}
+    skip = {s for s in skip if _name_key(s) != key}   # unless that is exactly what the user asked for
+    deadline = time.monotonic() + SCAN_SECONDS
+    # Breadth-first across all roots together: shallow folders (E:\FYP, Documents\7th Semester) are seen
+    # before the scan budget runs out, whichever drive they are on.
+    queue: deque = deque()
     for root in roots:
-        root = root.expanduser().resolve()
+        try:
+            root = root.expanduser().resolve()
+        except OSError:
+            continue
         if is_dir_only and root.is_dir():
-            root_key = "".join(c for c in root.name.casefold() if c.isalnum())
+            root_key = _name_key(root.name)
             if key == root_key or (alias_key and alias_key == search_name_key(root.name)):
                 matches[str(root)] = 1.0 if key == root_key else 0.95
                 if key != root_key:
                     alias_matches.add(str(root))
-        for current, dirs, files in os.walk(root, followlinks=False):
-            path = Path(current)
-            if path in visited:
-                dirs.clear()
-                continue
-            visited.add(path)
-            count += 1
-            dirs[:] = [d for d in dirs if d.casefold() not in skip and not d.startswith(".")
-                       and not (path / d).is_symlink() and not getattr(path / d, "is_junction", lambda: False)()]
-            for name in (dirs if is_dir_only else files):
-                normalized = "".join(c for c in name.casefold() if c.isalnum())
-                score = 1.0 if key == normalized else max(SequenceMatcher(None, key, normalized).ratio(), _sounds_like(query, name))
-                if key in normalized:
-                    score = max(score, 0.85)
-                if alias_key and alias_key == search_name_key(name) and key != normalized:
-                    score = max(score, 0.95)
-                    alias_matches.add(str(path / name))
-                if score >= 0.75:
-                    matches[str(path / name)] = score
-            if len(path.relative_to(root).parts) >= 6:
-                dirs.clear()
-            if count >= 5000:
-                truncated = True
-                break
-        if truncated:
+        queue.append((root, 0))
+    while queue:
+        path, depth = queue.popleft()
+        if path in visited:
+            continue
+        visited.add(path)
+        count += 1
+        if count >= MAX_SCAN_DIRS or time.monotonic() > deadline:
+            truncated = True
             break
-    ordered = sorted(matches, key=lambda p: (-matches[p], p.casefold()))
-    return {"candidates": ordered[:30], "truncated": truncated or len(ordered) > 30,
+        try:
+            entries = list(os.scandir(path))
+        except OSError:
+            continue
+        for entry in entries:
+            name = entry.name
+            try:
+                is_dir = entry.is_dir(follow_symlinks=False)
+                if is_dir and (name.casefold() in skip or name.startswith(".") or entry.is_symlink()
+                               or os.path.isjunction(entry.path)):
+                    continue
+                is_file = (not is_dir) and entry.is_file(follow_symlinks=False)
+            except OSError:
+                continue
+            if is_dir and depth < 6:
+                queue.append((path / name, depth + 1))
+            if is_dir != is_dir_only or not (is_dir or is_file):
+                continue
+            normalized = _name_key(name)
+            score = 1.0 if key == normalized else max(SequenceMatcher(None, key, normalized).ratio(), _sounds_like(query, name))
+            if len(key) >= 4 and key in normalized:   # "is" must not match "native-is-elevated" or "Cisco"
+                score = max(score, 0.85)
+            if alias_key and alias_key == search_name_key(name) and key != normalized:
+                score = max(score, 0.95)
+                alias_matches.add(str(path / name))
+            if score >= 0.75:
+                matches[str(path / name)] = score
+    if any(score >= 0.95 for score in matches.values()):
+        matches = {p: s for p, s in matches.items() if s >= 0.95}   # a folder with exactly this name beats every partial match
+    junk = re.compile(r"backup|copy|\(\d+\)|\bold\b|archive|temp|tmp|\.bak", re.IGNORECASE)
+
+    def modified(p: str) -> float:
+        try:
+            return os.stat(p).st_mtime
+        except OSError:
+            return 0.0
+
+    def rank(p: str):
+        # best name match, then not a backup/copy, then the one touched most recently (the one you are working on),
+        # then the one nearest the top of its drive
+        return (-round(matches[p], 2), bool(junk.search(p)), -modified(p) if matches[p] >= 0.95 else 0.0, len(Path(p).parts), p.casefold())
+    ordered = sorted(matches, key=rank)
+    confident = False
+    if ordered:
+        top = round(matches[ordered[0]], 2)
+        tied = [p for p in ordered if round(matches[p], 2) == top]
+        # One clearly best folder (or the only real one beside backups/copies): safe to open without asking.
+        confident = top >= 0.95 and ordered[0] not in alias_matches and (len(tied) == 1 or (not junk.search(tied[0]) and all(junk.search(p) for p in tied[1:])))
+    return {"candidates": ordered[:30], "confident": confident, "exact": bool(ordered) and matches[ordered[0]] >= 1.0 and ordered[0] not in alias_matches, "truncated": truncated or len(ordered) > 30,
             "alias_matches": [path for path in ordered[:30] if path in alias_matches]}
 
 
@@ -182,8 +247,10 @@ def _fuzzy_find_path(query_name: str, allowed: list[Path], is_dir_only: bool = T
     roots = allowed or [Path.home()]
     result = find_path_candidates(query_name, roots, is_dir_only)
     candidates = result["candidates"]
-    if len(candidates) > 1 or result["truncated"]:
-        raise AmbiguousPathError(result)
+    if result.get("confident") and is_dir_only:
+        return Path(candidates[0])
+    if len(candidates) > 1 or (result["truncated"] and not candidates):
+        raise AmbiguousPathError({**result, "candidates": candidates[:6]})
     return Path(candidates[0]) if candidates else None
 
 
@@ -236,7 +303,7 @@ class OpenFolderTool(BaseTool):
             target = _resolve_existing_open_path(a.path, is_dir=True)
         if not target or not target.is_dir():
             try:
-                fuzzy_target = _fuzzy_find_path(a.path, self.ctx.allowed_directories, is_dir_only=True)
+                fuzzy_target = _fuzzy_find_path(a.path, self.ctx.discovery_directories or self.ctx.allowed_directories, is_dir_only=True)
             except AmbiguousPathError as exc:
                 return ToolResult(success=False, output={**exc.result, "needs_confirmation": True}, error=str(exc))
             if fuzzy_target and fuzzy_target.is_dir():
