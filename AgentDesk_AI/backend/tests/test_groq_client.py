@@ -236,3 +236,13 @@ def test_from_settings_uses_configured_models():
     assert client.max_retries == 2 and client.timeout_seconds == 9
     assert client.chat_model == "openai/gpt-oss-20b" and client.tts_voice == "troy"
     assert client.stt_models == ("whisper-large-v3-turbo", "whisper-large-v3")
+
+
+def test_a_call_that_keeps_failing_slowly_stops_at_the_time_budget(monkeypatch):
+    """Live: three 15-second timeouts in a row made one command take 44 s. All attempts of one call share a budget now."""
+    chat = Endpoint(RateLimitError(), RateLimitError(), chat_response())
+    client, sleeps = make(fake_sdk(chat=chat))
+    client.max_total_seconds = 0.0                       # the first failure already used the whole budget
+    with pytest.raises(AIRateLimitError):
+        client.chat([{"role": "user", "content": "x"}])
+    assert len(chat.calls) == 1                          # no second and third attempt

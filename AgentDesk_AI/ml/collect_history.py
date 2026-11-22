@@ -103,8 +103,12 @@ def label(tool: str, args: dict) -> tuple[str, dict] | None:
         return "media_control", {}
     if tool == "list_folder":
         return "list_folder", {"path": _base(a.get("path"))}
-    if tool == "open_folder":
+    if tool in {"open_folder", "explorer_navigate"}:
         return "open_folder", {"path": _base(a.get("path"))}
+    if tool == "open_windows_settings":
+        return "open_settings", {"page": a.get("page")}
+    if tool == "open_browser_profile":
+        return "browser_profile", {"profile": a.get("profile") or None}
     if tool == "open_file":
         return "open_file", {"file": _base(a.get("path"))}
     if tool == "create_folder":

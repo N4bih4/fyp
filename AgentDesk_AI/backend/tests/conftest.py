@@ -151,3 +151,9 @@ def _never_raise_a_real_window(monkeypatch):
     """Opening tools bring their window to the front; a test with a fake window handle must not touch the real desktop."""
     from app.tools import window_focus
     monkeypatch.setattr(window_focus, "bring_to_front", lambda hwnd: False)
+
+
+@pytest.fixture(autouse=True)
+def _no_real_system_worker(monkeypatch):
+    """Tests must not start the long-lived worker that really changes the volume or brightness of whoever runs them."""
+    monkeypatch.setenv("AGENTDESK_PERSISTENT_SYSTEM_WORKER", "off")

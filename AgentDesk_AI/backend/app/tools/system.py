@@ -2,6 +2,10 @@
 from __future__ import annotations
 
 import asyncio
+import os
+import queue
+import threading
+import time
 import platform
 import subprocess
 import sys
@@ -43,6 +47,77 @@ class ManageSystemSettingArgs(BaseModel):
         elif self.action not in {"set"} and self.value is not None:
             raise ValueError(f"value is not used for {self.action}")
         return self
+
+
+def _persistent_workers_enabled() -> bool:
+    return os.environ.get("AGENTDESK_PERSISTENT_SYSTEM_WORKER", "on").lower() != "off"
+
+
+class _PersistentWorker:
+    """A long-lived system worker process (see system_worker.py --serve). Two of them are used: one that changes settings and one that only reads them back,
+    so the read-back that verifies a change is still done by a different process than the one that made it. None / a fall-back to the one-shot worker on any trouble."""
+
+    def __init__(self) -> None:
+        self._proc: subprocess.Popen | None = None
+        self._lines: "queue.Queue[str | None]" = queue.Queue()
+        self._lock = threading.Lock()
+
+    def _start(self) -> None:
+        self._proc = subprocess.Popen(
+            [*system_worker_command(), "--serve"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, encoding="utf-8",
+            errors="replace", cwd=str(data_root()), creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0), bufsize=1)
+        lines = self._lines = queue.Queue()
+        proc = self._proc
+
+        def pump() -> None:
+            for line in proc.stdout:                      # type: ignore[union-attr]
+                lines.put(line)
+            lines.put(None)                               # the process ended
+        threading.Thread(target=pump, daemon=True, name="system-worker-pump").start()
+
+    def call(self, payload: str, timeout: float = 20.0) -> "ToolResult | None":
+        with self._lock:
+            try:
+                if self._proc is None or self._proc.poll() is not None:
+                    self._start()
+                self._proc.stdin.write(" ".join(payload.splitlines()) + "\n")    # type: ignore[union-attr]  (one request per line)
+                self._proc.stdin.flush()                                         # type: ignore[union-attr]
+                deadline = time.monotonic() + timeout
+                while True:
+                    line = self._lines.get(timeout=max(0.1, deadline - time.monotonic()))
+                    if line is None:
+                        break
+                    if line.startswith("AGENTX_RESULT="):
+                        return ToolResult.model_validate_json(line.removeprefix("AGENTX_RESULT="))
+            except (OSError, ValueError, queue.Empty):
+                pass
+            self.stop()                                   # stuck or dead: the next call starts a fresh one; this one falls back to the one-shot worker
+            return None
+
+    def stop(self) -> None:
+        proc, self._proc = self._proc, None
+        if proc is not None:
+            try:
+                proc.kill()
+            except OSError:
+                pass
+
+
+_WORKERS = {"write": _PersistentWorker(), "read": _PersistentWorker()}
+
+
+def stop_workers() -> None:
+    """Shut the long-lived workers down with the server (no orphan Python processes after the app is closed)."""
+    for worker in _WORKERS.values():
+        worker.stop()
+
+
+def warm_workers() -> None:
+    """Start both system workers and let them load the audio library (a harmless volume read), so the first real command does not pay for it."""
+    if platform.system() != "Windows" or not _persistent_workers_enabled():
+        return
+    for worker in _WORKERS.values():
+        worker.call('{"setting": "volume", "action": "get"}', timeout=15.0)
 
 
 class ManageSystemSettingTool(BaseTool):
@@ -217,6 +292,9 @@ class ManageSystemSettingTool(BaseTool):
         if platform.system() == "Windows" and self.ctx.isolate_system_controls and parsed.setting in {"volume", "brightness", "bluetooth", "wifi"}:
             # COM/WMI objects cannot safely be shared across short-lived executor
             # threads. Native library faults must not crash the API process.
+            fast = _WORKERS["read" if parsed.action == "get" else "write"].call(parsed.model_dump_json()) if _persistent_workers_enabled() else None
+            if fast is not None:
+                return fast
             try:
                 child = subprocess.run(
                     system_worker_command(),

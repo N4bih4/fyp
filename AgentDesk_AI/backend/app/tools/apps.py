@@ -761,6 +761,13 @@ def _open_with_choice(url: str, requested: str | None, new_tab: bool = False) ->
     return None, {"browser": choice.browser.key, **({"profile": choice.profile} if choice.profile else {})}
 
 
+def _open_page(url: str) -> tuple[ToolResult | None, bool]:
+    """A page opened without a browser being named (YouTube results, a watch page): through the same choice as open_url, so with several browsers
+    and none chosen the user is asked. Returns (the question, False) or (None, whether a browser took it)."""
+    asked, opened = _open_with_choice(url, None)
+    return asked, bool(opened)
+
+
 def _same_url(a: str, b: str) -> bool:
     def norm(u: str) -> str:
         parts = urlsplit(u)
@@ -962,7 +969,9 @@ class PlayYouTubeVideoTool(BaseTool):
         except ValueError as exc:
             try:
                 reused_title = _reuse_youtube_window(search_url)
-                opened = bool(reused_title) or webbrowser.open(search_url)
+                asked, opened = (None, True) if reused_title else _open_page(search_url)
+                if asked is not None:
+                    return asked
             except Exception as open_exc:  # noqa: BLE001 - report both lookup and browser failures
                 return ToolResult(
                     success=False,
@@ -982,7 +991,9 @@ class PlayYouTubeVideoTool(BaseTool):
         if match is None:
             try:
                 reused_title = _reuse_youtube_window(search_url)
-                opened = bool(reused_title) or webbrowser.open(search_url)
+                asked, opened = (None, True) if reused_title else _open_page(search_url)
+                if asked is not None:
+                    return asked
             except Exception as exc:  # noqa: BLE001 - report system browser errors
                 return ToolResult(success=False, error=f"Could not open YouTube search results: {exc}")
             if not opened:
@@ -1003,7 +1014,9 @@ class PlayYouTubeVideoTool(BaseTool):
         watch_url = f"https://www.youtube.com/watch?{urlencode({'v': video_id, 'autoplay': '1'})}"
         try:
             reused_title = _reuse_youtube_window(watch_url)
-            opened = bool(reused_title) or webbrowser.open(watch_url)
+            asked, opened = (None, True) if reused_title else _open_page(watch_url)
+            if asked is not None:
+                return asked
         except Exception as exc:  # noqa: BLE001 - report system browser errors
             return ToolResult(success=False, error=f"Could not open the selected YouTube video: {exc}")
         if not opened:

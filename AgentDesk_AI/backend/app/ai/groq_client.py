@@ -23,6 +23,7 @@ import io
 import logging
 import random
 import threading
+import os
 import time
 from dataclasses import dataclass, field
 from email.utils import parsedate_to_datetime
@@ -162,6 +163,7 @@ class GroqClient:
         self._factory = client_factory
         self._sdk_key: str | None = None
         self.timeout_seconds = float(timeout_seconds)
+        self.max_total_seconds = float(os.environ.get("AGENTDESK_GROQ_BUDGET_SECONDS", "16"))      # all attempts of ONE call together (was up to 3 x 15 s + back-off)
         self.max_retries = max_retries
         self.base_backoff_seconds = base_backoff_seconds
         self.max_backoff_seconds = max_backoff_seconds
@@ -272,10 +274,11 @@ class GroqClient:
         last: _Retryable | None = None
         attempt = -1
         switches = 0
+        began = time.perf_counter()
         while True:
             attempt += 1
-            if attempt > self.max_retries:
-                break
+            if attempt > self.max_retries or (last is not None and time.perf_counter() - began > self.max_total_seconds):
+                break                                   # out of retries, or out of time: a stuck call is not retried for another 15 s, twice
             started = time.perf_counter()
             self.last_used = time.monotonic()
             self.usage.add(kind, calls=1)

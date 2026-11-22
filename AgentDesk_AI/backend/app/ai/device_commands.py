@@ -52,7 +52,7 @@ def device_plan(raw: str) -> Plan | None:
         return _device("keep_awake", minutes=max(1, min(720, minutes)))
     if re.fullmatch(rf"stop keeping {_PC} awake|let {_PC} sleep again|{_PC} ko sone do|keep awake (?:off|stop)", t):
         return _device("stop_keep_awake")
-    if re.fullmatch(r"(?:how much )?battery(?: is left| left| status| percentage| level)?|what(?:'s| is) (?:my )?battery(?: level| percentage)?|is (?:my )?(?:laptop|pc) charging|battery (?:kitni|kitna) (?:reh gayi|bachi|bacha) hai|battery ka status batao|battery kitne percent hai|بیٹری کتنی رہ گئی ہے|बैटरी कितनी बची है", t):
+    if re.fullmatch(r"(?:how much )?battery(?: is left| left| status| percentage| level)?|what(?:'s| is) (?:my )?battery(?: level| percentage)?|is (?:my )?(?:laptop|pc) charging|battery (?:kitni|kitna|kitne percent)(?: reh gayi| bachi| bacha| baqi| hai)*|(?:battery|charge|charging) (?:ka )?(?:status|level|percentage)(?: batao| bata do| dikhao)?|charge (?:kitna|kitni) (?:hai|bacha hai|bachi hai|reh gaya hai)|laptop (?:charge|charging) (?:ho raha|ho rahi) hai|battery ka status batao|battery kitne percent hai|بیٹری کتنی رہ گئی ہے|बैटरी कितनी बची है", t):
         return _device("battery")
     # ---- modes
     m = re.fullmatch(rf"(?:turn|switch|put) (on|off) (?:the )?(?:airplane|aeroplane|flight) mode|(?:airplane|aeroplane|flight) mode {_ON}(?: karo| kar do)?|(?:airplane|aeroplane|flight) mode (?:ko )?{_ON} (?:karo|kar do)", t)

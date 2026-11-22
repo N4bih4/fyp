@@ -171,3 +171,15 @@ def test_the_conversations_browser_window_is_reused_until_a_new_tab_is_asked_for
     assert again.success and again.output.get("same_window") and typed == [("edge", "https://github.com")] and len(world) == before
     fresh = open_url("https://gitlab.com", new_tab=True)                      # "new tab": the browser is started / asked for a tab
     assert fresh.success and len(world) == before + 1 and typed == [("edge", "https://github.com")]
+
+
+def test_a_youtube_video_with_three_browsers_and_no_choice_asks_instead_of_using_the_default(db, world, monkeypatch):
+    monkeypatch.setattr(apps, "_play_through_extension", lambda query, kind: None)
+    monkeypatch.setattr(apps, "_find_youtube_video", lambda query: ("abc123", "A song"))
+    tool = apps.PlayYouTubeVideoTool(ToolContext())
+    out = tool.execute(tool.validate_args({"query": "a song"}))
+    assert not out.success and out.output["needs_confirmation"] and out.output["asking"] == "browser" and world == []
+    browser_choice.remember_in_lane("edge", None)                          # after the answer the same request opens in that browser
+    monkeypatch.setattr(apps, "_nudge_youtube_playback", lambda video_id, wait_seconds=4.0: True)
+    again = tool.execute(tool.validate_args({"query": "a song"}))
+    assert again.success and world[-1][0] == r"C:\msedge.exe"

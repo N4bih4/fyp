@@ -75,3 +75,4 @@ The model is only as good as the voices it heard. Do one short session per perso
 4. With 3 or more speakers, `ml\build_dataset.py` keeps whole speakers OUT of training and tests on them: that number is the honest "new voice" score.
 5. Aim: 8+ people, at least 3 women/men mix, English + Roman Urdu + Urdu. Then `ml\retrain.ps1` and `ml\evaluate.py`.
 Use `ml\shadow_report.py` afterwards to see, on everyday use, from which confidence the model agrees with what the app really did.
+6. `backend\.venv\Scripts\python ml\speaker_report.py` (Phase 6): per speaker, how many sentences the model labels right, how many it answers at the calibrated threshold, and how often it is right WHEN it answers. That last number must stay at 97% or more for a new voice; below it the report says "do not let the model act alone for this voice". For the new-speaker test move one `history_<name>.jsonl` out of `data/real/`, retrain, put it back and run `ml\speaker_report.py --speaker <name>`.

@@ -91,3 +91,53 @@ def test_a_drive_that_is_not_on_this_pc_is_named_in_the_answer(monkeypatch):
     tool = ExplorerNavigateTool(ToolContext())
     out = tool.execute(tool.validate_args({"path": "Q:" + chr(92)}))
     assert not out.success and "no Q: drive" in out.error and "C:" in out.error
+
+
+def test_roman_urdu_louder_and_quieter_are_local_commands(db):
+    from app.orchestration import executor, local_agent
+    from app.tools.registry import ToolRegistry
+    registry = ToolRegistry()
+    for text, setting, action in (("volume thora barha do", "volume", "increase"), ("awaaz barha do", "volume", "increase"), ("volume ghata do", "volume", "decrease"),
+                                  ("thori awaaz kam karo", "volume", "decrease"), ("roshni barhao", "brightness", "increase")):
+        task = executor.create_task(db, text)
+        plan = local_agent.prepare_local_request(db, task, registry)
+        args = plan.actions[0].args
+        assert plan.actions[0].tool == "manage_system_setting" and args["setting"] == setting and args["action"] == action, text
+
+
+def test_battery_questions_in_roman_urdu_are_local_commands():
+    from app.ai.device_commands import device_plan
+    for text in ["battery kitni hai", "charge kitna hai", "battery kitne percent hai", "battery status batao", "charging status"]:
+        plan = device_plan(text)
+        assert plan is not None and plan.actions[0].tool == "device_control" and plan.actions[0].args == {"action": "battery"}, text
+
+
+def test_asking_how_loud_or_bright_it_is_reads_the_setting_and_never_changes_it(db):
+    from app.orchestration import executor, local_agent
+    from app.tools.registry import ToolRegistry
+    registry = ToolRegistry()
+    for text, setting in (("volume kitni hai", "volume"), ("awaaz kitni hai", "volume"), ("brightness kitni hai", "brightness")):
+        plan = local_agent.prepare_local_request(db, executor.create_task(db, text), registry)
+        assert plan.actions[0].args == {"setting": setting, "action": "get"}, text
+    plan = local_agent.prepare_local_request(db, executor.create_task(db, "volume kitni karni hai"), registry)
+    assert not plan.actions                                  # "how much should it be?" is a question back to the user, not a change
+
+
+def test_a_window_listed_twice_under_one_title_is_one_choice_not_a_question():
+    """Soak test: "calculator band karo" asked "which one? 1. Calculator 2. Calculator" because Windows lists the Calculator frame and window."""
+    from types import SimpleNamespace as NS
+    from app.ai import window_commands
+    from app.tools.base import ToolResult
+
+    class Control:
+        def validate_args(self, a):
+            return a
+
+        def execute(self, a):
+            return ToolResult(success=True, output={"completed_steps": [{"open_windows": ["Calculator", "Calculator", "Notepad"]}]})
+
+    class Registry:
+        def get(self, name):
+            return Control()
+    plan = window_commands.window_plan(NS(command="calculator band karo", agent_state_json=None), Registry(), "calculator band karo")
+    assert plan.actions and plan.actions[0].args["target_window"] == "Calculator"

@@ -76,6 +76,7 @@ def window_plan(task, registry, command=None):
     from .command_language import search_name_key
     key = search_name_key(target)
     matches = [title for title in titles if target.casefold() in title.casefold() or (key and key in search_name_key(title))]
+    matches = list(dict.fromkeys(matches))                       # Calculator is listed twice (its frame and its window): one title, one choice
     if len(matches) == 1:
         return close_action(matches[0])
     if matches:

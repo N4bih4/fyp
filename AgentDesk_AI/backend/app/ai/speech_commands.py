@@ -11,14 +11,14 @@ GROUPS = {
     "wifi": "wifi wi-fi وائیفائی वाईफाई",
     "theme": "theme", "mode": "mode मोड موڈ",
     "dark": "dark डार्क ڈارک", "light": "light लाइट لائٹ",
-    "increase": "up increase raise louder zyada ziyada zada barhao badhao ज्यादा बढ़ाओ زیادہ بڑھاؤ بڑھا اپ انکریز इंक्रीज इनक्रीज",
-    "decrease": "down decrease lower reduce dim kam कम کم डाउन घटाओ ڈاؤن ڈاون ڈیکریز ڈکریز डिक्रीज डीक्रीज",
+    "increase": "up increase raise louder zyada ziyada zada ziada barhao barha barhaye barhain badhao badha badhain tez ज्यादा बढ़ाओ زیادہ بڑھاؤ بڑھا اپ انکریز इंक्रीज इनक्रीज",
+    "decrease": "down decrease lower reduce dim kam kamm ghata ghatao ghatain कम کم डाउन घटाओ ڈاؤن ڈاون ڈیکریز ڈکریز डिक्रीज डीक्रीज",
     "on": "on enable chalu آن ان ऑन चालू", "off": "off disable band بند آف اف ऑफ बंद",
     "mute": "mute म्यूट میوٹ میُوٹ", "unmute": "unmute अनम्यूट انمیوٹ",
-    "get": "get status check batao", "%": "percent percentage فیصد پرسنٹ प्रतिशत",
+    "get": "get status check batao kitni kitna level", "%": "percent percentage فیصد پرسنٹ प्रतिशत",
 }
 ALIASES = {unicodedata.normalize("NFKC", word).replace("़", ""): key for key, values in GROUPS.items() for word in values.split()}
-FILLERS = set("please kindly meri mera mere my the turn set to by kar karo kardo do dein dena kr kijiye zara thora thodi sa ki ko ka ke mein me is it ji uh um erm laptop pc computer screen display मेरा मेरी मेरे मुझे कर करो दो दीजिए में को का के जरा थोड़ा پلیز میری میرا مجھے کر کرو دو دیں ذرا پی سی کی کا کے کو کمپیوٹر لیپ ٹاپ".split())
+FILLERS = set("hai hain ho please kindly meri mera mere my the turn set to by kar karo kardo do dein dena kr kijiye zara thora thori thodi thoda sa ki ko ka ke mein me is it ji uh um erm laptop pc computer screen display मेरा मेरी मेरे मुझे कर करो दो दीजिए में को का के जरा थोड़ा پلیز میری میرا مجھے کر کرو دو دیں ذرا پی سی کی کا کے کو کمپیوٹر لیپ ٹاپ".split())
 NEGATIONS = {"not", "no", "never", "dont", "don't", "nahi", "nahin", "mat", "नहीं", "मत", "نہیں", "مت"}
 
 

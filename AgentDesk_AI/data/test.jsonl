@@ -1,15 +1,15 @@
-{"text": "start Notepad", "intent": "open_app", "slots": {"app": "Notepad"}, "lang": "en", "is_correction": false}
-{"text": "start Firefox", "intent": "open_app", "slots": {"app": "Firefox"}, "lang": "en", "is_correction": false}
-{"text": "start Word", "intent": "open_app", "slots": {"app": "Word"}, "lang": "en", "is_correction": false}
-{"text": "start File Explorer", "intent": "open_app", "slots": {"app": "File Explorer"}, "lang": "en", "is_correction": false}
-{"text": "start VS Code", "intent": "open_app", "slots": {"app": "VS Code"}, "lang": "en", "is_correction": false}
-{"text": "start Outlook", "intent": "open_app", "slots": {"app": "Outlook"}, "lang": "en", "is_correction": false}
-{"text": "i want to use File Explorer", "intent": "open_app", "slots": {"app": "File Explorer"}, "lang": "en", "is_correction": false}
-{"text": "i want to use Firefox", "intent": "open_app", "slots": {"app": "Firefox"}, "lang": "en", "is_correction": false}
-{"text": "i want to use Notepad", "intent": "open_app", "slots": {"app": "Notepad"}, "lang": "en", "is_correction": false}
-{"text": "i want to use VS Code", "intent": "open_app", "slots": {"app": "VS Code"}, "lang": "en", "is_correction": false}
-{"text": "i want to use Word", "intent": "open_app", "slots": {"app": "Word"}, "lang": "en", "is_correction": false}
-{"text": "i want to use Outlook", "intent": "open_app", "slots": {"app": "Outlook"}, "lang": "en", "is_correction": false}
+{"text": "bring up Notepad", "intent": "open_app", "slots": {"app": "Notepad"}, "lang": "en", "is_correction": false}
+{"text": "bring up Firefox", "intent": "open_app", "slots": {"app": "Firefox"}, "lang": "en", "is_correction": false}
+{"text": "bring up Word", "intent": "open_app", "slots": {"app": "Word"}, "lang": "en", "is_correction": false}
+{"text": "bring up File Explorer", "intent": "open_app", "slots": {"app": "File Explorer"}, "lang": "en", "is_correction": false}
+{"text": "bring up VS Code", "intent": "open_app", "slots": {"app": "VS Code"}, "lang": "en", "is_correction": false}
+{"text": "bring up Outlook", "intent": "open_app", "slots": {"app": "Outlook"}, "lang": "en", "is_correction": false}
+{"text": "please open File Explorer for me", "intent": "open_app", "slots": {"app": "File Explorer"}, "lang": "en", "is_correction": false}
+{"text": "please open Firefox for me", "intent": "open_app", "slots": {"app": "Firefox"}, "lang": "en", "is_correction": false}
+{"text": "please open Notepad for me", "intent": "open_app", "slots": {"app": "Notepad"}, "lang": "en", "is_correction": false}
+{"text": "please open VS Code for me", "intent": "open_app", "slots": {"app": "VS Code"}, "lang": "en", "is_correction": false}
+{"text": "please open Word for me", "intent": "open_app", "slots": {"app": "Word"}, "lang": "en", "is_correction": false}
+{"text": "please open Outlook for me", "intent": "open_app", "slots": {"app": "Outlook"}, "lang": "en", "is_correction": false}
 {"text": "VS Code open karo", "intent": "open_app", "slots": {"app": "VS Code"}, "lang": "roman_ur", "is_correction": false}
 {"text": "Notepad open karo", "intent": "open_app", "slots": {"app": "Notepad"}, "lang": "roman_ur", "is_correction": false}
 {"text": "Word open karo", "intent": "open_app", "slots": {"app": "Word"}, "lang": "roman_ur", "is_correction": false}
@@ -430,7 +430,46 @@
 {"text": "cancel kar do", "intent": "confirm_no", "slots": {}, "lang": "roman_ur", "is_correction": false}
 {"text": "نہیں رہنے دو", "intent": "confirm_no", "slots": {}, "lang": "ur", "is_correction": false}
 {"text": "नहीं", "intent": "confirm_no", "slots": {}, "lang": "hi", "is_correction": false}
-{"text": "what time does the train leave", "intent": "unknown", "slots": {}, "lang": "en", "is_correction": false}
-{"text": "what is the best pizza place", "intent": "unknown", "slots": {}, "lang": "en", "is_correction": false}
-{"text": "acha theek hai phir", "intent": "unknown", "slots": {}, "lang": "roman_ur", "is_correction": false}
+{"text": "settings kholo", "intent": "open_settings", "slots": {}, "lang": "en", "is_correction": false}
+{"text": "display ki settings dikhao", "intent": "open_settings", "slots": {"page": "display"}, "lang": "roman_ur", "is_correction": false}
+{"text": "privacy ki settings dikhao", "intent": "open_settings", "slots": {"page": "privacy"}, "lang": "roman_ur", "is_correction": false}
+{"text": "Bluetooth ki settings dikhao", "intent": "open_settings", "slots": {"page": "Bluetooth"}, "lang": "roman_ur", "is_correction": false}
+{"text": "display کی سیٹنگز دکھاؤ", "intent": "open_settings", "slots": {"page": "display"}, "lang": "ur", "is_correction": false}
+{"text": "privacy کی سیٹنگز دکھاؤ", "intent": "open_settings", "slots": {"page": "privacy"}, "lang": "ur", "is_correction": false}
+{"text": "Bluetooth کی سیٹنگز دکھاؤ", "intent": "open_settings", "slots": {"page": "Bluetooth"}, "lang": "ur", "is_correction": false}
+{"text": "privacy सेटिंग्स खोलो", "intent": "open_settings", "slots": {"page": "privacy"}, "lang": "hi", "is_correction": false}
+{"text": "display सेटिंग्स खोलो", "intent": "open_settings", "slots": {"page": "display"}, "lang": "hi", "is_correction": false}
+{"text": "Bluetooth सेटिंग्स खोलो", "intent": "open_settings", "slots": {"page": "Bluetooth"}, "lang": "hi", "is_correction": false}
+{"text": "open the Office profile in chrome", "intent": "browser_profile", "slots": {"profile": "Office"}, "lang": "en", "is_correction": false}
+{"text": "open the Nabiha profile in chrome", "intent": "browser_profile", "slots": {"profile": "Nabiha"}, "lang": "en", "is_correction": false}
+{"text": "open the Personal profile in chrome", "intent": "browser_profile", "slots": {"profile": "Personal"}, "lang": "en", "is_correction": false}
+{"text": "open the Work profile in chrome", "intent": "browser_profile", "slots": {"profile": "Work"}, "lang": "en", "is_correction": false}
+{"text": "open the Mary profile in chrome", "intent": "browser_profile", "slots": {"profile": "Mary"}, "lang": "en", "is_correction": false}
+{"text": "open the Study profile in chrome", "intent": "browser_profile", "slots": {"profile": "Study"}, "lang": "en", "is_correction": false}
+{"text": "Nabiha profile kholo", "intent": "browser_profile", "slots": {"profile": "Nabiha"}, "lang": "roman_ur", "is_correction": false}
+{"text": "Office profile kholo", "intent": "browser_profile", "slots": {"profile": "Office"}, "lang": "roman_ur", "is_correction": false}
+{"text": "Personal profile kholo", "intent": "browser_profile", "slots": {"profile": "Personal"}, "lang": "roman_ur", "is_correction": false}
+{"text": "Study profile kholo", "intent": "browser_profile", "slots": {"profile": "Study"}, "lang": "roman_ur", "is_correction": false}
+{"text": "Mary profile kholo", "intent": "browser_profile", "slots": {"profile": "Mary"}, "lang": "roman_ur", "is_correction": false}
+{"text": "Work profile kholo", "intent": "browser_profile", "slots": {"profile": "Work"}, "lang": "roman_ur", "is_correction": false}
+{"text": "کروم کی دوسری پروفائل کھولو", "intent": "browser_profile", "slots": {}, "lang": "ur", "is_correction": false}
+{"text": "प्रोफाइल्स दिखाओ", "intent": "browser_profile", "slots": {}, "lang": "hi", "is_correction": false}
+{"text": "turn on the kitchen lights", "intent": "unknown", "slots": {}, "lang": "en", "is_correction": false}
+{"text": "order a coffee", "intent": "unknown", "slots": {}, "lang": "en", "is_correction": false}
+{"text": "kuch bhi", "intent": "unknown", "slots": {}, "lang": "roman_ur", "is_correction": false}
 {"text": "ٹیکسی بک کرو", "intent": "unknown", "slots": {}, "lang": "ur", "is_correction": false}
+{"text": "YouTube open zero", "intent": "open_website", "slots": {"site": "YouTube"}, "lang": "en", "source": "real", "speaker": "zain", "is_correction": false}
+{"text": "YouTube open karo,", "intent": "open_website", "slots": {"site": "YouTube"}, "lang": "roman_ur", "source": "real", "speaker": "zain", "is_correction": false}
+{"text": "یہ میں نے آپ کو کہا گزارش موسک یوٹیوب پر لے کرنا ہے", "intent": "youtube_play", "slots": {}, "lang": "ur", "source": "real", "speaker": "zain", "is_correction": false}
+{"text": "I'm saying YouTube, YouTube, I'll go to YouTube, I'll go to Rathbhati Khanda,", "intent": "browser_tab", "slots": {}, "lang": "en", "source": "real", "speaker": "zain", "is_correction": false}
+{"text": "ZainResumeDev.pdf.", "intent": "find_files", "slots": {"name": "ZainResumeDev.pdf"}, "lang": "en", "source": "real", "speaker": "zain", "is_correction": false}
+{"text": "zandav.pdf", "intent": "find_files", "slots": {"name": "zandav.pdf"}, "lang": "en", "source": "real", "speaker": "zain", "is_correction": false}
+{"text": "play the video", "intent": "youtube_resume", "slots": {}, "lang": "en", "source": "real", "speaker": "zain", "is_correction": false}
+{"text": "mute the video", "intent": "youtube_control", "slots": {}, "lang": "en", "source": "real", "speaker": "zain", "is_correction": false}
+{"text": "unmute", "intent": "volume_change", "slots": {}, "lang": "en", "source": "real", "speaker": "zain", "is_correction": false}
+{"text": "open paint", "intent": "open_app", "slots": {"app": "paint"}, "lang": "en", "source": "real", "speaker": "zain", "is_correction": false}
+{"text": "open file explorer", "intent": "open_app", "slots": {"app": "file explorer"}, "lang": "en", "source": "real", "speaker": "zain", "is_correction": false}
+{"text": "open a browser", "intent": "open_app", "slots": {}, "lang": "en", "source": "real", "speaker": "zain", "is_correction": false}
+{"text": "Antigravity open karo", "intent": "open_app", "slots": {"app": "Antigravity"}, "lang": "roman_ur", "source": "real", "speaker": "zain", "is_correction": false}
+{"text": "میرے agent کا نام ہے میں user کا folder open کرنے کا کہہ رہا ہوں اسے", "intent": "open_folder", "slots": {}, "lang": "ur", "source": "real", "speaker": "zain", "is_correction": false}
+{"text": "Chrome Open Godot", "intent": "open_app", "slots": {"app": "Chrome"}, "lang": "en", "source": "real", "speaker": "zain", "is_correction": false}

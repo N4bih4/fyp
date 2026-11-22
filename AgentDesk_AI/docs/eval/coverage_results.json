@@ -169,15 +169,15 @@
   "app_close_notepad": {
    "en": {
     "state": "cloud",
-    "detail": "Kaunsi window band karni hai? Number batayein.\n1. *hello world اردو 12"
+    "detail": "'notepad' ki khuli window nahi mili. Khuli window ka naam batayein."
    },
    "ru": {
     "state": "cloud",
-    "detail": "Kaunsi window band karni hai? Number batayein.\n1. *hello world اردو 12"
+    "detail": "'notepad' ki khuli window nahi mili. Khuli window ka naam batayein."
    },
    "hi": {
     "state": "cloud",
-    "detail": "Kaunsi window band karni hai? Number batayein.\n1. *hello world اردو 12"
+    "detail": "'notepad' ki khuli window nahi mili. Khuli window ka naam batayein."
    }
   },
   "app_switch": {
@@ -2156,5 +2156,5 @@
    "detail": "failed ['control_browser'] ['That control needs the browser helper (the Agent X extension): it is not connect']"
   }
  },
- "when": "2026-11-13 20:10"
+ "when": "2026-11-22 17:27"
 }

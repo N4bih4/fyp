@@ -90,7 +90,10 @@ async def lifespan(app: FastAPI):
         from .orchestration import worker
         # Start one tool worker in the background so the first command does not pay its start-up cost.
         threading.Thread(target=worker.pool.warm, name="tool-worker-warmup", daemon=True).start()
+    from .tools import system as _system
+    threading.Thread(target=_system.warm_workers, name="system-worker-warmup", daemon=True).start()   # the first "volume kam karo" then answers in under a second
     yield
+    _system.stop_workers()
     if settings.tool_isolation == "process":
         from .orchestration import worker
 

@@ -39,6 +39,8 @@ fillers:
   question: [who is the prime minister of Pakistan, what is the capital of Australia, how far is the moon, what is photosynthesis, when did Pakistan become independent, how many people live in Karachi]
   button: [Save, Submit, Next, OK, Cancel, Start, Search, Login, Download, Play, Send, Close, Add, Apply]
   field: [search box, name field, address bar, message box, email field, title box]
+  page: [Wi-Fi, Bluetooth, display, sound, apps, Windows Update, battery, storage, network, privacy, personalization, accounts, date and time, notifications]
+  profile: [Work, Zain, Nabiha, Personal, Study, Mary, Office]
   typed: [hello world, my name is Zain, meeting at five, good morning, test message]
 
 intents:
@@ -424,6 +426,20 @@ intents:
     roman_ur: "nahi | nahi rehne do | mat karo | cancel kar do"
     ur: "نہیں | نہیں رہنے دو | مت کرو"
     hi: "नहीं | रहने दो | मत करो"
+  open_settings:
+    risk: low
+    slots: [page]
+    en: "open {page} settings | show me the {page} settings | take me to {page} settings | open windows settings | settings kholo"
+    roman_ur: "{page} settings kholo | {page} ki settings dikhao | {page} settings open karo | windows settings kholo | settings mein jao"
+    ur: "{page} سیٹنگز کھولو | سیٹنگز کھولو | {page} کی سیٹنگز دکھاؤ"
+    hi: "{page} सेटिंग्स खोलो | सेटिंग्स खोलो | {page} की सेटिंग्स दिखाओ"
+  browser_profile:
+    risk: low
+    slots: [profile]
+    en: "open the {profile} profile in chrome | open chrome with the {profile} profile | switch to my {profile} chrome profile | open another chrome profile | show me the chrome profiles"
+    roman_ur: "chrome mein {profile} wali profile kholo | {profile} profile kholo | chrome ki koi aur profile kholni hai | profile change karni hai | chrome ki profiles dikhao"
+    ur: "کروم میں {profile} پروفائل کھولو | کروم کی دوسری پروفائل کھولو | پروفائلز دکھاؤ"
+    hi: "क्रोम में {profile} प्रोफाइल खोलो | क्रोम की दूसरी प्रोफाइल खोलो | प्रोफाइल्स दिखाओ"
   unknown:
     risk: low
     en: "what is the best pizza place | book me a taxi | turn on the kitchen lights | order a coffee | blah blah | what time does the train leave"
