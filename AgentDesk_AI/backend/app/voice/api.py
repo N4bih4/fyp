@@ -26,12 +26,12 @@ _chain: TTSChain | None = None
 def _speech_client():
     """The cloud brain when configured, else the local Groq client; None when neither is available."""
     settings = get_settings()
+    if settings.groq_configured:        # this PC's own key first: one hop to Groq, no cold-starting free server in between
+        from ..ai.groq_client import get_groq_client
+        return get_groq_client()
     if settings.cloud_configured:
         from ..cloud_client import CloudBrain
         return CloudBrain(settings.cloud_brain_url, settings.cloud_brain_token)
-    if settings.groq_configured:
-        from ..ai.groq_client import get_groq_client
-        return get_groq_client()
     return None
 
 
@@ -272,6 +272,11 @@ async def stt(audio: UploadFile = File(...), language: str | None = Form(default
                 from ..ai.groq_client import get_groq_client
                 client = get_groq_client()
         result = client.transcribe(data, filename=name, language=language, prompt=prompt)
+        from .junk import junk_reason
+        why = junk_reason(result["text"], language=result.get("language"), no_speech_prob=result.get("no_speech_prob"), avg_logprob=result.get("avg_logprob"),
+                          compression_ratio=result.get("compression_ratio"))
+        if why:      # noise, not a command: an empty text is "nothing was said" for the page
+            return {"text": "", "rejected": why, "language": result.get("language"), "model": result.get("model")}
         return {"text": result["text"], "language": result.get("language"), "model": result.get("model")}
     except AIRateLimitError as exc:
         raise HTTPException(429, str(exc)) from exc

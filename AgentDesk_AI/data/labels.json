@@ -47,6 +47,7 @@
   "ui_click",
   "ui_type",
   "undo",
+  "unknown",
   "volume_change",
   "volume_set",
   "web_answer",

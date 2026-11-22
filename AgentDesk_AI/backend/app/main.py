@@ -114,7 +114,7 @@ app.add_middleware(
 
 _LOCAL_HOSTS = {"127.0.0.1", "localhost", "[::1]", "testserver"}
 _SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
-_PROTECTED_PREFIXES = ("/tasks", "/agents", "/config", "/tools", "/usage", "/browser/connect-token", "/preferences", "/memory", "/metrics", "/voice", "/mail")
+_PROTECTED_PREFIXES = ("/tasks", "/agents", "/lanes", "/config", "/tools", "/usage", "/browser/connect-token", "/preferences", "/memory", "/metrics", "/voice", "/mail")
 
 
 @app.middleware("http")
@@ -293,8 +293,33 @@ def list_tools() -> list[dict]:
 @app.post("/tasks", response_model=TaskOut)
 def create_task(payload: TaskCreate, response: Response, background: bool = Query(default=False), db: Session = Depends(get_db)) -> TaskOut:
     # Shadow (the team lead) picks the agent: a name at the start ("Scout, ...") is honoured, a busy agent's job moves to a free one.
+    from .voice.junk import junk_reason
+    if junk_reason(payload.command):      # noise heard by the always-listening mic ("Ffff!", "Danke.", "yuk yuk yuk"): never a task
+        raise HTTPException(status_code=422, detail="That did not sound like a command.")
     from .agents.dispatcher import get_dispatcher
     dispatcher = get_dispatcher()
+    from .agents.splitter import split_command
+    parts = split_command(payload.command)
+    if len(parts) > 1:
+        # Several independent jobs in one sentence: one task per job, each to a different free agent, all running at the same time.
+        from .agents import runner
+        tasks, names, notes = [], [], []
+        for i, part in enumerate(parts):
+            assignment, command = dispatcher.choose(db, part)
+            try:
+                started = runner.submit(command, payload.idempotency_key if i == 0 else None, _registry(), get_settings())
+            except RuntimeError as exc:
+                raise HTTPException(status_code=503, detail=str(exc)) from exc
+            tasks.append(executor._get_task(db, started.id))
+            dispatcher.record(assignment, started.id)
+            names.append(assignment.agent)
+            if assignment.note:
+                notes.append(assignment.note)
+        response.headers["X-Agent"] = ", ".join(names)
+        response.headers["X-Subtasks"] = ",".join(t.id for t in tasks)
+        if notes:
+            response.headers["X-Agent-Note"] = " ".join(notes).encode("ascii", "replace").decode()
+        return executor.task_out(tasks[0])
     assignment, command = dispatcher.choose(db, payload.command)
     # start_task branches on the provider: static planning for mock,
     # the agentic tool-calling loop for Groq.
@@ -315,6 +340,13 @@ def create_task(payload: TaskCreate, response: Response, background: bool = Quer
     if assignment.note:
         response.headers["X-Agent-Note"] = assignment.note.encode("ascii", "replace").decode()
     return executor.task_out(task)
+
+
+@app.get("/lanes")
+def list_lanes(db: Session = Depends(get_db)) -> list[dict]:
+    """The living conversation lanes (one per agent and kind of work): the current one and the parked ones, with the minutes each has left."""
+    from .orchestration import lanes
+    return lanes.rows(db)
 
 
 @app.get("/agents")

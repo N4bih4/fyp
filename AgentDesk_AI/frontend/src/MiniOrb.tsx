@@ -97,7 +97,7 @@ export default function MiniOrb() {
   });
   const needsApproval = task?.status === 'awaiting_approval';
   const muted = !voice.handsFree;
-  const caption = voice.heard || (muted ? 'Mic off' : working.map((a) => a.name).join(' · '));
+  const caption = voice.heard || (muted ? 'Mic off' : working.map((a) => `${a.name}: ${(a.doing ?? '').slice(0, 22)}`).join(' · '));
   const label = `${prefs?.persona.name ?? 'Agent X'}: ${STATE_LABEL[state]}${muted ? ' (microphone off)' : ''}. Press to open the panel`;
   const accent = prefs ? accentFor(prefs.persona, catalog) : '#38E1FF';
   return (

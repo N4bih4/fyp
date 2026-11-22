@@ -203,6 +203,8 @@ export function useVoiceInput({ voice: v, prefs, voiceLanguage, setCommand, setB
           v.voiceCommandRef.current = '';
           if (!transcript || !v.handsFreeRef.current) return;
           v.voiceQueueRef.current.push(transcript);
+          // Noise must not pile up: a command that waited behind three newer ones is stale, so only the newest three are kept.
+          while (v.voiceQueueRef.current.length > 3) v.voiceQueueRef.current.shift();
           v.setHeard('');
           v.setVoiceMessage(
             v.voiceTaskActiveRef.current

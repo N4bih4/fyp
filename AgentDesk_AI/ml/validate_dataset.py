@@ -83,7 +83,7 @@ def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8")
     args = [Path(a) for a in sys.argv[1:]]
     if not args:
-        args = [DATA / "train.jsonl", DATA / "val.jsonl", DATA / "test.jsonl"] + sorted((DATA / "real").glob("*.jsonl"))
+        args = [DATA / "train.jsonl", DATA / "val.jsonl", DATA / "test.jsonl"] + sorted((DATA / "real").glob("*.jsonl")) + sorted((DATA / "public").glob("*.jsonl"))
     errors, warnings, stats = check(args, load_spec())
     print(json.dumps(stats, ensure_ascii=False))
     for w in warnings[:40]:

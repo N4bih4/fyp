@@ -29,6 +29,22 @@ ORB_SIZE = 150
 PANEL_SIZE = (1180, 820)
 
 
+def never_take_focus(title: str) -> bool:
+    """The orb must never become the foreground window: when it did, the app the user had just opened (Chrome, Explorer ...) lost the front place to it.
+    WS_EX_NOACTIVATE keeps the clicks and the microphone working but stops the window from being activated. Windows only; False when it cannot be found."""
+    if sys.platform != "win32":
+        return False
+    import ctypes
+    user32 = ctypes.windll.user32
+    hwnd = user32.FindWindowW(None, title)
+    if not hwnd:
+        return False
+    GWL_EXSTYLE, WS_EX_NOACTIVATE = -20, 0x08000000
+    style = user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
+    user32.SetWindowLongW(hwnd, GWL_EXSTYLE, style | WS_EX_NOACTIVATE)
+    return True
+
+
 def allow_microphone(window: Any, origin: str) -> bool:
     """Give the microphone to our own page (the local server at `origin`) without a permission dialog.
 
@@ -120,6 +136,8 @@ class Shell:
         done: list[bool] = []
 
         def on_loaded(*_args) -> None:
+            if window is self.orb:
+                never_take_focus("Agent X orb")
             if not done and allow_microphone(window, self.url):
                 done.append(True)
 

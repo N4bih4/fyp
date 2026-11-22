@@ -212,6 +212,11 @@ class BrowserControlTool(BaseTool):
                 matches = audible
             elif len(matches) > 1 and len(active) == 1:
                 matches = active
+            if len(matches) > 1:
+                # Old YouTube tabs left open (results pages, earlier songs) must not stop "pause" / "skip the ad": the voice is talking about the video
+                # that was opened last. Prefer watch pages, then the newest tab (highest id); the spoken answer names the video so a wrong guess is obvious.
+                watch = [t for t in matches if "/watch" in str(t.get("url", ""))] or matches
+                matches = [max(watch, key=lambda t: int(t.get("id") or 0))]
         if a.action == "search" and not matches:
             # No YouTube tab is open: the results page opens in a new one.
             url = "https://www.youtube.com/results?" + urlencode({"search_query": " ".join((a.query or "").split())})

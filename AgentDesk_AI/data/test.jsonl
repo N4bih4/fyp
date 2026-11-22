@@ -195,10 +195,10 @@
 {"text": "budget.xlsx کہاں ہے", "intent": "find_files", "slots": {"file": "budget.xlsx"}, "lang": "ur", "is_correction": false}
 {"text": "budget.xlsx कहाँ है", "intent": "find_files", "slots": {"file": "budget.xlsx"}, "lang": "hi", "is_correction": false}
 {"text": "notes.txt कहाँ है", "intent": "find_files", "slots": {"file": "notes.txt"}, "lang": "hi", "is_correction": false}
-{"text": "new folder Report in Documents", "intent": "create_folder", "slots": {"name": "Report", "path": "Documents"}, "lang": "en", "is_correction": false}
+{"text": "new folder Lab in D drive", "intent": "create_folder", "slots": {"name": "Lab", "path": "D drive"}, "lang": "en", "is_correction": false}
 {"text": "new folder Lab in Documents", "intent": "create_folder", "slots": {"name": "Lab", "path": "Documents"}, "lang": "en", "is_correction": false}
 {"text": "new folder Report in D drive", "intent": "create_folder", "slots": {"name": "Report", "path": "D drive"}, "lang": "en", "is_correction": false}
-{"text": "new folder Lab in D drive", "intent": "create_folder", "slots": {"name": "Lab", "path": "D drive"}, "lang": "en", "is_correction": false}
+{"text": "new folder Report in Documents", "intent": "create_folder", "slots": {"name": "Report", "path": "Documents"}, "lang": "en", "is_correction": false}
 {"text": "Lab naam ka folder bana do", "intent": "create_folder", "slots": {"name": "Lab"}, "lang": "roman_ur", "is_correction": false}
 {"text": "Report naam ka folder bana do", "intent": "create_folder", "slots": {"name": "Report"}, "lang": "roman_ur", "is_correction": false}
 {"text": "copy notes.txt to Documents", "intent": "copy_file", "slots": {"file": "notes.txt", "path": "Documents"}, "lang": "en", "is_correction": false}
@@ -209,16 +209,16 @@
 {"text": "move budget.xlsx to Documents", "intent": "move_file", "slots": {"file": "budget.xlsx", "path": "Documents"}, "lang": "en", "is_correction": false}
 {"text": "move budget.xlsx to D drive", "intent": "move_file", "slots": {"file": "budget.xlsx", "path": "D drive"}, "lang": "en", "is_correction": false}
 {"text": "move notes.txt to D drive", "intent": "move_file", "slots": {"file": "notes.txt", "path": "D drive"}, "lang": "en", "is_correction": false}
-{"text": "rename budget.xlsx to Version 2", "intent": "rename_file", "slots": {"file": "budget.xlsx", "new_name": "Version 2"}, "lang": "en", "is_correction": false}
-{"text": "rename notes.txt to Final", "intent": "rename_file", "slots": {"file": "notes.txt", "new_name": "Final"}, "lang": "en", "is_correction": false}
-{"text": "rename notes.txt to Version 2", "intent": "rename_file", "slots": {"file": "notes.txt", "new_name": "Version 2"}, "lang": "en", "is_correction": false}
-{"text": "rename notes.txt to Submission", "intent": "rename_file", "slots": {"file": "notes.txt", "new_name": "Submission"}, "lang": "en", "is_correction": false}
 {"text": "rename budget.xlsx to Final", "intent": "rename_file", "slots": {"file": "budget.xlsx", "new_name": "Final"}, "lang": "en", "is_correction": false}
+{"text": "rename notes.txt to Submission", "intent": "rename_file", "slots": {"file": "notes.txt", "new_name": "Submission"}, "lang": "en", "is_correction": false}
+{"text": "rename notes.txt to Backup", "intent": "rename_file", "slots": {"file": "notes.txt", "new_name": "Backup"}, "lang": "en", "is_correction": false}
+{"text": "rename budget.xlsx to Version 2", "intent": "rename_file", "slots": {"file": "budget.xlsx", "new_name": "Version 2"}, "lang": "en", "is_correction": false}
+{"text": "rename notes.txt to Version 2", "intent": "rename_file", "slots": {"file": "notes.txt", "new_name": "Version 2"}, "lang": "en", "is_correction": false}
 {"text": "rename budget.xlsx to Submission", "intent": "rename_file", "slots": {"file": "budget.xlsx", "new_name": "Submission"}, "lang": "en", "is_correction": false}
-{"text": "move budget.xlsx to the recycle bin", "intent": "delete_file", "slots": {"file": "budget.xlsx"}, "lang": "en", "is_correction": false}
-{"text": "move notes.txt to the recycle bin", "intent": "delete_file", "slots": {"file": "notes.txt"}, "lang": "en", "is_correction": false}
-{"text": "budget.xlsx hata do", "intent": "delete_file", "slots": {"file": "budget.xlsx"}, "lang": "roman_ur", "is_correction": false}
-{"text": "notes.txt hata do", "intent": "delete_file", "slots": {"file": "notes.txt"}, "lang": "roman_ur", "is_correction": false}
+{"text": "delete budget.xlsx", "intent": "delete_file", "slots": {"file": "budget.xlsx"}, "lang": "en", "is_correction": false}
+{"text": "delete notes.txt", "intent": "delete_file", "slots": {"file": "notes.txt"}, "lang": "en", "is_correction": false}
+{"text": "budget.xlsx ko recycle bin mein daal do", "intent": "delete_file", "slots": {"file": "budget.xlsx"}, "lang": "roman_ur", "is_correction": false}
+{"text": "notes.txt ko recycle bin mein daal do", "intent": "delete_file", "slots": {"file": "notes.txt"}, "lang": "roman_ur", "is_correction": false}
 {"text": "budget.xlsx ہٹا دو", "intent": "delete_file", "slots": {"file": "budget.xlsx"}, "lang": "ur", "is_correction": false}
 {"text": "notes.txt ہٹا دو", "intent": "delete_file", "slots": {"file": "notes.txt"}, "lang": "ur", "is_correction": false}
 {"text": "budget.xlsx डिलीट करो", "intent": "delete_file", "slots": {"file": "budget.xlsx"}, "lang": "hi", "is_correction": false}
@@ -353,76 +353,84 @@
 {"text": "the exam date kya hai", "intent": "memory_recall", "slots": {"thing": "the exam date"}, "lang": "roman_ur", "is_correction": false}
 {"text": "my favourite colour kya hai", "intent": "memory_recall", "slots": {"thing": "my favourite colour"}, "lang": "roman_ur", "is_correction": false}
 {"text": "my best friend's birthday kya hai", "intent": "memory_recall", "slots": {"thing": "my best friend's birthday"}, "lang": "roman_ur", "is_correction": false}
-{"text": "remind me about the meeting is cancelled at 3", "intent": "reminder", "slots": {"text": "the meeting is cancelled", "time": "at 3"}, "lang": "en", "is_correction": false}
-{"text": "remind me about happy birthday 7 am", "intent": "reminder", "slots": {"text": "happy birthday", "time": "7 am"}, "lang": "en", "is_correction": false}
-{"text": "remind me about see you at five 7 am", "intent": "reminder", "slots": {"text": "see you at five", "time": "7 am"}, "lang": "en", "is_correction": false}
-{"text": "remind me about thank you so much at 3", "intent": "reminder", "slots": {"text": "thank you so much", "time": "at 3"}, "lang": "en", "is_correction": false}
 {"text": "remind me about I am on my way 7 am", "intent": "reminder", "slots": {"text": "I am on my way", "time": "7 am"}, "lang": "en", "is_correction": false}
+{"text": "remind me about call me when you are free at 3", "intent": "reminder", "slots": {"text": "call me when you are free", "time": "at 3"}, "lang": "en", "is_correction": false}
+{"text": "remind me about see you at five at 3", "intent": "reminder", "slots": {"text": "see you at five", "time": "at 3"}, "lang": "en", "is_correction": false}
 {"text": "remind me about happy birthday at 3", "intent": "reminder", "slots": {"text": "happy birthday", "time": "at 3"}, "lang": "en", "is_correction": false}
-{"text": "how are you", "intent": "chat", "slots": {}, "lang": "en", "is_correction": false}
-{"text": "i am bored", "intent": "chat", "slots": {}, "lang": "en", "is_correction": false}
-{"text": "shukriya", "intent": "chat", "slots": {}, "lang": "roman_ur", "is_correction": false}
+{"text": "remind me about I will be late at 3", "intent": "reminder", "slots": {"text": "I will be late", "time": "at 3"}, "lang": "en", "is_correction": false}
+{"text": "remind me about thank you so much 7 am", "intent": "reminder", "slots": {"text": "thank you so much", "time": "7 am"}, "lang": "en", "is_correction": false}
+{"text": "what can you do", "intent": "chat", "slots": {}, "lang": "en", "is_correction": false}
+{"text": "good morning", "intent": "chat", "slots": {}, "lang": "en", "is_correction": false}
+{"text": "main bore ho raha hoon", "intent": "chat", "slots": {}, "lang": "roman_ur", "is_correction": false}
 {"text": "kaise ho", "intent": "chat", "slots": {}, "lang": "roman_ur", "is_correction": false}
-{"text": "صبح بخیر", "intent": "chat", "slots": {}, "lang": "ur", "is_correction": false}
-{"text": "شکریہ", "intent": "chat", "slots": {}, "lang": "ur", "is_correction": false}
-{"text": "तुम कौन हो", "intent": "chat", "slots": {}, "lang": "hi", "is_correction": false}
-{"text": "कोई चुटकुला सुनाओ", "intent": "chat", "slots": {}, "lang": "hi", "is_correction": false}
-{"text": "not that one open File Explorer", "intent": "correction", "slots": {"app": "File Explorer"}, "lang": "en", "is_correction": true}
-{"text": "not that one open Outlook", "intent": "correction", "slots": {"app": "Outlook"}, "lang": "en", "is_correction": true}
-{"text": "not that one open VS Code", "intent": "correction", "slots": {"app": "VS Code"}, "lang": "en", "is_correction": true}
-{"text": "not that one open Word", "intent": "correction", "slots": {"app": "Word"}, "lang": "en", "is_correction": true}
-{"text": "not that one open Notepad", "intent": "correction", "slots": {"app": "Notepad"}, "lang": "en", "is_correction": true}
-{"text": "not that one open Firefox", "intent": "correction", "slots": {"app": "Firefox"}, "lang": "en", "is_correction": true}
-{"text": "no no i want Atif Aslam songs", "intent": "correction", "slots": {"query": "Atif Aslam songs"}, "lang": "en", "is_correction": true}
-{"text": "no no i want cricket highlights", "intent": "correction", "slots": {"query": "cricket highlights"}, "lang": "en", "is_correction": true}
-{"text": "no no i want relaxing music", "intent": "correction", "slots": {"query": "relaxing music"}, "lang": "en", "is_correction": true}
-{"text": "nahi nahi Atif Aslam songs chalao", "intent": "correction", "slots": {"query": "Atif Aslam songs"}, "lang": "roman_ur", "is_correction": true}
+{"text": "تم کون ہو", "intent": "chat", "slots": {}, "lang": "ur", "is_correction": false}
+{"text": "کیسے ہو", "intent": "chat", "slots": {}, "lang": "ur", "is_correction": false}
+{"text": "तुम क्या कर सकते हो", "intent": "chat", "slots": {}, "lang": "hi", "is_correction": false}
+{"text": "सुप्रभात", "intent": "chat", "slots": {}, "lang": "hi", "is_correction": false}
+{"text": "no i meant Firefox", "intent": "correction", "slots": {"app": "Firefox"}, "lang": "en", "is_correction": true}
+{"text": "no i meant Word", "intent": "correction", "slots": {"app": "Word"}, "lang": "en", "is_correction": true}
+{"text": "no i meant Outlook", "intent": "correction", "slots": {"app": "Outlook"}, "lang": "en", "is_correction": true}
+{"text": "no i meant File Explorer", "intent": "correction", "slots": {"app": "File Explorer"}, "lang": "en", "is_correction": true}
+{"text": "no i meant VS Code", "intent": "correction", "slots": {"app": "VS Code"}, "lang": "en", "is_correction": true}
+{"text": "no i meant Notepad", "intent": "correction", "slots": {"app": "Notepad"}, "lang": "en", "is_correction": true}
+{"text": "i did not say that i said Word", "intent": "correction", "slots": {"app": "Word"}, "lang": "en", "is_correction": true}
+{"text": "i did not say that i said VS Code", "intent": "correction", "slots": {"app": "VS Code"}, "lang": "en", "is_correction": true}
+{"text": "i did not say that i said Notepad", "intent": "correction", "slots": {"app": "Notepad"}, "lang": "en", "is_correction": true}
+{"text": "i did not say that i said Outlook", "intent": "correction", "slots": {"app": "Outlook"}, "lang": "en", "is_correction": true}
+{"text": "i did not say that i said File Explorer", "intent": "correction", "slots": {"app": "File Explorer"}, "lang": "en", "is_correction": true}
+{"text": "i did not say that i said Firefox", "intent": "correction", "slots": {"app": "Firefox"}, "lang": "en", "is_correction": true}
 {"text": "nahi nahi relaxing music chalao", "intent": "correction", "slots": {"query": "relaxing music"}, "lang": "roman_ur", "is_correction": true}
+{"text": "nahi nahi Atif Aslam songs chalao", "intent": "correction", "slots": {"query": "Atif Aslam songs"}, "lang": "roman_ur", "is_correction": true}
 {"text": "nahi nahi cricket highlights chalao", "intent": "correction", "slots": {"query": "cricket highlights"}, "lang": "roman_ur", "is_correction": true}
-{"text": "نہیں میں نے کیلکولیٹر کہا تھا", "intent": "correction", "slots": {"app": "کیلکولیٹر"}, "lang": "ur", "is_correction": true}
-{"text": "نہیں میں نے نوٹ پیڈ کہا تھا", "intent": "correction", "slots": {"app": "نوٹ پیڈ"}, "lang": "ur", "is_correction": true}
+{"text": "نہیں میں نے فائل ایکسپلورر کہا تھا", "intent": "correction", "slots": {"app": "فائل ایکسپلورر"}, "lang": "ur", "is_correction": true}
 {"text": "نہیں میں نے ایکسل کہا تھا", "intent": "correction", "slots": {"app": "ایکسل"}, "lang": "ur", "is_correction": true}
 {"text": "نہیں میں نے کروم کہا تھا", "intent": "correction", "slots": {"app": "کروم"}, "lang": "ur", "is_correction": true}
-{"text": "نہیں میں نے فائل ایکسپلورر کہا تھا", "intent": "correction", "slots": {"app": "فائل ایکسپلورر"}, "lang": "ur", "is_correction": true}
-{"text": "نہیں میں نے ورڈ کہا تھا", "intent": "correction", "slots": {"app": "ورڈ"}, "lang": "ur", "is_correction": true}
-{"text": "यह नहीं नोटपैड खोलो", "intent": "correction", "slots": {"app": "नोटपैड"}, "lang": "hi", "is_correction": true}
-{"text": "यह नहीं क्रोम खोलो", "intent": "correction", "slots": {"app": "क्रोम"}, "lang": "hi", "is_correction": true}
-{"text": "यह नहीं एक्सेल खोलो", "intent": "correction", "slots": {"app": "एक्सेल"}, "lang": "hi", "is_correction": true}
-{"text": "यह नहीं वर्ड खोलो", "intent": "correction", "slots": {"app": "वर्ड"}, "lang": "hi", "is_correction": true}
-{"text": "यह नहीं कैलकुलेटर खोलो", "intent": "correction", "slots": {"app": "कैलकुलेटर"}, "lang": "hi", "is_correction": true}
-{"text": "यह नहीं फ़ाइल एक्सप्लोरर खोलो", "intent": "correction", "slots": {"app": "फ़ाइल एक्सप्लोरर"}, "lang": "hi", "is_correction": true}
+{"text": "نہیں میں نے نوٹ پیڈ کہا تھا", "intent": "correction", "slots": {"app": "نوٹ پیڈ"}, "lang": "ur", "is_correction": true}
+{"text": "نہیں میں نے واٹس ایپ کہا تھا", "intent": "correction", "slots": {"app": "واٹس ایپ"}, "lang": "ur", "is_correction": true}
+{"text": "نہیں میں نے کیلکولیٹر کہا تھا", "intent": "correction", "slots": {"app": "کیلکولیٹر"}, "lang": "ur", "is_correction": true}
+{"text": "नहीं मैंने व्हाट्सएप कहा था", "intent": "correction", "slots": {"app": "व्हाट्सएप"}, "lang": "hi", "is_correction": true}
+{"text": "नहीं मैंने कैलकुलेटर कहा था", "intent": "correction", "slots": {"app": "कैलकुलेटर"}, "lang": "hi", "is_correction": true}
+{"text": "नहीं मैंने नोटपैड कहा था", "intent": "correction", "slots": {"app": "नोटपैड"}, "lang": "hi", "is_correction": true}
+{"text": "नहीं मैंने क्रोम कहा था", "intent": "correction", "slots": {"app": "क्रोम"}, "lang": "hi", "is_correction": true}
+{"text": "नहीं मैंने एक्सेल कहा था", "intent": "correction", "slots": {"app": "एक्सेल"}, "lang": "hi", "is_correction": true}
+{"text": "नहीं मैंने फ़ाइल एक्सप्लोरर कहा था", "intent": "correction", "slots": {"app": "फ़ाइल एक्सप्लोरर"}, "lang": "hi", "is_correction": true}
 {"text": "now do the same for Documents", "intent": "follow_up", "slots": {"path": "Documents"}, "lang": "en", "is_correction": false}
 {"text": "now do the same for D drive", "intent": "follow_up", "slots": {"path": "D drive"}, "lang": "en", "is_correction": false}
-{"text": "the second one", "intent": "follow_up", "slots": {}, "lang": "en", "is_correction": false}
-{"text": "woh delete karo", "intent": "follow_up", "slots": {}, "lang": "roman_ur", "is_correction": false}
-{"text": "phir se karo", "intent": "follow_up", "slots": {}, "lang": "roman_ur", "is_correction": false}
-{"text": "اسے بند کرو", "intent": "follow_up", "slots": {}, "lang": "ur", "is_correction": false}
-{"text": "फिर से करो", "intent": "follow_up", "slots": {}, "lang": "hi", "is_correction": false}
+{"text": "close it", "intent": "follow_up", "slots": {}, "lang": "en", "is_correction": false}
+{"text": "ab yehi Documents ke liye karo", "intent": "follow_up", "slots": {"path": "Documents"}, "lang": "roman_ur", "is_correction": false}
+{"text": "ab yehi D drive ke liye karo", "intent": "follow_up", "slots": {"path": "D drive"}, "lang": "roman_ur", "is_correction": false}
+{"text": "doosra wala", "intent": "follow_up", "slots": {}, "lang": "roman_ur", "is_correction": false}
+{"text": "دوسرا والا", "intent": "follow_up", "slots": {}, "lang": "ur", "is_correction": false}
+{"text": "वापस जाओ", "intent": "follow_up", "slots": {}, "lang": "hi", "is_correction": false}
+{"text": "no thanks that is all", "intent": "end_task", "slots": {}, "lang": "en", "is_correction": false}
 {"text": "i am done", "intent": "end_task", "slots": {}, "lang": "en", "is_correction": false}
-{"text": "you can stop now", "intent": "end_task", "slots": {}, "lang": "en", "is_correction": false}
+{"text": "bas khatam", "intent": "end_task", "slots": {}, "lang": "roman_ur", "is_correction": false}
 {"text": "kaam khatam", "intent": "end_task", "slots": {}, "lang": "roman_ur", "is_correction": false}
-{"text": "nahi shukriya bas", "intent": "end_task", "slots": {}, "lang": "roman_ur", "is_correction": false}
-{"text": "بس ختم", "intent": "end_task", "slots": {}, "lang": "ur", "is_correction": false}
-{"text": "शुक्रिया बस", "intent": "end_task", "slots": {}, "lang": "hi", "is_correction": false}
-{"text": "wait stop", "intent": "stop", "slots": {}, "lang": "en", "is_correction": false}
+{"text": "کام ختم", "intent": "end_task", "slots": {}, "lang": "ur", "is_correction": false}
+{"text": "बस खत्म", "intent": "end_task", "slots": {}, "lang": "hi", "is_correction": false}
 {"text": "stop", "intent": "stop", "slots": {}, "lang": "en", "is_correction": false}
-{"text": "bas karo ruko", "intent": "stop", "slots": {}, "lang": "roman_ur", "is_correction": false}
-{"text": "کینسل کرو", "intent": "stop", "slots": {}, "lang": "ur", "is_correction": false}
-{"text": "इसे रोक दो", "intent": "stop", "slots": {}, "lang": "hi", "is_correction": false}
-{"text": "undo that", "intent": "undo", "slots": {}, "lang": "en", "is_correction": false}
-{"text": "jo kiya wapas kar do", "intent": "undo", "slots": {}, "lang": "roman_ur", "is_correction": false}
-{"text": "پچھلا کام انڈو کرو", "intent": "undo", "slots": {}, "lang": "ur", "is_correction": false}
-{"text": "अनडू करो", "intent": "undo", "slots": {}, "lang": "hi", "is_correction": false}
+{"text": "wait stop", "intent": "stop", "slots": {}, "lang": "en", "is_correction": false}
+{"text": "ruk jao", "intent": "stop", "slots": {}, "lang": "roman_ur", "is_correction": false}
+{"text": "اسے روک دو", "intent": "stop", "slots": {}, "lang": "ur", "is_correction": false}
+{"text": "रुको", "intent": "stop", "slots": {}, "lang": "hi", "is_correction": false}
+{"text": "take that back", "intent": "undo", "slots": {}, "lang": "en", "is_correction": false}
+{"text": "undo karo", "intent": "undo", "slots": {}, "lang": "roman_ur", "is_correction": false}
+{"text": "وہ واپس کرو", "intent": "undo", "slots": {}, "lang": "ur", "is_correction": false}
+{"text": "पिछला काम अनडू करो", "intent": "undo", "slots": {}, "lang": "hi", "is_correction": false}
 {"text": "come again", "intent": "repeat", "slots": {}, "lang": "en", "is_correction": false}
-{"text": "dobara bolo", "intent": "repeat", "slots": {}, "lang": "roman_ur", "is_correction": false}
+{"text": "phir se bolo", "intent": "repeat", "slots": {}, "lang": "roman_ur", "is_correction": false}
 {"text": "پھر سے بولو", "intent": "repeat", "slots": {}, "lang": "ur", "is_correction": false}
 {"text": "क्या कहा था", "intent": "repeat", "slots": {}, "lang": "hi", "is_correction": false}
 {"text": "go ahead", "intent": "confirm_yes", "slots": {}, "lang": "en", "is_correction": false}
-{"text": "okay do it", "intent": "confirm_yes", "slots": {}, "lang": "en", "is_correction": false}
+{"text": "yeah", "intent": "confirm_yes", "slots": {}, "lang": "en", "is_correction": false}
 {"text": "theek hai kar do", "intent": "confirm_yes", "slots": {}, "lang": "roman_ur", "is_correction": false}
 {"text": "کر دو", "intent": "confirm_yes", "slots": {}, "lang": "ur", "is_correction": false}
-{"text": "ठीक है कर दो", "intent": "confirm_yes", "slots": {}, "lang": "hi", "is_correction": false}
-{"text": "no thanks", "intent": "confirm_no", "slots": {}, "lang": "en", "is_correction": false}
-{"text": "mat karo", "intent": "confirm_no", "slots": {}, "lang": "roman_ur", "is_correction": false}
-{"text": "مت کرو", "intent": "confirm_no", "slots": {}, "lang": "ur", "is_correction": false}
-{"text": "रहने दो", "intent": "confirm_no", "slots": {}, "lang": "hi", "is_correction": false}
+{"text": "जी हाँ", "intent": "confirm_yes", "slots": {}, "lang": "hi", "is_correction": false}
+{"text": "nope", "intent": "confirm_no", "slots": {}, "lang": "en", "is_correction": false}
+{"text": "cancel kar do", "intent": "confirm_no", "slots": {}, "lang": "roman_ur", "is_correction": false}
+{"text": "نہیں رہنے دو", "intent": "confirm_no", "slots": {}, "lang": "ur", "is_correction": false}
+{"text": "नहीं", "intent": "confirm_no", "slots": {}, "lang": "hi", "is_correction": false}
+{"text": "what time does the train leave", "intent": "unknown", "slots": {}, "lang": "en", "is_correction": false}
+{"text": "what is the best pizza place", "intent": "unknown", "slots": {}, "lang": "en", "is_correction": false}
+{"text": "acha theek hai phir", "intent": "unknown", "slots": {}, "lang": "roman_ur", "is_correction": false}
+{"text": "ٹیکسی بک کرو", "intent": "unknown", "slots": {}, "lang": "ur", "is_correction": false}

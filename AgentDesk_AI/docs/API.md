@@ -147,6 +147,9 @@ that task is returned unchanged: no duplicate planning or execution.
 ### `GET /agents`
 The team (Shadow is the lead): each agent, whether it is busy and what it is doing. `POST /tasks` replies with header `X-Agent` (who got the job) and `X-Agent-Note` (why, when the job moved).
 
+### `GET /lanes`
+The living conversation lanes (one per agent and kind of work: File Explorer, browser, coding app, system, app). Each row: `agent`, `kind`, `label`, `app`, `folder`, `current` / `status` (`open` or `parked`), `minutes_left` (a lane lives 20 minutes after its last sentence), `steps`, `last`, `waiting` (a question to the user is open). Needs the API token. `GET /agents` rows carry the same information under `lane`.
+
 ### `GET /tasks/{task_id}/progress`
 Short progress lines of a running task.
 

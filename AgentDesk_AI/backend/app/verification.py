@@ -300,12 +300,18 @@ def failed_result(result) -> Any:
     return Verification(passed=False, checks=[], details=result.error or "tool reported failure")
 
 
-def window_check(timeout: float | None = None, **criteria) -> tuple[bool, dict[str, Any]]:
-    """Wait for a window matching `criteria` on the real desktop; evidence lists what was seen."""
+def window_check(timeout: float | None = None, focus: bool = False, **criteria) -> tuple[bool, dict[str, Any]]:
+    """Wait for a window matching `criteria` on the real desktop; evidence lists what was seen.
+    `focus=True` (the tools that OPEN something): the window found is then brought in front of everything, so the user sees what opened."""
     probe = current()
     try:
         ok, found = probe.wait_for_window(timeout=timeout, **criteria)
     except ProbeUnavailable as exc:
         return False, {"window_probe": "unavailable", "reason": str(exc)}
+    if ok and focus and found:
+        from .tools.window_focus import bring_to_front
+        target = next((w for w in found if w.foreground), found[0])
+        if target.hwnd:
+            bring_to_front(target.hwnd)
     return ok, {"windows": [w.as_evidence() for w in found[:3]],
                 "criteria": {k: (sorted(v) if isinstance(v, set) else v) for k, v in criteria.items()}}

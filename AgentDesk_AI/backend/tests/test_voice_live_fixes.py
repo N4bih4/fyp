@@ -148,7 +148,8 @@ def test_listing_commands_say_what_is_there_not_just_done():
     folder = _verified("list_folder", {"entries": [{"name": n, "type": "file"} for n in ("a.txt", "b.pdf", "c.png", "d.csv", "e.md")]})
     task = {"status": "completed", "actions": [folder]}
     assert responses.line_for_task(task, "en") == "Done. There are 5 items: a.txt, b.pdf and c.png, 2 more."
-    assert "5 چیزیں" in responses.line_for_task(task, "ur") and "5 चीज़ें" in responses.line_for_task(task, "hi")
+    assert "5" in responses.line_for_task(task, "ur") and "5" in responses.line_for_task(task, "hi")      # written in Latin letters now (REPLY_SCRIPT=latin)
+    assert not any("ऀ" <= ch <= "ॿ" or "؀" <= ch <= "ۿ" for ch in responses.line_for_task(task, "hi") + responses.line_for_task(task, "ur"))
     one = {"status": "completed", "actions": [_verified("list_folder", {"entries": [{"name": "only.txt", "type": "file"}]})]}
     assert responses.line_for_task(one, "en") == "Done. There are 1 items: only.txt."
     empty = {"status": "completed", "actions": [_verified("list_folder", {"entries": []})]}

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { api } from './api';
 import { isDesktop } from './desktop';
 import { ActionPreview } from './components/ActionPreview';
+import { AgentsBoard } from './components/AgentsBoard';
 import { AppHeader } from './components/AppHeader';
 import { CommandPanel } from './components/CommandPanel';
 import { Onboarding } from './components/Onboarding';
@@ -29,7 +30,12 @@ export default function App() {
   const commandFailedRef = useRef<() => void>(() => {});
 
   const commandStartRef = useRef<(command: string) => void>(() => {});
-  const tasks = useTasks({ setBanner, onCommandFailed: () => commandFailedRef.current(), onCommandStart: (c) => commandStartRef.current(c) });
+  const backgroundStartedRef = useRef<() => void>(() => {});
+  // Parallel agents (as in the orb): every command is a background job, so the next one can start while this one still runs.
+  const tasks = useTasks({
+    setBanner, onCommandFailed: () => commandFailedRef.current(), onCommandStart: (c) => commandStartRef.current(c),
+    background: true, onBackgroundStarted: () => backgroundStartedRef.current(),
+  });
   const { activeTask, command, setCommand, submitting, busy } = tasks;
   const { config, configError, prefs, catalog, theme, setTheme, savePreferences } =
     useAppData({ setBanner, setVoiceLanguage, loadHistory: tasks.loadHistory });
@@ -55,7 +61,19 @@ export default function App() {
     }
   };
 
-  toggleVoiceRef.current = input.toggleVoiceInput;
+  backgroundStartedRef.current = () => {
+    voice.voiceWaitingForTaskRef.current = false;
+    voice.voiceTaskActiveRef.current = false;
+    voice.drainVoiceQueueRef.current();
+  };
+  // In the desktop app the orb window is the microphone and it never stops; a second microphone here would hear (and run) every sentence twice.
+  toggleVoiceRef.current = () => {
+    if (isDesktop()) {
+      setBanner('The orb (small window) is always listening. There is no second microphone in this panel; type here or speak to the orb.');
+      return;
+    }
+    input.toggleVoiceInput();
+  };
   // Hands-free is the default: start listening by itself once the page is ready (no "tap to speak").
   const autoStartedRef = useRef(false);
   useEffect(() => {
@@ -113,7 +131,7 @@ export default function App() {
           onApprove={(ids) => void tasks.mutate('confirm', () => tasks.approveThenRun(activeTask.id, ids))}
           onReject={() => void tasks.mutate('reject-all', () => api.reject(activeTask.id))}
           micLabel={voice.handsFree ? 'Stop microphone' : 'Answer by voice'}
-          onMic={prefs?.listen_mode === 'off' ? undefined : input.toggleVoiceInput}
+          onMic={prefs?.listen_mode === 'off' ? undefined : () => toggleVoiceRef.current()}
         />
       )}
       {prefs && !prefs.onboarded && (
@@ -126,7 +144,7 @@ export default function App() {
           onFinish={(persona, memoryEnabled, cloudAnswers, startVoice) => {
             setVoiceLanguage(persona.language);
             void savePreferences({ onboarded: true, memory_enabled: memoryEnabled, persona, ...(cloudAnswers === null ? {} : { cloud_answers: cloudAnswers }) }).catch(() => {});
-            if (startVoice) input.toggleVoiceInput();
+            if (startVoice) toggleVoiceRef.current();
             else window.setTimeout(() => commandInputRef.current?.focus(), 0);
           }}
         />
@@ -188,10 +206,11 @@ export default function App() {
             onCommand={setCommand}
             submitting={submitting}
             onSubmit={tasks.submitCommand}
-            onToggleVoice={input.toggleVoiceInput}
+            onToggleVoice={() => toggleVoiceRef.current()}
             onStopSpeaking={input.stopSpeaking}
             inputRef={commandInputRef}
           />
+          <AgentsBoard onOpenTask={(id) => void api.getTask(id).then((t) => tasks.selectTask(t)).catch(() => {})} />
           <SessionCard activeTask={activeTask} />
           <MailDraftCard activeTask={activeTask} />
           <TaskPanel

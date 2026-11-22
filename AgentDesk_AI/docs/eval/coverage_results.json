@@ -1,0 +1,2160 @@
+{
+ "routing": {
+  "app_open_notepad": {
+   "en": {
+    "state": "local",
+    "detail": "open_application {\"app_name\": \"notepad\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_application {\"app_name\": \"notepad\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_application {\"app_name\": \"notepad\"}",
+    "risk": "low"
+   }
+  },
+  "file_delete": {
+   "en": {
+    "state": "cloud",
+    "detail": "I'm not sure what to do with that. Do you want me to open something, f"
+   },
+   "ru": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": ""
+   }
+  },
+  "vol_up": {
+   "en": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"volume\", \"action\": \"increase\", \"value\": 10}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"volume\", \"action\": \"increase\", \"value\": 10}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"volume\", \"action\": \"increase\", \"value\": 10}",
+    "risk": "low"
+   }
+  },
+  "page_display": {
+   "en": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"display\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"display\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"display\"}",
+    "risk": "low"
+   }
+  },
+  "app_open_calculator": {
+   "en": {
+    "state": "local",
+    "detail": "open_application {\"app_name\": \"calculator\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_application {\"app_name\": \"calculator\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_application {\"app_name\": \"कैलकुलेटर\"}",
+    "risk": "high"
+   }
+  },
+  "app_open_paint": {
+   "en": {
+    "state": "local",
+    "detail": "open_application {\"app_name\": \"paint\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_application {\"app_name\": \"paint\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_application {\"app_name\": \"पेंट\"}",
+    "risk": "high"
+   }
+  },
+  "app_open_explorer": {
+   "en": {
+    "state": "local",
+    "detail": "open_application {\"app_name\": \"file explorer\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_application {\"app_name\": \"file explorer\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": "Yeh naam nahi mila. File/folder ka exact path batayein."
+   }
+  },
+  "app_open_task_manager": {
+   "en": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"taskmanager\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"taskmanager\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"taskmanager\"}",
+    "risk": "low"
+   }
+  },
+  "app_open_word": {
+   "en": {
+    "state": "local",
+    "detail": "open_application {\"app_name\": \"word\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_application {\"app_name\": \"word\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_application {\"app_name\": \"वर्ड\"}",
+    "risk": "high"
+   }
+  },
+  "app_open_vscode": {
+   "en": {
+    "state": "local",
+    "detail": "open_application {\"app_name\": \"vs code\"}",
+    "risk": "high"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_application {\"app_name\": \"vs code\"}",
+    "risk": "high"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_application {\"app_name\": \"वीएस कोड\"}",
+    "risk": "high"
+   }
+  },
+  "app_close_notepad": {
+   "en": {
+    "state": "cloud",
+    "detail": "Kaunsi window band karni hai? Number batayein.\n1. *hello world اردو 12"
+   },
+   "ru": {
+    "state": "cloud",
+    "detail": "Kaunsi window band karni hai? Number batayein.\n1. *hello world اردو 12"
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": "Kaunsi window band karni hai? Number batayein.\n1. *hello world اردو 12"
+   }
+  },
+  "app_switch": {
+   "en": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "ru": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": ""
+   }
+  },
+  "app_list_windows": {
+   "en": {
+    "state": "local",
+    "detail": "control_desktop {\"steps\": [{\"action\": \"inspect\"}]}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "control_desktop {\"steps\": [{\"action\": \"inspect\"}]}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "control_desktop {\"steps\": [{\"action\": \"inspect\"}]}",
+    "risk": "low"
+   }
+  },
+  "win_minimize": {
+   "en": {
+    "state": "local",
+    "detail": "control_desktop {\"target_window\": \"Claude\", \"steps\": [{\"action\": \"minimize_window\"}]}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "control_desktop {\"target_window\": \"Claude\", \"steps\": [{\"action\": \"minimize_window\"}]}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "control_desktop {\"target_window\": \"Claude\", \"steps\": [{\"action\": \"minimize_window\"}]}",
+    "risk": "low"
+   }
+  },
+  "win_maximize": {
+   "en": {
+    "state": "local",
+    "detail": "control_desktop {\"target_window\": \"Claude\", \"steps\": [{\"action\": \"maximize_window\"}]}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "control_desktop {\"target_window\": \"Claude\", \"steps\": [{\"action\": \"maximize_window\"}]}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "control_desktop {\"target_window\": \"Claude\", \"steps\": [{\"action\": \"maximize_window\"}]}",
+    "risk": "low"
+   }
+  },
+  "win_show_desktop": {
+   "en": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "ru": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": ""
+   }
+  },
+  "win_close_window": {
+   "en": {
+    "state": "local",
+    "detail": "control_desktop {\"target_window\": \"Claude\", \"steps\": [{\"action\": \"close_window\"}]}",
+    "risk": "high"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "control_desktop {\"target_window\": \"Claude\", \"steps\": [{\"action\": \"close_window\"}]}",
+    "risk": "high"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "control_desktop {\"target_window\": \"Claude\", \"steps\": [{\"action\": \"close_window\"}]}",
+    "risk": "high"
+   }
+  },
+  "file_open_downloads": {
+   "en": {
+    "state": "local",
+    "detail": "explorer_navigate {\"path\": \"C:\\\\Users\\\\HP\\\\Downloads\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "explorer_navigate {\"path\": \"C:\\\\Users\\\\HP\\\\Downloads\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "explorer_navigate {\"path\": \"C:\\\\Users\\\\HP\\\\Downloads\"}",
+    "risk": "low"
+   }
+  },
+  "file_open_documents": {
+   "en": {
+    "state": "local",
+    "detail": "explorer_navigate {\"path\": \"C:\\\\Users\\\\HP\\\\Documents\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "explorer_navigate {\"path\": \"C:\\\\Users\\\\HP\\\\Documents\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "explorer_navigate {\"path\": \"C:\\\\Users\\\\HP\\\\Documents\"}",
+    "risk": "low"
+   }
+  },
+  "file_open_desktop": {
+   "en": {
+    "state": "local",
+    "detail": "explorer_navigate {\"path\": \"C:\\\\Users\\\\HP\\\\Desktop\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "explorer_navigate {\"path\": \"C:\\\\Users\\\\HP\\\\Desktop\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "explorer_navigate {\"path\": \"C:\\\\Users\\\\HP\\\\Desktop\"}",
+    "risk": "low"
+   }
+  },
+  "file_open_drive": {
+   "en": {
+    "state": "local",
+    "detail": "explorer_navigate {\"path\": \"C:\\\\\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "explorer_navigate {\"path\": \"C:\\\\\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "explorer_navigate {\"path\": \"C:\\\\\"}",
+    "risk": "low"
+   }
+  },
+  "file_list_downloads": {
+   "en": {
+    "state": "local",
+    "detail": "list_folder {\"path\": \"C:\\\\Users\\\\HP\\\\Downloads\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "list_folder {\"path\": \"C:\\\\Users\\\\HP\\\\Downloads\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "list_folder {\"path\": \"C:\\\\Users\\\\HP\\\\Downloads\"}",
+    "risk": "low"
+   }
+  },
+  "file_find": {
+   "en": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "ru": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": ""
+   }
+  },
+  "file_create_folder": {
+   "en": {
+    "state": "local",
+    "detail": "create_folder {\"path\": \"C:\\\\Users\\\\HP\\\\Desktop\\\\coverage test\"}",
+    "risk": "medium"
+   },
+   "ru": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": ""
+   }
+  },
+  "file_copy": {
+   "en": {
+    "state": "cloud",
+    "detail": "Which file or folder do you mean? Tell me its name."
+   },
+   "ru": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": ""
+   }
+  },
+  "file_move": {
+   "en": {
+    "state": "cloud",
+    "detail": "I'm not sure what to do with that. Do you want me to open something, f"
+   },
+   "ru": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": ""
+   }
+  },
+  "file_rename": {
+   "en": {
+    "state": "cloud",
+    "detail": "I'm not sure what to do with that. Do you want me to open something, f"
+   },
+   "ru": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": ""
+   }
+  },
+  "file_read": {
+   "en": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "ru": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": ""
+   }
+  },
+  "file_write": {
+   "en": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "ru": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": ""
+   }
+  },
+  "file_zip": {
+   "en": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "ru": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": ""
+   }
+  },
+  "file_trash": {
+   "en": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "ru": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": ""
+   }
+  },
+  "file_summarise": {
+   "en": {
+    "state": "local",
+    "detail": "make_document {\"kind\": \"notes\", \"topic\": \"Notes\", \"files\": [\"report.pdf\"]}",
+    "risk": "medium"
+   },
+   "ru": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": ""
+   }
+  },
+  "web_open_youtube": {
+   "en": {
+    "state": "local",
+    "detail": "open_url {\"url\": \"https://www.youtube.com\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_url {\"url\": \"https://www.youtube.com\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_url {\"url\": \"https://www.youtube.com\"}",
+    "risk": "low"
+   }
+  },
+  "web_open_github": {
+   "en": {
+    "state": "local",
+    "detail": "open_url {\"url\": \"https://github.com\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_url {\"url\": \"https://github.com\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_url {\"url\": \"https://github.com\"}",
+    "risk": "low"
+   }
+  },
+  "web_open_gmail": {
+   "en": {
+    "state": "local",
+    "detail": "open_url {\"url\": \"https://mail.google.com\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_url {\"url\": \"https://mail.google.com\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_url {\"url\": \"https://mail.google.com\"}",
+    "risk": "low"
+   }
+  },
+  "web_search": {
+   "en": {
+    "state": "local",
+    "detail": "web_search {\"query\": \"python tutorial on google\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "web_search {\"query\": \"pe python tutorial search karo\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": ""
+   }
+  },
+  "web_new_tab": {
+   "en": {
+    "state": "local",
+    "detail": "open_url {\"url\": \"https://www.google.com\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_url {\"url\": \"https://www.google.com\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_url {\"url\": \"https://www.google.com\"}",
+    "risk": "low"
+   }
+  },
+  "web_close_tab": {
+   "en": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"close\", \"target\": \"this\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"close\", \"target\": \"yeh\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"close\", \"target\": \"यह\"}",
+    "risk": "low"
+   }
+  },
+  "web_profile": {
+   "en": {
+    "state": "local",
+    "detail": "open_browser_profile {\"profile\": \"work\", \"browser\": \"chrome\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_browser_profile {\"profile\": \"work\", \"browser\": \"chrome\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_browser_profile {\"profile\": \"क र म म वर क प र फ इल ख ल\", \"browser\": \"chrome\"}",
+    "risk": "low"
+   }
+  },
+  "web_read_page": {
+   "en": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"read_page\", \"target\": \"active\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": ""
+   }
+  },
+  "web_summarise_page": {
+   "en": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "ru": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": ""
+   }
+  },
+  "web_history": {
+   "en": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"reopen\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"reopen\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"reopen\"}",
+    "risk": "low"
+   }
+  },
+  "yt_play": {
+   "en": {
+    "state": "local",
+    "detail": "play_youtube_video {\"query\": \"lofi music\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "play_youtube_video {\"query\": \"lofi music\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "play_youtube_video {\"query\": \"लोफ़ी म्यूज़िक\"}",
+    "risk": "low"
+   }
+  },
+  "yt_pause": {
+   "en": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"pause\", \"target\": \"youtube\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"pause\", \"target\": \"youtube\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"pause\", \"target\": \"youtube\"}",
+    "risk": "low"
+   }
+  },
+  "yt_resume": {
+   "en": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"resume\", \"target\": \"youtube\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"resume\", \"target\": \"youtube\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"resume\", \"target\": \"youtube\"}",
+    "risk": "low"
+   }
+  },
+  "yt_next": {
+   "en": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"next\", \"target\": \"youtube\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"next\", \"target\": \"youtube\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"next\", \"target\": \"youtube\"}",
+    "risk": "low"
+   }
+  },
+  "yt_skip_ad": {
+   "en": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"skip_ad\", \"target\": \"youtube\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"skip_ad\", \"target\": \"youtube\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"skip_ad\", \"target\": \"youtube\"}",
+    "risk": "low"
+   }
+  },
+  "yt_seek": {
+   "en": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"seek\", \"target\": \"youtube\", \"seconds\": 10}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"seek\", \"target\": \"youtube\", \"seconds\": 10}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"seek\", \"target\": \"youtube\", \"seconds\": 10}",
+    "risk": "low"
+   }
+  },
+  "yt_speed": {
+   "en": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"speed\", \"target\": \"youtube\", \"rate\": 1.5}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"speed\", \"target\": \"youtube\", \"rate\": 1.5}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"speed\", \"target\": \"youtube\", \"rate\": 1.5}",
+    "risk": "low"
+   }
+  },
+  "yt_mute": {
+   "en": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"mute\", \"target\": \"youtube\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"mute\", \"target\": \"youtube\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"mute\", \"target\": \"youtube\"}",
+    "risk": "low"
+   }
+  },
+  "yt_fullscreen": {
+   "en": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"fullscreen\", \"target\": \"youtube\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"fullscreen\", \"target\": \"youtube\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"fullscreen\", \"target\": \"youtube\"}",
+    "risk": "low"
+   }
+  },
+  "yt_now_playing": {
+   "en": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"now_playing\", \"target\": \"youtube\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"now_playing\", \"target\": \"youtube\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"now_playing\", \"target\": \"youtube\"}",
+    "risk": "low"
+   }
+  },
+  "yt_like": {
+   "en": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"like\", \"target\": \"youtube\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"like\", \"target\": \"youtube\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"like\", \"target\": \"youtube\"}",
+    "risk": "low"
+   }
+  },
+  "yt_subscribe": {
+   "en": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"subscribe\", \"target\": \"youtube\"}",
+    "risk": "medium"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"subscribe\", \"target\": \"youtube\"}",
+    "risk": "medium"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "control_browser {\"action\": \"subscribe\", \"target\": \"youtube\"}",
+    "risk": "medium"
+   }
+  },
+  "vol_down": {
+   "en": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"volume\", \"action\": \"decrease\", \"value\": 10}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"volume\", \"action\": \"decrease\", \"value\": 10}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"volume\", \"action\": \"decrease\", \"value\": 10}",
+    "risk": "low"
+   }
+  },
+  "vol_set": {
+   "en": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"volume\", \"action\": \"set\", \"value\": 30}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"volume\", \"action\": \"set\", \"value\": 30}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"volume\", \"action\": \"set\", \"value\": 30}",
+    "risk": "low"
+   }
+  },
+  "vol_mute": {
+   "en": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"volume\", \"action\": \"mute\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"volume\", \"action\": \"mute\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"volume\", \"action\": \"mute\"}",
+    "risk": "low"
+   }
+  },
+  "vol_unmute": {
+   "en": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"volume\", \"action\": \"unmute\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"volume\", \"action\": \"unmute\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"volume\", \"action\": \"unmute\"}",
+    "risk": "low"
+   }
+  },
+  "bright_up": {
+   "en": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"brightness\", \"action\": \"increase\", \"value\": 10}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"brightness\", \"action\": \"increase\", \"value\": 10}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"brightness\", \"action\": \"increase\", \"value\": 10}",
+    "risk": "low"
+   }
+  },
+  "bright_set": {
+   "en": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"brightness\", \"action\": \"set\", \"value\": 60}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"brightness\", \"action\": \"set\", \"value\": 60}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"brightness\", \"action\": \"set\", \"value\": 60}",
+    "risk": "low"
+   }
+  },
+  "wifi_off": {
+   "en": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"wifi\", \"action\": \"off\"}",
+    "risk": "medium"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"wifi\", \"action\": \"off\"}",
+    "risk": "medium"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"wifi\", \"action\": \"off\"}",
+    "risk": "medium"
+   }
+  },
+  "bt_on": {
+   "en": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"bluetooth\", \"action\": \"on\"}",
+    "risk": "medium"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"bluetooth\", \"action\": \"on\"}",
+    "risk": "medium"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"bluetooth\", \"action\": \"on\"}",
+    "risk": "medium"
+   }
+  },
+  "theme_dark": {
+   "en": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"theme\", \"action\": \"dark\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"theme\", \"action\": \"dark\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "manage_system_setting {\"setting\": \"theme\", \"action\": \"dark\"}",
+    "risk": "low"
+   }
+  },
+  "battery": {
+   "en": {
+    "state": "local",
+    "detail": "device_control {\"action\": \"battery\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "device_control {\"action\": \"battery\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "device_control {\"action\": \"battery\"}",
+    "risk": "low"
+   }
+  },
+  "screenshot": {
+   "en": {
+    "state": "local",
+    "detail": "take_screenshot {}",
+    "risk": "medium"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "take_screenshot {}",
+    "risk": "medium"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "take_screenshot {}",
+    "risk": "medium"
+   }
+  },
+  "page_settings": {
+   "en": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"root\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"root\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"root\"}",
+    "risk": "low"
+   }
+  },
+  "page_sound": {
+   "en": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"sound\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"sound\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"sound\"}",
+    "risk": "low"
+   }
+  },
+  "page_bluetooth": {
+   "en": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"bluetooth\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"bluetooth\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"bluetooth\"}",
+    "risk": "low"
+   }
+  },
+  "page_wifi": {
+   "en": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"wifi\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"wifi\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"wifi\"}",
+    "risk": "low"
+   }
+  },
+  "page_update": {
+   "en": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"windowsupdate\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"windowsupdate\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"windowsupdate\"}",
+    "risk": "low"
+   }
+  },
+  "page_apps": {
+   "en": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"apps\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"apps\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"apps\"}",
+    "risk": "low"
+   }
+  },
+  "page_battery": {
+   "en": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"battery\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"battery\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"battery\"}",
+    "risk": "low"
+   }
+  },
+  "page_privacy": {
+   "en": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"privacy\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"privacy\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"privacy\"}",
+    "risk": "low"
+   }
+  },
+  "page_network": {
+   "en": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"network\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"network\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"network\"}",
+    "risk": "low"
+   }
+  },
+  "page_personalise": {
+   "en": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"personalization\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"personalization\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"personalization\"}",
+    "risk": "low"
+   }
+  },
+  "page_storage": {
+   "en": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"storage\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"storage\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"storage\"}",
+    "risk": "low"
+   }
+  },
+  "page_default_apps": {
+   "en": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"defaultapps\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"defaultapps\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"defaultapps\"}",
+    "risk": "low"
+   }
+  },
+  "page_startup": {
+   "en": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"startupapps\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"startupapps\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"startupapps\"}",
+    "risk": "low"
+   }
+  },
+  "page_about": {
+   "en": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"about\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"about\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"about\"}",
+    "risk": "low"
+   }
+  },
+  "page_control_panel": {
+   "en": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"controlpanel\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"controlpanel\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"controlpanel\"}",
+    "risk": "low"
+   }
+  },
+  "page_device_manager": {
+   "en": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"devicemanager\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"devicemanager\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"devicemanager\"}",
+    "risk": "low"
+   }
+  },
+  "page_network_adapters": {
+   "en": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"networkconnections\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"networkconnections\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"networkconnections\"}",
+    "risk": "low"
+   }
+  },
+  "page_power_options": {
+   "en": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"poweroptions\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"poweroptions\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"poweroptions\"}",
+    "risk": "low"
+   }
+  },
+  "page_programs": {
+   "en": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"programsfeatures\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"programsfeatures\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"programsfeatures\"}",
+    "risk": "low"
+   }
+  },
+  "page_disk_management": {
+   "en": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"diskmanagement\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"diskmanagement\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_windows_settings {\"page\": \"diskmanagement\"}",
+    "risk": "low"
+   }
+  },
+  "pc_lock": {
+   "en": {
+    "state": "local",
+    "detail": "device_control {\"action\": \"lock\"}",
+    "risk": "medium"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "device_control {\"action\": \"lock\"}",
+    "risk": "medium"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "device_control {\"action\": \"lock\"}",
+    "risk": "medium"
+   }
+  },
+  "pc_sleep": {
+   "en": {
+    "state": "local",
+    "detail": "device_control {\"action\": \"sleep\"}",
+    "risk": "medium"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "device_control {\"action\": \"sleep\"}",
+    "risk": "medium"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "device_control {\"action\": \"sleep\"}",
+    "risk": "medium"
+   }
+  },
+  "pc_restart": {
+   "en": {
+    "state": "local",
+    "detail": "device_control {\"action\": \"restart\"}",
+    "risk": "high"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "device_control {\"action\": \"restart\"}",
+    "risk": "high"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "device_control {\"action\": \"restart\"}",
+    "risk": "high"
+   }
+  },
+  "pc_shutdown": {
+   "en": {
+    "state": "local",
+    "detail": "device_control {\"action\": \"shutdown\"}",
+    "risk": "high"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "device_control {\"action\": \"shutdown\"}",
+    "risk": "high"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "device_control {\"action\": \"shutdown\"}",
+    "risk": "high"
+   }
+  },
+  "pc_keep_awake": {
+   "en": {
+    "state": "local",
+    "detail": "device_control {\"action\": \"keep_awake\", \"minutes\": 60}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "device_control {\"action\": \"keep_awake\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "device_control {\"action\": \"keep_awake\"}",
+    "risk": "low"
+   }
+  },
+  "media_pause": {
+   "en": {
+    "state": "local",
+    "detail": "media_control {\"action\": \"pause\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "media_control {\"action\": \"pause\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "media_control {\"action\": \"pause\"}",
+    "risk": "low"
+   }
+  },
+  "media_next": {
+   "en": {
+    "state": "local",
+    "detail": "media_control {\"action\": \"next\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "media_control {\"action\": \"next\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "media_control {\"action\": \"next\"}",
+    "risk": "low"
+   }
+  },
+  "mail_write": {
+   "en": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "ru": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": ""
+   }
+  },
+  "chat_whatsapp": {
+   "en": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "ru": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": ""
+   }
+  },
+  "code_terminal": {
+   "en": {
+    "state": "local",
+    "detail": "open_terminal {\"shell\": \"terminal\"}",
+    "risk": "low"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "open_terminal {\"shell\": \"terminal\"}",
+    "risk": "low"
+   },
+   "hi": {
+    "state": "local",
+    "detail": "open_terminal {\"shell\": \"terminal\"}",
+    "risk": "low"
+   }
+  },
+  "code_git_status": {
+   "en": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "ru": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": ""
+   }
+  },
+  "code_agent": {
+   "en": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "ru": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": ""
+   }
+  },
+  "pkg_install": {
+   "en": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "ru": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": ""
+   }
+  },
+  "pkg_uninstall": {
+   "en": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "ru": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": ""
+   }
+  },
+  "info_answer": {
+   "en": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "ru": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": ""
+   }
+  },
+  "info_remember": {
+   "en": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "ru": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": ""
+   }
+  },
+  "info_recall": {
+   "en": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "ru": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": ""
+   }
+  },
+  "info_document": {
+   "en": {
+    "state": "local",
+    "detail": "make_document {\"kind\": \"plan\", \"topic\": \"study plan for physics\"}",
+    "risk": "medium"
+   },
+   "ru": {
+    "state": "local",
+    "detail": "make_document {\"kind\": \"plan\", \"topic\": \"study plan for physics\", \"language\": \"roman",
+    "risk": "medium"
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": ""
+   }
+  },
+  "ui_click": {
+   "en": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "ru": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": ""
+   }
+  },
+  "ui_type": {
+   "en": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "ru": {
+    "state": "cloud",
+    "detail": ""
+   },
+   "hi": {
+    "state": "cloud",
+    "detail": ""
+   }
+  }
+ },
+ "live": {
+  "app_open_notepad": {
+   "status": "completed",
+   "tools": [
+    "open_application"
+   ],
+   "seconds": 3.8,
+   "note": "Kaam complete: open application.",
+   "state": "pass",
+   "detail": "completed and verified"
+  },
+  "app_open_calculator": {
+   "status": "completed",
+   "tools": [
+    "open_application"
+   ],
+   "seconds": 0.6,
+   "note": "Kaam complete: open application.",
+   "state": "pass",
+   "detail": "completed and verified",
+   "closed_afterwards": [
+    "Calculator"
+   ]
+  },
+  "app_open_paint": {
+   "status": "completed",
+   "tools": [
+    "open_application"
+   ],
+   "seconds": 1.5,
+   "note": "Kaam complete: open application.",
+   "state": "pass",
+   "detail": "completed and verified",
+   "closed_afterwards": [
+    "Untitled - Paint"
+   ]
+  },
+  "app_open_explorer": {
+   "status": "completed",
+   "tools": [
+    "open_application"
+   ],
+   "seconds": 0.4,
+   "note": "Kaam complete: open application.",
+   "state": "pass",
+   "detail": "completed and verified"
+  },
+  "app_open_task_manager": {
+   "status": "completed",
+   "tools": [
+    "open_windows_settings"
+   ],
+   "seconds": 0.4,
+   "note": "Kaam complete: open windows settings.",
+   "state": "pass",
+   "detail": "completed and verified"
+  },
+  "file_open_downloads": {
+   "status": "completed",
+   "tools": [
+    "explorer_navigate"
+   ],
+   "seconds": 4.6,
+   "note": "Kaam complete: explorer navigate.",
+   "state": "pass",
+   "detail": "completed and verified",
+   "closed_afterwards": [
+    "Downloads - File Explorer"
+   ]
+  },
+  "file_open_documents": {
+   "status": "completed",
+   "tools": [
+    "explorer_navigate"
+   ],
+   "seconds": 2.7,
+   "note": "Kaam complete: explorer navigate.",
+   "state": "pass",
+   "detail": "completed and verified",
+   "closed_afterwards": [
+    "Documents - File Explorer"
+   ]
+  },
+  "file_open_desktop": {
+   "status": "completed",
+   "tools": [
+    "explorer_navigate"
+   ],
+   "seconds": 2.9,
+   "note": "Kaam complete: explorer navigate.",
+   "state": "pass",
+   "detail": "completed and verified",
+   "closed_afterwards": [
+    "Desktop - File Explorer"
+   ]
+  },
+  "file_open_drive": {
+   "status": "completed",
+   "tools": [
+    "explorer_navigate"
+   ],
+   "seconds": 2.7,
+   "note": "Kaam complete: explorer navigate.",
+   "state": "pass",
+   "detail": "completed and verified",
+   "closed_afterwards": [
+    "Local Disk (C:) - File Explore"
+   ]
+  },
+  "file_list_downloads": {
+   "status": "completed",
+   "tools": [
+    "list_folder"
+   ],
+   "seconds": 1.2,
+   "note": "Kaam complete: list folder.",
+   "state": "pass",
+   "detail": "completed and verified"
+  },
+  "file_find": {
+   "status": "completed",
+   "tools": [
+    "find_files"
+   ],
+   "seconds": 14.3,
+   "note": "Kaam complete: find files.",
+   "state": "pass",
+   "detail": "completed and verified"
+  },
+  "file_create_folder": {
+   "status": "awaiting_approval",
+   "tools": [
+    "create_folder"
+   ],
+   "seconds": 0.1,
+   "note": "Local agent ne plan tayyar kiya; cloud API use nahi hui.",
+   "state": "pass",
+   "detail": "stopped at the approval card"
+  },
+  "file_copy": {
+   "status": "awaiting_input",
+   "tools": [],
+   "seconds": 0.1,
+   "note": "Which file or folder do you mean? Tell me its name.",
+   "state": "pass",
+   "detail": "asked which item (nothing exists to change)"
+  },
+  "file_move": {
+   "status": "awaiting_input",
+   "tools": [],
+   "seconds": 0.1,
+   "note": "I'm not sure what to do with that. Do you want me to open something, find a file, play mus",
+   "state": "pass",
+   "detail": "asked which item (nothing exists to change)"
+  },
+  "file_rename": {
+   "status": "awaiting_input",
+   "tools": [],
+   "seconds": 0.1,
+   "note": "I'm not sure what to do with that. Do you want me to open something, find a file, play mus",
+   "state": "pass",
+   "detail": "asked which item (nothing exists to change)"
+  },
+  "file_delete": {
+   "status": "awaiting_input",
+   "tools": [],
+   "seconds": 0.1,
+   "note": "I'm not sure what to do with that. Do you want me to open something, find a file, play mus",
+   "state": "pass",
+   "detail": "asked which item (nothing exists to change)"
+  },
+  "file_zip": {
+   "status": "awaiting_approval",
+   "tools": [
+    "compress_folder"
+   ],
+   "seconds": 2.3,
+   "note": "",
+   "state": "pass",
+   "detail": "stopped at the approval card"
+  },
+  "file_trash": {
+   "status": "completed",
+   "tools": [
+    "list_trash"
+   ],
+   "seconds": 4.3,
+   "note": "Trash is currently empty – nothing has been deleted.",
+   "state": "pass",
+   "detail": "completed and verified"
+  },
+  "vol_up": {
+   "status": "completed",
+   "tools": [
+    "manage_system_setting"
+   ],
+   "seconds": 2.6,
+   "note": "Volume ab 100% hai.",
+   "state": "pass",
+   "detail": "completed and verified"
+  },
+  "vol_down": {
+   "status": "completed",
+   "tools": [
+    "manage_system_setting"
+   ],
+   "seconds": 2.9,
+   "note": "Volume ab 80% hai.",
+   "state": "pass",
+   "detail": "completed and verified"
+  },
+  "vol_mute": {
+   "status": "completed",
+   "tools": [
+    "manage_system_setting"
+   ],
+   "seconds": 3.2,
+   "note": "Volume mute kar diya.",
+   "state": "pass",
+   "detail": "completed and verified"
+  },
+  "web_open_youtube": {
+   "status": "completed",
+   "tools": [
+    "open_url"
+   ],
+   "seconds": 1.3,
+   "note": "Kaam complete: open url.",
+   "state": "pass",
+   "detail": "completed and verified"
+  },
+  "web_open_github": {
+   "status": "completed",
+   "tools": [
+    "open_url"
+   ],
+   "seconds": 1.9,
+   "note": "Kaam complete: open url.",
+   "state": "pass",
+   "detail": "completed and verified"
+  },
+  "web_search": {
+   "status": "completed",
+   "tools": [
+    "web_search"
+   ],
+   "seconds": 0.9,
+   "note": "Kaam complete: web search.",
+   "state": "pass",
+   "detail": "completed and verified"
+  },
+  "battery": {
+   "status": "completed",
+   "tools": [
+    "device_control"
+   ],
+   "seconds": 0.3,
+   "note": "Kaam complete: device control.",
+   "state": "pass",
+   "detail": "completed and verified"
+  },
+  "screenshot": {
+   "status": "awaiting_approval",
+   "tools": [
+    "take_screenshot"
+   ],
+   "seconds": 0.1,
+   "note": "Local agent ne plan tayyar kiya; cloud API use nahi hui.",
+   "state": "pass",
+   "detail": "stopped at the approval card"
+  },
+  "page_settings": {
+   "status": "completed",
+   "tools": [
+    "open_windows_settings"
+   ],
+   "seconds": 1.2,
+   "note": "Kaam complete: open windows settings.",
+   "state": "pass",
+   "detail": "completed and verified"
+  },
+  "page_display": {
+   "status": "completed",
+   "tools": [
+    "open_windows_settings"
+   ],
+   "seconds": 0.8,
+   "note": "Kaam complete: open windows settings.",
+   "state": "pass",
+   "detail": "completed and verified"
+  },
+  "page_apps": {
+   "status": "completed",
+   "tools": [
+    "open_windows_settings"
+   ],
+   "seconds": 0.7,
+   "note": "Kaam complete: open windows settings.",
+   "state": "pass",
+   "detail": "completed and verified"
+  },
+  "page_control_panel": {
+   "status": "completed",
+   "tools": [
+    "open_windows_settings"
+   ],
+   "seconds": 0.5,
+   "note": "Kaam complete: open windows settings.",
+   "state": "pass",
+   "detail": "completed and verified"
+  },
+  "page_device_manager": {
+   "status": "completed",
+   "tools": [
+    "open_windows_settings"
+   ],
+   "seconds": 1.1,
+   "note": "Kaam complete: open windows settings.",
+   "state": "pass",
+   "detail": "completed and verified",
+   "closed_afterwards": [
+    "Control Panel"
+   ]
+  },
+  "page_power_options": {
+   "status": "completed",
+   "tools": [
+    "open_windows_settings"
+   ],
+   "seconds": 0.4,
+   "note": "Kaam complete: open windows settings.",
+   "state": "pass",
+   "detail": "completed and verified",
+   "closed_afterwards": [
+    "File Explorer"
+   ]
+  },
+  "media_pause": {
+   "status": "completed",
+   "tools": [
+    "media_control"
+   ],
+   "seconds": 2.1,
+   "note": "Kaam complete: media control.",
+   "state": "pass",
+   "detail": "completed and verified"
+  },
+  "code_terminal": {
+   "status": "completed",
+   "tools": [
+    "open_terminal"
+   ],
+   "seconds": 0.4,
+   "note": "Kaam complete: open terminal.",
+   "state": "pass",
+   "detail": "completed and verified",
+   "closed_afterwards": [
+    "Windows PowerShell"
+   ]
+  },
+  "yt_pause": {
+   "status": "completed",
+   "tools": [
+    "control_browser"
+   ],
+   "seconds": 2.2,
+   "note": "YouTube video pause kar di.",
+   "state": "pass",
+   "detail": "completed and verified"
+  },
+  "yt_resume": {
+   "status": "failed",
+   "tools": [
+    "control_browser"
+   ],
+   "seconds": 0.1,
+   "note": "",
+   "state": "fail",
+   "detail": "failed ['control_browser'] ['I cannot see a browser window showing YouTube.']"
+  },
+  "yt_next": {
+   "status": "failed",
+   "tools": [
+    "control_browser"
+   ],
+   "seconds": 0.1,
+   "note": "",
+   "state": "fail",
+   "detail": "failed ['control_browser'] ['I cannot see a browser window showing YouTube.']"
+  },
+  "yt_skip_ad": {
+   "status": "failed",
+   "tools": [
+    "control_browser"
+   ],
+   "seconds": 0.1,
+   "note": "",
+   "state": "fail",
+   "detail": "failed ['control_browser'] ['That control needs the browser helper (the Agent X extension): it is not connect']"
+  },
+  "yt_seek": {
+   "status": "failed",
+   "tools": [
+    "control_browser"
+   ],
+   "seconds": 0.1,
+   "note": "",
+   "state": "fail",
+   "detail": "failed ['control_browser'] ['I cannot see a browser window showing YouTube.']"
+  },
+  "yt_speed": {
+   "status": "failed",
+   "tools": [
+    "control_browser"
+   ],
+   "seconds": 0.1,
+   "note": "",
+   "state": "fail",
+   "detail": "failed ['control_browser'] ['That control needs the browser helper (the Agent X extension): it is not connect']"
+  },
+  "yt_mute": {
+   "status": "failed",
+   "tools": [
+    "control_browser"
+   ],
+   "seconds": 0.1,
+   "note": "",
+   "state": "fail",
+   "detail": "failed ['control_browser'] ['I cannot see a browser window showing YouTube.']"
+  },
+  "yt_fullscreen": {
+   "status": "failed",
+   "tools": [
+    "control_browser"
+   ],
+   "seconds": 0.1,
+   "note": "",
+   "state": "fail",
+   "detail": "failed ['control_browser'] ['I cannot see a browser window showing YouTube.']"
+  },
+  "yt_now_playing": {
+   "status": "failed",
+   "tools": [
+    "control_browser"
+   ],
+   "seconds": 0.1,
+   "note": "",
+   "state": "fail",
+   "detail": "failed ['control_browser'] ['That control needs the browser helper (the Agent X extension): it is not connect']"
+  }
+ },
+ "when": "2026-11-13 20:10"
+}

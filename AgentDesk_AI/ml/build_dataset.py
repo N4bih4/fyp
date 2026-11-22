@@ -153,16 +153,42 @@ def augment(rng: random.Random, rows: list[dict], copies: int = 2) -> list[dict]
 
 
 def real_rows() -> tuple[list[dict], list[dict]]:
-    train, test = [], []
+    """Real sentences. With 3+ different speakers (row["speaker"]), whole speakers are held out for the test set (about a quarter of them), so the test
+    answers "does it work for a voice it never heard?"; otherwise 20% of the sentences by a hash of the text."""
+    rows = []
     for path in sorted((DATA / "real").glob("*.jsonl")) if (DATA / "real").exists() else []:
         for row in read_jsonl(path):
-            bucket = test if int(hashlib.sha1(row["text"].encode("utf-8")).hexdigest(), 16) % 5 == 0 else train
             row.setdefault("slots", {})
             row.setdefault("lang", "en")
             row.setdefault("is_correction", False)
             row["source"] = "real"
-            bucket.append(row)
+            rows.append(row)
+    speakers = sorted({r["speaker"] for r in rows if r.get("speaker")})
+    held = set()
+    if len(speakers) >= 3:
+        held = {sp for sp in speakers if int(hashlib.sha1(sp.encode("utf-8")).hexdigest(), 16) % 4 == 0} or {speakers[-1]}
+    train, test = [], []
+    for row in rows:
+        if held:
+            to_test = row.get("speaker") in held
+        else:
+            to_test = int(hashlib.sha1(row["text"].encode("utf-8")).hexdigest(), 16) % 5 == 0
+        (test if to_test else train).append(row)
+    if held:
+        print(f"test speakers held out (never trained on): {sorted(held)}")
     return train, test
+
+
+def public_rows() -> list[dict]:
+    """Public datasets (ml/import_public.py): TRAIN ONLY, they never go into the honest test set."""
+    rows = []
+    for path in sorted((DATA / "public").glob("*.jsonl")) if (DATA / "public").exists() else []:
+        for row in read_jsonl(path):
+            row.setdefault("slots", {})
+            row.setdefault("lang", "en")
+            row.setdefault("is_correction", False)
+            rows.append(row)
+    return rows
 
 
 def main() -> int:
@@ -174,7 +200,7 @@ def main() -> int:
     train, test, _, _ = build(spec, a.per_lang, a.seed)
     rt, rs = real_rows()
     rng = random.Random(a.seed + 1)
-    train = train + rt
+    train = train + rt + public_rows()
     test = test + rs
     texts_in_test = {r["text"].casefold() for r in test}
     train = [r for r in train if r["text"].casefold() not in texts_in_test]      # no sentence is in both

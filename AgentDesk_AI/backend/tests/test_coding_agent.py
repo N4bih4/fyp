@@ -172,3 +172,86 @@ def test_claude_and_antigravity_are_measured_profiles_the_rest_are_marked_guesse
     assert ca.PROFILES["antigravity"]["verified"] and ca.PROFILES["claude"]["verified"]
     assert not any(ca.PROFILES[k]["verified"] for k in ("codex", "cursor", "chatgpt"))
     assert all(ca.PROFILES[k]["hints"] for k in ca.PROFILES)
+
+
+# ---- a project is named: the new conversation's project chip must be proven to show it before the prompt is sent
+def chip(monkeypatch, *texts):
+    """project_pill() answers with these texts in turn (None = the chip is not on screen); the last answer repeats."""
+    queue = list(texts)
+    monkeypatch.setattr(ca, "project_pill", lambda image, left: None if (queue[0] if len(queue) == 1 else queue.pop(0)) is None else ((0.38, 0.83), (queue[0])))
+
+
+def test_a_new_conversation_is_started_in_the_named_project_and_checked(monkeypatch, machine):
+    seq = iter(["Phone-Cleaner", None])                                            # chip seen after New Conversation, gone after Enter (the conversation started)
+    monkeypatch.setattr(ca, "project_pill", lambda image, left: (lambda t: None if t is None else ((0.38, 0.83), t))(next(seq, None)))
+    screen = FakeScreen([pic(20), pic(20), pic(20, box=True)])
+    out = run(monkeypatch, screen, project="Phone Cleaner")
+    assert out.success, out.error
+    assert screen.clicks[0] == (80, 70)                                              # "New Conversation" (0.08, 0.118 of the window)
+    assert out.output["project"] == "Phone Cleaner" and ("press", ("enter",)) in machine
+
+
+def test_another_project_is_switched_in_the_chooser(monkeypatch, machine):
+    monkeypatch.setattr(ca, "popup_open", lambda image: True)
+    seq = iter(["Downloads v", "Phone-Cleaner v", None])                           # wrong chip, right one after the choice, gone after Enter
+    monkeypatch.setattr(ca, "project_pill", lambda image, left: (lambda t: None if t is None else ((0.38, 0.83), t))(next(seq, None)))
+    monkeypatch.setattr(ca, "find_in_popup", lambda image, wanted, left: (0.39, 0.6))
+    screen = FakeScreen([pic(20), pic(20), pic(20), pic(20), pic(20), pic(20, box=True)])
+    out = run(monkeypatch, screen, project="Phone Cleaner")
+    assert out.success, out.error
+    assert screen.clicks[1] == (380, 498) and screen.clicks[2] == (390, 360)         # the chip, then the project's row in the list
+
+
+def test_a_project_that_is_not_in_the_chooser_sends_nothing(monkeypatch, machine):
+    monkeypatch.setattr(ca, "popup_open", lambda image: True)
+    monkeypatch.setattr(ca, "project_pill", lambda image, left: ((0.38, 0.83), "Downloads v"))
+    monkeypatch.setattr(ca, "find_in_popup", lambda image, wanted, left: None)
+    out = run(monkeypatch, FakeScreen([pic(20)]), project="Banana")
+    assert not out.success and "cannot find a project called 'Banana'" in out.error
+    assert ("press", ("escape",)) in machine and ("press", ("enter",)) not in machine and ("clip", "make a login page") not in machine
+
+
+def test_a_chip_that_does_not_show_the_project_after_the_choice_sends_nothing(monkeypatch, machine):
+    monkeypatch.setattr(ca, "popup_open", lambda image: True)
+    seq = iter(["Downloads v", "Downloads v"])
+    monkeypatch.setattr(ca, "project_pill", lambda image, left: ((0.38, 0.83), next(seq, "Downloads v")))
+    monkeypatch.setattr(ca, "find_in_popup", lambda image, wanted, left: (0.39, 0.6))
+    out = run(monkeypatch, FakeScreen([pic(20)]), project="Phone Cleaner")
+    assert not out.success and "did not send the prompt" in out.error
+    assert ("press", ("enter",)) not in machine and ("clip", "make a login page") not in machine
+
+
+def test_no_project_chooser_on_screen_sends_nothing(monkeypatch, machine):
+    monkeypatch.setattr(ca, "project_pill", lambda image, left: None)
+    out = run(monkeypatch, FakeScreen([pic(20)]), project="Phone Cleaner")
+    assert not out.success and "cannot see" in out.error and ("press", ("enter",)) not in machine
+
+
+def test_a_prompt_that_leaves_the_new_conversation_screen_in_place_is_not_called_sent(monkeypatch, machine):
+    monkeypatch.setattr(ca, "project_pill", lambda image, left: ((0.38, 0.83), "Phone-Cleaner v"))   # still there after Enter
+    out = run(monkeypatch, FakeScreen([pic(20), pic(20), pic(20, box=True)]), project="Phone Cleaner")
+    assert not out.success and "still shows the new-conversation screen" in out.error
+
+
+def test_an_app_without_a_project_list_says_so(monkeypatch, machine):
+    monkeypatch.setattr(ca, "get_screen", lambda: FakeScreen([pic(20)]))
+    monkeypatch.setattr(ca, "get_service", lambda: FakeService("Claude"))
+    tool = ca.CodingAgentTool.__new__(ca.CodingAgentTool)
+    out = tool.execute(ca.CodingAgentArgs(app="claude", prompt="hi", project="X"))
+    assert not out.success and "no project list" in out.error and ("press", ("enter",)) not in machine
+
+
+def test_project_names_match_loosely_but_not_wildly():
+    assert ca._name_match("photo translator", "Photo-Translator") == 1.0
+    assert ca._name_match("Phone Cleaner", "Phone-Cleaner") == 1.0
+    assert ca._name_match("Downloads", "El Downloads v") >= 0.8
+    assert ca._name_match("Map navigation", "Phone-Cleaner") < 0.8
+
+
+def test_a_list_that_never_opens_sends_nothing(monkeypatch, machine):
+    monkeypatch.setattr(ca, "project_pill", lambda image, left: ((0.38, 0.83), "Downloads v"))
+    monkeypatch.setattr(ca, "popup_open", lambda image: False)
+    screen = FakeScreen([pic(20)])
+    out = run(monkeypatch, screen, project="Phone Cleaner")
+    assert not out.success and "could not open" in out.error and ("press", ("enter",)) not in machine
+    assert len(screen.clicks) == 4                                                   # New Conversation, then the chip three times

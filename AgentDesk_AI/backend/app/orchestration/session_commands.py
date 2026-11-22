@@ -97,8 +97,9 @@ def parse(command: str, awaiting_more: bool = False) -> str | None:
 
 
 def _say(key: str, lang: str, **slots: str) -> str:
+    from ..voice.reply_script import reply_lang
     table = SAYS[key]
-    return table.get(lang, table["en"]).format(**slots)
+    return table.get(reply_lang(lang), table["en"]).format(**slots)
 
 
 def _done(db: Session, task: Task, text: str) -> Task:

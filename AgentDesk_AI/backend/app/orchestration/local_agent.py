@@ -41,6 +41,14 @@ def relative_candidates(value, registry):
 
 def correction_plan(task, original, reply, registry):
     """Apply a path reply to a specific workflow, never wrap it as prose for AI."""
+    from ..ai.profile_commands import profile_answer
+    chosen = profile_answer(original, reply)
+    if chosen is not None:
+        return chosen
+    from ..ai.clarify_answers import browser_answer
+    chosen = browser_answer(original, reply)
+    if chosen is not None:
+        return chosen
     paths = relative_candidates(reply, registry)
     state = json.loads(original.agent_state_json or "{}")
     if state.get("window_choices"):
@@ -194,6 +202,14 @@ def _apply_correction(db, spoken, recent):
     return spoken
 
 
+def _last_acting_task(db, task):
+    """The newest earlier task that DID something (has actions): noise and chat answers heard in between do not hide it."""
+    for earlier in db.query(Task).filter(Task.id != task.id).order_by(Task.created_at.desc()).limit(8):
+        if earlier.actions:
+            return earlier
+    return None
+
+
 def prepare_local_request(db, task, registry):
     """Return a validated local plan, or None when cloud reasoning is appropriate."""
     from ..ai.command_intents import canonical_command, switch_followup
@@ -205,7 +221,9 @@ def prepare_local_request(db, task, registry):
     from ..ai.browser_commands import youtube_followup
     from ..ai.device_commands import device_plan
     from ..ai.document_commands import document_followup, document_plan
-    media = document_followup(spoken, recent) or document_plan(routed) or youtube_followup(routed, recent) or browser_plan(routed) or device_plan(routed)
+    from ..ai.coverage_commands import coverage_plan
+    from ..ai.profile_commands import drive_plan, profile_followup, profile_plan
+    media = document_followup(spoken, recent) or profile_followup(routed, _last_acting_task(db, task)) or profile_plan(routed) or drive_plan(routed) or coverage_plan(routed) or document_plan(routed) or youtube_followup(routed, recent) or browser_plan(routed) or device_plan(routed)
     if media is not None:
         return media
     pieces = re.split(r"\s+(?:and|aur|और|اور)\s+", routed, flags=re.IGNORECASE)

@@ -163,6 +163,13 @@ class PywinautoBackend:
         import platform
         if platform.system() != "Windows":
             raise UiaError("UI Automation needs Windows.")
+        try:
+            import comtypes
+            comtypes.CoInitialize()      # tools run in server threads that never started COM: pywinauto's import fails ("CoInitialize has not been called") and the request was a 500
+        except OSError:
+            pass
+        except ImportError:
+            pass
         from pywinauto.uia_element_info import UIAElementInfo
         self._Info = UIAElementInfo
 

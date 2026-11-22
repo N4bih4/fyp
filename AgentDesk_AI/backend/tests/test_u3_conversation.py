@@ -195,7 +195,7 @@ def test_line_asks_anything_else_after_a_verified_result_only(db, registry, clie
     body = executor.task_out(task).model_dump(mode="json")
     text = client.post("/voice/line", json={"task": body}).json()["text"]
     assert text.endswith("Anything else?")
-    assert client.post("/voice/line", json={"task": body, "language": "ur"}).json()["text"].endswith("اور کچھ؟")
+    assert client.post("/voice/line", json={"task": body, "language": "ur"}).json()["text"].endswith("Aur kuch?")   # Urdu is answered in Roman Urdu (REPLY_SCRIPT=latin)
     say(db, registry, "no thanks")
     assert not client.post("/voice/line", json={"task": body}).json()["text"].endswith("Anything else?")
 

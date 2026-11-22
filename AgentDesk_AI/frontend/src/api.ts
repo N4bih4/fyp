@@ -52,6 +52,25 @@ export interface AgentRow {
   busy: boolean;
   task_id: string | null;
   doing: string | null;
+  status: string;
+  tool: string | null;
+  seconds: number;
+  last: { command: string; status: string; task_id: string } | null;
+  lane: LaneRow | null;
+}
+
+export interface LaneRow {
+  agent: string;
+  kind: string;
+  label: string;
+  app: string | null;
+  folder: string | null;
+  current: boolean;
+  status: 'open' | 'parked';
+  minutes_left: number;
+  steps: number;
+  last: string | null;
+  waiting: string | null;
 }
 
 export interface TaskOut {

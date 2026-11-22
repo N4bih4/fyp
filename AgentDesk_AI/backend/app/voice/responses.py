@@ -155,10 +155,9 @@ def _lang(language: str | None) -> str:
     code = (language or "en").lower()
     if code in ("roman", "roman_urdu", "ur-latn", "ur_roman"):
         return "roman"
-    if code.startswith("ur"):
-        return "ur"
-    if code.startswith("hi"):
-        return "hi"
+    if code.startswith("ur") or code.startswith("hi"):
+        from .reply_script import reply_lang
+        return "roman" if reply_lang("ur") == "roman_ur" else ("ur" if code.startswith("ur") else "hi")    # written answers in Latin letters unless REPLY_SCRIPT=native
     return "en"
 
 

@@ -162,5 +162,85 @@ class WingetInstallTool(BaseTool):
                         "already_installed": result.output.get("already_installed")})
 
 
+# ------------------------------------------------------------------ uninstall
+class WingetUninstallArgs(BaseModel):
+    app: str = Field(min_length=2, max_length=100, pattern=r"^[^\x00-\x1f;&|<>`$]+$",
+                     description="The installed app's name as spoken (e.g. 'VLC') or its exact WinGet ID (e.g. VideoLAN.VLC)")
+
+
+def parse_winget_list(text: str) -> list[tuple[str, str]]:
+    """[(name, id)] from the fixed-width table `winget list` prints (columns found from the header line)."""
+    lines = [ln.rstrip() for ln in text.splitlines()]
+    header = next((i for i, ln in enumerate(lines) if re.match(r"^Name\s+Id\s+Version", ln)), None)
+    if header is None:
+        return []
+    id_at, ver_at = lines[header].index("Id"), lines[header].index("Version")
+    rows = []
+    for ln in lines[header + 1:]:
+        if not ln.strip() or set(ln.strip()) <= {"-"} or len(ln) <= id_at:
+            continue
+        name, pid = ln[:id_at].strip(), ln[id_at:ver_at].strip()
+        if name and pid and " " not in pid:
+            rows.append((name, pid))
+    return rows
+
+
+def resolve_installed(query: str) -> tuple[list[tuple[str, str]], str]:
+    """Installed apps that fit the spoken name: an exact ID or exact name wins; otherwise every app whose name holds all the words."""
+    listed = run_winget(["list", "--query", query, "--accept-source-agreements", "--disable-interactivity"], timeout=60)
+    text = (listed.stdout or "") + (listed.stderr or "")
+    rows = parse_winget_list(text)
+    q = query.casefold().strip()
+    exact = [r for r in rows if r[1].casefold() == q or r[0].casefold() == q]
+    if exact:
+        return exact[:1], text
+    words = q.split()
+    return [r for r in rows if all(w in r[0].casefold() or w in r[1].casefold() for w in words)], text
+
+
+class WingetUninstallTool(BaseTool):
+    name = "winget_uninstall"
+    description = ("Uninstall one installed Windows app by name or exact WinGet ID. HIGH risk: shown for explicit approval first. If the name fits "
+                   "several installed apps it uninstalls NOTHING and asks which one. Verified afterwards with `winget list`.")
+    args_schema = WingetUninstallArgs
+    risk_level = RiskLevel.HIGH
+    timeout_seconds = 900
+    interruptible = False
+
+    def execute(self, args: BaseModel) -> ToolResult:
+        a = WingetUninstallArgs.model_validate(args.model_dump())
+        try:
+            found, listing = resolve_installed(a.app)
+            if not found:
+                return ToolResult(success=False, error=f"I could not find an installed app called {a.app}.", output={"details": listing[-800:]})
+            if len(found) > 1:
+                names = [n for n, _ in found[:3]]
+                question = f"Which one should I uninstall: {', '.join(names)}?"
+                return ToolResult(success=False, output={"candidates": names, "needs_confirmation": True, "question": question}, error=question)
+            name, pid = found[0]
+            result = run_winget(["uninstall", "--id", pid, "--exact", "--silent", "--accept-source-agreements", "--disable-interactivity"],
+                                timeout=self.timeout_seconds - 60)
+        except FileNotFoundError as exc:
+            return ToolResult(success=False, error=str(exc))
+        except subprocess.TimeoutExpired:
+            return ToolResult(success=False, error="WinGet did not finish in time; check Apps & features.")
+        details = ((result.stdout or "") + (result.stderr or ""))[-4000:]
+        if result.returncode != 0:
+            return ToolResult(success=False, output={"details": details, "exit_code": result.returncode, "package_id": pid},
+                              error=f"Uninstalling {name} failed (exit {result.returncode}); an administrator prompt may have been declined.")
+        return ToolResult(success=True, output={"package_id": pid, "name": name, "details": details, "spoken": f"{name} has been uninstalled."})
+
+    def verify(self, args: BaseModel, result: ToolResult) -> Verification:
+        """After the uninstall `winget list --id <id> --exact` must NOT show the package."""
+        if not result.success:
+            return failed_result(result)
+        pid = str(result.output.get("package_id"))
+        try:
+            installed, listing = is_installed(pid)
+        except (FileNotFoundError, subprocess.TimeoutExpired) as exc:
+            return Verification(passed=False, checks=["winget list could not run"], details=str(exc))
+        return verdict([("winget list no longer shows the package", not installed)], {"package_id": pid, "winget_list_tail": listing[-400:]})
+
+
 def package_tools(ctx=None) -> list[BaseTool]:
-    return [ApplicationPackageTool(ctx), WingetInstallTool(ctx)]
+    return [ApplicationPackageTool(ctx), WingetInstallTool(ctx), WingetUninstallTool(ctx)]

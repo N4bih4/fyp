@@ -39,6 +39,9 @@ class ExplorerBackend(Protocol):
     def properties(self, path: str) -> None: ...
     def window_titles(self) -> list[str]: ...
     def search(self, folder: str, query: str) -> None: ...
+    def navigate(self, path: str, hwnd: int | None) -> dict: ...
+    def location(self, hwnd: int) -> str | None: ...
+    def focus(self, hwnd: int) -> bool: ...
 
 
 class WindowsExplorer:
@@ -46,7 +49,12 @@ class WindowsExplorer:
 
     @staticmethod
     def _windows():
+        import comtypes
         import comtypes.client
+        try:
+            comtypes.CoInitialize()          # the tools run in server threads that have not started COM ("CoInitialize has not been called")
+        except OSError:
+            pass                             # already started in another mode: fine
         shell = comtypes.client.CreateObject("Shell.Application")
         found = []
         wins = shell.Windows()
@@ -124,6 +132,52 @@ class WindowsExplorer:
         from urllib.parse import quote
         uri = f"search-ms:displayname=Search Results&crumb=location:{quote(folder)}&query={quote(query)}"
         subprocess.Popen(["explorer.exe", uri])
+
+    @staticmethod
+    def _path_of(window) -> str:
+        from urllib.parse import unquote, urlsplit
+        return unquote(urlsplit(str(window.LocationURL)).path.lstrip("/")).replace("/", "\\")
+
+    def location(self, hwnd: int) -> str | None:
+        """The folder shown by the Explorer window with this handle (None when that window is gone)."""
+        for w in self._windows():
+            try:
+                if int(w.HWND) == int(hwnd):
+                    return self._path_of(w)
+            except Exception:  # noqa: BLE001
+                continue
+        return None
+
+    def focus(self, hwnd: int) -> bool:
+        user32 = ctypes.windll.user32
+        if not user32.IsWindow(int(hwnd)):
+            return False
+        if user32.IsIconic(int(hwnd)):
+            user32.ShowWindow(int(hwnd), 9)        # SW_RESTORE
+        user32.keybd_event(0x12, 0, 0, 0)          # a tap of Alt lets SetForegroundWindow succeed from a background process
+        user32.keybd_event(0x12, 0, 2, 0)
+        return bool(user32.SetForegroundWindow(int(hwnd)))
+
+    def navigate(self, path: str, hwnd: int | None) -> dict:
+        """Show `path` in the Explorer window `hwnd` (a window of its own, never "whichever is in front"). With no usable window, a new one is opened and its handle returned."""
+        target = None
+        if hwnd:
+            target = next((w for w in self._windows() if int(w.HWND) == int(hwnd)), None)
+        opened_new = False
+        if target is None:
+            before = {int(w.HWND) for w in self._windows()}
+            subprocess.Popen(["explorer.exe", path])
+            deadline = time.monotonic() + 8
+            while time.monotonic() < deadline and target is None:
+                time.sleep(0.3)
+                fresh = [w for w in self._windows() if int(w.HWND) not in before]
+                target = fresh[-1] if fresh else next((w for w in self._windows() if os.path.normcase(self._path_of(w)) == os.path.normcase(path)), None)
+            opened_new = True
+        else:
+            target.Navigate2(path)
+        if target is None:
+            raise RuntimeError("Explorer did not show a window for that folder")
+        return {"hwnd": int(target.HWND), "opened_new": opened_new}
 
 
 _backend: ExplorerBackend | None = None
@@ -248,5 +302,58 @@ class ExplorerViewTool(BaseTool):
             return Verification(passed=False, checks=["read back"], details=f"{type(exc).__name__}: {str(exc)[:120]}")
 
 
+class ExplorerNavigateArgs(BaseModel):
+    path: str = Field(min_length=2, max_length=500, description="An existing folder or drive, e.g. the C drive or the Users folder on it")
+    window: int | None = Field(default=None, description="The Explorer window to use (its handle, kept by the conversation); empty = the conversation's window, or a new one when there is none")
+    new_window: bool = Field(default=False, description="True only when the user asked for a NEW File Explorer window")
+
+
+class ExplorerNavigateTool(BaseTool):
+    name = "explorer_navigate"
+    description = ("Show a folder or drive in ONE File Explorer window, the one the conversation already works in (window = its handle), so 'C drive', then 'Users', "
+                   "then 'Documents' stay in the same window. Without a window it opens a new Explorer window. Read-only: it only changes what the window shows.")
+    args_schema = ExplorerNavigateArgs
+    risk_level = RiskLevel.LOW
+    isolation = "thread"
+    timeout_seconds = 30
+
+    def execute(self, args: BaseModel) -> ToolResult:
+        a = ExplorerNavigateArgs.model_validate(args.model_dump())
+        folder = Path(os.path.expandvars(a.path)).expanduser()
+        if not folder.is_dir():
+            if re.fullmatch(r"[A-Za-z]:[\\/]?", a.path.strip()):                         # a drive that is not on this PC: say which ones are
+                have = [f"{c}:" for c in "CDEFGHIJKLMNOPQRSTUVWXYZ" if os.path.isdir(f"{c}:\\")]
+                return ToolResult(success=False, error=f"There is no {a.path.strip()[0].upper()}: drive on this PC. Drives here: {', '.join(have)}.")
+            return ToolResult(success=False, error=f"'{a.path}' is not a folder I can open.")
+        path = str(folder.resolve())
+        window = a.window
+        if window is None and not a.new_window:
+            from ..orchestration import lanes
+            window = lanes.explorer_window()                  # until the user asks for a new window, work in the one that is open
+        try:
+            info = get_explorer().navigate(path, window)
+        except Exception as exc:  # noqa: BLE001
+            return ToolResult(success=False, error=f"Explorer did not accept that: {type(exc).__name__}: {str(exc)[:120]}")
+        name = folder.name or path
+        return ToolResult(success=True, output={"path": path, "hwnd": info["hwnd"], "opened_new": info["opened_new"], "spoken": f"Opened {name}."})
+
+    def verify(self, args: BaseModel, result: ToolResult) -> Verification:
+        if not result.success:
+            return Verification(passed=False, checks=["folder shown"], details=result.error)
+        want, hwnd = result.output["path"], result.output["hwnd"]
+        deadline, shown = time.monotonic() + 5, None
+        try:
+            while time.monotonic() < deadline:
+                shown = get_explorer().location(hwnd)
+                if shown and os.path.normcase(shown.rstrip("\\")) == os.path.normcase(want.rstrip("\\")):
+                    from .window_focus import bring_to_front
+                    bring_to_front(hwnd)                      # the window that changed is shown in front of everything, not left blinking in the taskbar
+                    return Verification(passed=True, checks=["the Explorer window reports this folder"], evidence={"hwnd": hwnd, "shown": shown})
+                time.sleep(0.3)
+        except Exception as exc:  # noqa: BLE001
+            return Verification(passed=False, checks=["read back"], details=f"{type(exc).__name__}: {str(exc)[:120]}")
+        return Verification(passed=False, checks=["the window shows the folder"], evidence={"hwnd": hwnd, "shown": shown}, details="The window does not show that folder.")
+
+
 def explorer_tools(ctx) -> list[BaseTool]:
-    return [ExplorerViewTool(ctx)]
+    return [ExplorerViewTool(ctx), ExplorerNavigateTool(ctx)]

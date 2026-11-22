@@ -1,34 +1,34 @@
 {
  "model": "xlm-roberta-base, int8 ONNX",
  "test_clean": {
-  "n": 428,
-  "intent_accuracy": 0.8388,
+  "n": 436,
+  "intent_accuracy": 0.7982,
   "per_language_accuracy": {
    "en": {
-    "n": 187,
-    "accuracy": 0.845
+    "n": 192,
+    "accuracy": 0.807
    },
    "hi": {
     "n": 67,
-    "accuracy": 0.925
+    "accuracy": 0.896
    },
    "roman_ur": {
-    "n": 114,
-    "accuracy": 0.737
+    "n": 116,
+    "accuracy": 0.724
    },
    "ur": {
-    "n": 60,
-    "accuracy": 0.917
+    "n": 61,
+    "accuracy": 0.803
    }
   },
-  "confident_share": 0.841,
-  "accuracy_when_confident": 0.9139,
-  "wrong_and_confident": 31,
+  "confident_share": 0.385,
+  "accuracy_when_confident": 0.9762,
+  "wrong_and_confident": 4,
   "slot": {
-   "precision": 0.864,
-   "recall": 0.866,
-   "f1": 0.865,
-   "gold_slots": 367
+   "precision": 0.861,
+   "recall": 0.852,
+   "f1": 0.857,
+   "gold_slots": 372
   },
   "per_intent": {
    "battery_status": {
@@ -57,27 +57,27 @@
    },
    "chat": {
     "support": 8,
-    "precision": 0.875,
-    "recall": 0.875,
-    "f1": 0.875
+    "precision": 0.667,
+    "recall": 1.0,
+    "f1": 0.8
    },
    "close_app": {
     "support": 24,
-    "precision": 0.913,
-    "recall": 0.875,
-    "f1": 0.894
+    "precision": 0.857,
+    "recall": 1.0,
+    "f1": 0.923
    },
    "confirm_no": {
     "support": 4,
-    "precision": 0.667,
+    "precision": 1.0,
     "recall": 0.5,
-    "f1": 0.571
+    "f1": 0.667
    },
    "confirm_yes": {
     "support": 5,
-    "precision": 1.0,
-    "recall": 0.6,
-    "f1": 0.75
+    "precision": 0.833,
+    "recall": 1.0,
+    "f1": 0.909
    },
    "copy_file": {
     "support": 4,
@@ -86,10 +86,10 @@
     "f1": 1.0
    },
    "correction": {
-    "support": 24,
-    "precision": 0.75,
-    "recall": 1.0,
-    "f1": 0.857
+    "support": 27,
+    "precision": 0.722,
+    "recall": 0.963,
+    "f1": 0.825
    },
    "create_folder": {
     "support": 6,
@@ -106,8 +106,8 @@
    "delete_file": {
     "support": 8,
     "precision": 1.0,
-    "recall": 0.75,
-    "f1": 0.857
+    "recall": 1.0,
+    "f1": 1.0
    },
    "email_compose": {
     "support": 6,
@@ -123,21 +123,21 @@
    },
    "end_task": {
     "support": 6,
-    "precision": 0.6,
-    "recall": 0.5,
-    "f1": 0.545
+    "precision": 1.0,
+    "recall": 0.667,
+    "f1": 0.8
    },
    "find_files": {
     "support": 8,
-    "precision": 0.714,
-    "recall": 0.625,
+    "precision": 0.6,
+    "recall": 0.75,
     "f1": 0.667
    },
    "follow_up": {
-    "support": 7,
-    "precision": 0.5,
-    "recall": 0.714,
-    "f1": 0.588
+    "support": 8,
+    "precision": 0.25,
+    "recall": 0.125,
+    "f1": 0.167
    },
    "install_app": {
     "support": 4,
@@ -153,9 +153,9 @@
    },
    "list_folder": {
     "support": 4,
-    "precision": 0.667,
+    "precision": 0.8,
     "recall": 1.0,
-    "f1": 0.8
+    "f1": 0.889
    },
    "lock_pc": {
     "support": 4,
@@ -165,15 +165,15 @@
    },
    "media_control": {
     "support": 6,
-    "precision": 1.0,
-    "recall": 0.667,
-    "f1": 0.8
+    "precision": 0.6,
+    "recall": 0.5,
+    "f1": 0.545
    },
    "memory_recall": {
     "support": 12,
     "precision": 1.0,
-    "recall": 1.0,
-    "f1": 1.0
+    "recall": 0.833,
+    "f1": 0.909
    },
    "memory_remember": {
     "support": 6,
@@ -189,33 +189,33 @@
    },
    "open_app": {
     "support": 36,
-    "precision": 0.781,
-    "recall": 0.694,
-    "f1": 0.735
+    "precision": 0.788,
+    "recall": 0.722,
+    "f1": 0.754
    },
    "open_file": {
     "support": 4,
     "precision": 1.0,
-    "recall": 0.5,
-    "f1": 0.667
+    "recall": 0.75,
+    "f1": 0.857
    },
    "open_folder": {
     "support": 8,
-    "precision": 0.875,
+    "precision": 0.778,
     "recall": 0.875,
-    "f1": 0.875
+    "f1": 0.824
    },
    "open_website": {
     "support": 12,
     "precision": 1.0,
-    "recall": 0.833,
-    "f1": 0.909
+    "recall": 0.333,
+    "f1": 0.5
    },
    "read_file": {
     "support": 4,
-    "precision": 0.667,
+    "precision": 1.0,
     "recall": 1.0,
-    "f1": 0.8
+    "f1": 1.0
    },
    "reminder": {
     "support": 6,
@@ -231,9 +231,9 @@
    },
    "repeat": {
     "support": 4,
-    "precision": 0.75,
+    "precision": 0.6,
     "recall": 0.75,
-    "f1": 0.75
+    "f1": 0.667
    },
    "research_task": {
     "support": 8,
@@ -243,9 +243,9 @@
    },
    "restart_pc": {
     "support": 2,
-    "precision": 0.222,
+    "precision": 0.286,
     "recall": 1.0,
-    "f1": 0.364
+    "f1": 0.444
    },
    "restore_file": {
     "support": 4,
@@ -262,8 +262,8 @@
    "shutdown_pc": {
     "support": 2,
     "precision": 1.0,
-    "recall": 1.0,
-    "f1": 1.0
+    "recall": 0.5,
+    "f1": 0.667
    },
    "sleep_pc": {
     "support": 2,
@@ -285,15 +285,15 @@
    },
    "switch_app": {
     "support": 23,
-    "precision": 1.0,
+    "precision": 0.857,
     "recall": 0.522,
-    "f1": 0.686
+    "f1": 0.649
    },
    "terminal_run": {
     "support": 4,
-    "precision": 0.667,
+    "precision": 0.8,
     "recall": 1.0,
-    "f1": 0.8
+    "f1": 0.889
    },
    "ui_click": {
     "support": 6,
@@ -309,33 +309,39 @@
    },
    "undo": {
     "support": 4,
-    "precision": 1.0,
-    "recall": 0.75,
-    "f1": 0.857
+    "precision": 0.667,
+    "recall": 0.5,
+    "f1": 0.571
+   },
+   "unknown": {
+    "support": 4,
+    "precision": 0.4,
+    "recall": 0.5,
+    "f1": 0.444
    },
    "volume_change": {
     "support": 6,
-    "precision": 0.857,
+    "precision": 0.6,
     "recall": 1.0,
-    "f1": 0.923
+    "f1": 0.75
    },
    "volume_set": {
     "support": 6,
     "precision": 1.0,
-    "recall": 1.0,
-    "f1": 1.0
+    "recall": 0.667,
+    "f1": 0.8
    },
    "web_answer": {
     "support": 12,
-    "precision": 0.923,
+    "precision": 0.8,
     "recall": 1.0,
-    "f1": 0.96
+    "f1": 0.889
    },
    "web_search": {
     "support": 8,
     "precision": 1.0,
-    "recall": 0.875,
-    "f1": 0.933
+    "recall": 0.125,
+    "f1": 0.222
    },
    "whatsapp_draft": {
     "support": 6,
@@ -351,9 +357,9 @@
    },
    "window_control": {
     "support": 20,
-    "precision": 1.0,
+    "precision": 0.778,
     "recall": 0.7,
-    "f1": 0.824
+    "f1": 0.737
    },
    "write_file": {
     "support": 6,
@@ -363,33 +369,33 @@
    },
    "youtube_control": {
     "support": 9,
-    "precision": 0.833,
-    "recall": 0.556,
-    "f1": 0.667
+    "precision": 1.0,
+    "recall": 0.667,
+    "f1": 0.8
    },
    "youtube_now_playing": {
     "support": 4,
-    "precision": 0.8,
-    "recall": 1.0,
-    "f1": 0.889
+    "precision": 1.0,
+    "recall": 0.75,
+    "f1": 0.857
    },
    "youtube_pause": {
     "support": 4,
-    "precision": 0.8,
-    "recall": 1.0,
-    "f1": 0.889
+    "precision": 0.5,
+    "recall": 0.5,
+    "f1": 0.5
    },
    "youtube_play": {
     "support": 10,
-    "precision": 1.0,
-    "recall": 1.0,
-    "f1": 1.0
+    "precision": 0.643,
+    "recall": 0.9,
+    "f1": 0.75
    },
    "youtube_resume": {
     "support": 4,
-    "precision": 0.444,
-    "recall": 1.0,
-    "f1": 0.615
+    "precision": 0.6,
+    "recall": 0.75,
+    "f1": 0.667
    },
    "youtube_seek": {
     "support": 4,
@@ -402,7 +408,12 @@
    {
     "gold": "open_app",
     "predicted": "correction",
-    "count": 6
+    "count": 8
+   },
+   {
+    "gold": "open_website",
+    "predicted": "open_app",
+    "count": 7
    },
    {
     "gold": "switch_app",
@@ -412,21 +423,21 @@
    {
     "gold": "window_control",
     "predicted": "restart_pc",
-    "count": 6
-   },
-   {
-    "gold": "switch_app",
-    "predicted": "open_app",
     "count": 5
    },
    {
-    "gold": "youtube_control",
-    "predicted": "youtube_resume",
+    "gold": "switch_app",
+    "predicted": "window_control",
     "count": 4
    },
    {
-    "gold": "close_app",
-    "predicted": "follow_up",
+    "gold": "web_search",
+    "predicted": "web_answer",
+    "count": 3
+   },
+   {
+    "gold": "web_search",
+    "predicted": "find_files",
     "count": 3
    },
    {
@@ -435,18 +446,18 @@
     "count": 2
    },
    {
-    "gold": "open_app",
-    "predicted": "terminal_run",
+    "gold": "youtube_pause",
+    "predicted": "media_control",
     "count": 2
    },
    {
-    "gold": "open_website",
-    "predicted": "open_app",
+    "gold": "youtube_control",
+    "predicted": "youtube_play",
     "count": 2
    },
    {
-    "gold": "open_file",
-    "predicted": "read_file",
+    "gold": "media_control",
+    "predicted": "youtube_pause",
     "count": 2
    },
    {
@@ -455,56 +466,51 @@
     "count": 2
    },
    {
-    "gold": "delete_file",
-    "predicted": "find_files",
+    "gold": "volume_set",
+    "predicted": "volume_change",
     "count": 2
    },
    {
-    "gold": "open_app",
-    "predicted": "restart_pc",
-    "count": 1
+    "gold": "memory_recall",
+    "predicted": "chat",
+    "count": 2
    },
    {
-    "gold": "web_search",
-    "predicted": "create_folder",
-    "count": 1
-   },
-   {
-    "gold": "media_control",
-    "predicted": "youtube_pause",
-    "count": 1
+    "gold": "follow_up",
+    "predicted": "correction",
+    "count": 2
    }
   ]
  },
  "test_noisy": {
-  "n": 428,
-  "intent_accuracy": 0.8294,
+  "n": 436,
+  "intent_accuracy": 0.7844,
   "per_language_accuracy": {
    "en": {
-    "n": 187,
-    "accuracy": 0.829
+    "n": 192,
+    "accuracy": 0.802
    },
    "hi": {
     "n": 67,
-    "accuracy": 0.925
+    "accuracy": 0.896
    },
    "roman_ur": {
-    "n": 114,
-    "accuracy": 0.737
+    "n": 116,
+    "accuracy": 0.681
    },
    "ur": {
-    "n": 60,
-    "accuracy": 0.9
+    "n": 61,
+    "accuracy": 0.803
    }
   },
-  "confident_share": 0.818,
-  "accuracy_when_confident": 0.9086,
-  "wrong_and_confident": 32,
+  "confident_share": 0.374,
+  "accuracy_when_confident": 0.9816,
+  "wrong_and_confident": 3,
   "slot": {
-   "precision": 0.842,
-   "recall": 0.812,
-   "f1": 0.827,
-   "gold_slots": 367
+   "precision": 0.848,
+   "recall": 0.809,
+   "f1": 0.828,
+   "gold_slots": 372
   },
   "per_intent": {
    "battery_status": {
@@ -522,8 +528,8 @@
    "brightness_set": {
     "support": 6,
     "precision": 1.0,
-    "recall": 0.833,
-    "f1": 0.909
+    "recall": 0.667,
+    "f1": 0.8
    },
    "browser_tab": {
     "support": 9,
@@ -533,39 +539,39 @@
    },
    "chat": {
     "support": 8,
-    "precision": 0.875,
-    "recall": 0.875,
-    "f1": 0.875
+    "precision": 0.615,
+    "recall": 1.0,
+    "f1": 0.762
    },
    "close_app": {
     "support": 24,
-    "precision": 0.955,
-    "recall": 0.875,
-    "f1": 0.913
+    "precision": 0.793,
+    "recall": 0.958,
+    "f1": 0.868
    },
    "confirm_no": {
     "support": 4,
-    "precision": 0.5,
+    "precision": 1.0,
     "recall": 0.5,
-    "f1": 0.5
+    "f1": 0.667
    },
    "confirm_yes": {
     "support": 5,
-    "precision": 1.0,
-    "recall": 0.6,
-    "f1": 0.75
+    "precision": 0.833,
+    "recall": 1.0,
+    "f1": 0.909
    },
    "copy_file": {
     "support": 4,
     "precision": 1.0,
-    "recall": 0.75,
-    "f1": 0.857
+    "recall": 1.0,
+    "f1": 1.0
    },
    "correction": {
-    "support": 24,
-    "precision": 0.75,
-    "recall": 1.0,
-    "f1": 0.857
+    "support": 27,
+    "precision": 0.714,
+    "recall": 0.926,
+    "f1": 0.806
    },
    "create_folder": {
     "support": 6,
@@ -575,45 +581,45 @@
    },
    "dark_mode": {
     "support": 4,
-    "precision": 0.8,
+    "precision": 0.667,
     "recall": 1.0,
-    "f1": 0.889
+    "f1": 0.8
    },
    "delete_file": {
     "support": 8,
     "precision": 1.0,
-    "recall": 0.75,
-    "f1": 0.857
+    "recall": 1.0,
+    "f1": 1.0
    },
    "email_compose": {
     "support": 6,
-    "precision": 0.857,
+    "precision": 0.75,
     "recall": 1.0,
-    "f1": 0.923
+    "f1": 0.857
    },
    "email_send": {
     "support": 2,
-    "precision": 0.333,
+    "precision": 0.5,
     "recall": 0.5,
-    "f1": 0.4
+    "f1": 0.5
    },
    "end_task": {
     "support": 6,
-    "precision": 0.667,
+    "precision": 0.8,
     "recall": 0.667,
-    "f1": 0.667
+    "f1": 0.727
    },
    "find_files": {
     "support": 8,
-    "precision": 0.714,
-    "recall": 0.625,
-    "f1": 0.667
+    "precision": 0.75,
+    "recall": 0.75,
+    "f1": 0.75
    },
    "follow_up": {
-    "support": 7,
-    "precision": 0.455,
-    "recall": 0.714,
-    "f1": 0.556
+    "support": 8,
+    "precision": 0.333,
+    "recall": 0.125,
+    "f1": 0.182
    },
    "install_app": {
     "support": 4,
@@ -629,9 +635,9 @@
    },
    "list_folder": {
     "support": 4,
-    "precision": 1.0,
+    "precision": 0.8,
     "recall": 1.0,
-    "f1": 1.0
+    "f1": 0.889
    },
    "lock_pc": {
     "support": 4,
@@ -641,15 +647,15 @@
    },
    "media_control": {
     "support": 6,
-    "precision": 1.0,
-    "recall": 0.667,
-    "f1": 0.8
+    "precision": 0.5,
+    "recall": 0.333,
+    "f1": 0.4
    },
    "memory_recall": {
     "support": 12,
     "precision": 1.0,
-    "recall": 1.0,
-    "f1": 1.0
+    "recall": 0.833,
+    "f1": 0.909
    },
    "memory_remember": {
     "support": 6,
@@ -659,39 +665,39 @@
    },
    "move_file": {
     "support": 4,
-    "precision": 0.8,
+    "precision": 1.0,
     "recall": 1.0,
-    "f1": 0.889
+    "f1": 1.0
    },
    "open_app": {
     "support": 36,
-    "precision": 0.742,
-    "recall": 0.639,
-    "f1": 0.687
+    "precision": 0.808,
+    "recall": 0.583,
+    "f1": 0.677
    },
    "open_file": {
     "support": 4,
     "precision": 1.0,
-    "recall": 0.5,
-    "f1": 0.667
+    "recall": 0.75,
+    "f1": 0.857
    },
    "open_folder": {
     "support": 8,
-    "precision": 0.75,
+    "precision": 0.6,
     "recall": 0.75,
-    "f1": 0.75
+    "f1": 0.667
    },
    "open_website": {
     "support": 12,
     "precision": 1.0,
-    "recall": 0.75,
-    "f1": 0.857
+    "recall": 0.417,
+    "f1": 0.588
    },
    "read_file": {
     "support": 4,
-    "precision": 0.667,
+    "precision": 1.0,
     "recall": 1.0,
-    "f1": 0.8
+    "f1": 1.0
    },
    "reminder": {
     "support": 6,
@@ -707,9 +713,9 @@
    },
    "repeat": {
     "support": 4,
-    "precision": 0.75,
+    "precision": 1.0,
     "recall": 0.75,
-    "f1": 0.75
+    "f1": 0.857
    },
    "research_task": {
     "support": 8,
@@ -719,9 +725,9 @@
    },
    "restart_pc": {
     "support": 2,
-    "precision": 0.222,
+    "precision": 0.333,
     "recall": 1.0,
-    "f1": 0.364
+    "f1": 0.5
    },
    "restore_file": {
     "support": 4,
@@ -731,15 +737,15 @@
    },
    "screenshot": {
     "support": 2,
-    "precision": 0.667,
+    "precision": 1.0,
     "recall": 1.0,
-    "f1": 0.8
+    "f1": 1.0
    },
    "shutdown_pc": {
     "support": 2,
     "precision": 1.0,
-    "recall": 1.0,
-    "f1": 1.0
+    "recall": 0.5,
+    "f1": 0.667
    },
    "sleep_pc": {
     "support": 2,
@@ -749,9 +755,9 @@
    },
    "stop": {
     "support": 5,
-    "precision": 0.667,
-    "recall": 0.8,
-    "f1": 0.727
+    "precision": 0.429,
+    "recall": 0.6,
+    "f1": 0.5
    },
    "summarise": {
     "support": 2,
@@ -761,15 +767,15 @@
    },
    "switch_app": {
     "support": 23,
-    "precision": 0.857,
+    "precision": 1.0,
     "recall": 0.522,
-    "f1": 0.649
+    "f1": 0.686
    },
    "terminal_run": {
     "support": 4,
-    "precision": 1.0,
-    "recall": 1.0,
-    "f1": 1.0
+    "precision": 0.75,
+    "recall": 0.75,
+    "f1": 0.75
    },
    "ui_click": {
     "support": 6,
@@ -785,15 +791,21 @@
    },
    "undo": {
     "support": 4,
-    "precision": 1.0,
+    "precision": 0.75,
     "recall": 0.75,
-    "f1": 0.857
+    "f1": 0.75
+   },
+   "unknown": {
+    "support": 4,
+    "precision": 0.2,
+    "recall": 0.5,
+    "f1": 0.286
    },
    "volume_change": {
     "support": 6,
-    "precision": 0.857,
-    "recall": 1.0,
-    "f1": 0.923
+    "precision": 0.625,
+    "recall": 0.833,
+    "f1": 0.714
    },
    "volume_set": {
     "support": 6,
@@ -803,15 +815,15 @@
    },
    "web_answer": {
     "support": 12,
-    "precision": 0.923,
+    "precision": 0.8,
     "recall": 1.0,
-    "f1": 0.96
+    "f1": 0.889
    },
    "web_search": {
     "support": 8,
     "precision": 1.0,
-    "recall": 0.875,
-    "f1": 0.933
+    "recall": 0.375,
+    "f1": 0.545
    },
    "whatsapp_draft": {
     "support": 6,
@@ -827,9 +839,9 @@
    },
    "window_control": {
     "support": 20,
-    "precision": 0.933,
+    "precision": 0.778,
     "recall": 0.7,
-    "f1": 0.8
+    "f1": 0.737
    },
    "write_file": {
     "support": 6,
@@ -839,33 +851,33 @@
    },
    "youtube_control": {
     "support": 9,
-    "precision": 0.833,
-    "recall": 0.556,
-    "f1": 0.667
+    "precision": 0.857,
+    "recall": 0.667,
+    "f1": 0.75
    },
    "youtube_now_playing": {
     "support": 4,
     "precision": 1.0,
-    "recall": 1.0,
-    "f1": 1.0
+    "recall": 0.75,
+    "f1": 0.857
    },
    "youtube_pause": {
     "support": 4,
-    "precision": 0.8,
-    "recall": 1.0,
-    "f1": 0.889
+    "precision": 0.667,
+    "recall": 0.5,
+    "f1": 0.571
    },
    "youtube_play": {
     "support": 10,
-    "precision": 1.0,
+    "precision": 0.562,
     "recall": 0.9,
-    "f1": 0.947
+    "f1": 0.692
    },
    "youtube_resume": {
     "support": 4,
-    "precision": 0.4,
-    "recall": 1.0,
-    "f1": 0.571
+    "precision": 0.5,
+    "recall": 0.75,
+    "f1": 0.6
    },
    "youtube_seek": {
     "support": 4,
@@ -878,7 +890,7 @@
    {
     "gold": "open_app",
     "predicted": "correction",
-    "count": 7
+    "count": 8
    },
    {
     "gold": "switch_app",
@@ -886,137 +898,130 @@
     "count": 6
    },
    {
-    "gold": "switch_app",
-    "predicted": "open_app",
+    "gold": "open_app",
+    "predicted": "close_app",
     "count": 5
-   },
-   {
-    "gold": "window_control",
-    "predicted": "restart_pc",
-    "count": 5
-   },
-   {
-    "gold": "youtube_control",
-    "predicted": "youtube_resume",
-    "count": 4
    },
    {
     "gold": "open_website",
     "predicted": "open_app",
-    "count": 3
+    "count": 5
+   },
+   {
+    "gold": "switch_app",
+    "predicted": "window_control",
+    "count": 4
+   },
+   {
+    "gold": "window_control",
+    "predicted": "restart_pc",
+    "count": 4
+   },
+   {
+    "gold": "web_search",
+    "predicted": "web_answer",
+    "count": 2
+   },
+   {
+    "gold": "web_search",
+    "predicted": "create_folder",
+    "count": 2
+   },
+   {
+    "gold": "youtube_pause",
+    "predicted": "media_control",
+    "count": 2
+   },
+   {
+    "gold": "youtube_control",
+    "predicted": "youtube_play",
+    "count": 2
+   },
+   {
+    "gold": "media_control",
+    "predicted": "youtube_play",
+    "count": 2
    },
    {
     "gold": "find_files",
     "predicted": "create_folder",
-    "count": 3
-   },
-   {
-    "gold": "open_app",
-    "predicted": "restart_pc",
     "count": 2
    },
    {
-    "gold": "close_app",
-    "predicted": "follow_up",
+    "gold": "brightness_set",
+    "predicted": "unknown",
     "count": 2
    },
    {
-    "gold": "open_file",
-    "predicted": "read_file",
+    "gold": "memory_recall",
+    "predicted": "chat",
     "count": 2
    },
    {
-    "gold": "delete_file",
-    "predicted": "find_files",
+    "gold": "follow_up",
+    "predicted": "correction",
     "count": 2
-   },
-   {
-    "gold": "open_app",
-    "predicted": "open_folder",
-    "count": 1
-   },
-   {
-    "gold": "open_app",
-    "predicted": "follow_up",
-    "count": 1
-   },
-   {
-    "gold": "open_app",
-    "predicted": "switch_app",
-    "count": 1
-   },
-   {
-    "gold": "open_app",
-    "predicted": "close_app",
-    "count": 1
    }
   ]
  },
  "regex_matcher_on_test": {
   "sentences_it_could_be_asked": 324,
-  "answered": 154,
-  "answered_share": 0.475,
-  "correct_of_answered": 116,
-  "accuracy_of_answered": 0.753,
-  "accuracy_over_all": 0.358
+  "answered": 153,
+  "answered_share": 0.472,
+  "correct_of_answered": 118,
+  "accuracy_of_answered": 0.771,
+  "accuracy_over_all": 0.364
  },
  "regex_matcher_on_test_noisy": {
   "sentences_it_could_be_asked": 324,
-  "answered": 140,
-  "answered_share": 0.432,
-  "correct_of_answered": 107,
-  "accuracy_of_answered": 0.764,
-  "accuracy_over_all": 0.33
+  "answered": 135,
+  "answered_share": 0.417,
+  "correct_of_answered": 103,
+  "accuracy_of_answered": 0.763,
+  "accuracy_over_all": 0.318
  },
  "cpu_latency": {
   "runs": 200,
-  "p50_ms": 9.7,
-  "p90_ms": 11.2,
-  "max_ms": 12.7
+  "p50_ms": 16.8,
+  "p90_ms": 25.4,
+  "max_ms": 56.9
  },
  "train_log": {
   "epochs": [
    {
     "epoch": 1,
-    "loss": 4.1221,
-    "val_intent_acc": 0.8006,
-    "val_slot_token_acc": 0.9818,
-    "seconds": 451
+    "loss": 3.4842,
+    "val_intent_acc": 0.8009,
+    "val_slot_token_acc": 0.9227,
+    "seconds": 1973
    },
    {
     "epoch": 2,
-    "loss": 0.495,
-    "val_intent_acc": 0.9821,
-    "val_slot_token_acc": 0.9976,
-    "seconds": 2888
+    "loss": 0.6584,
+    "val_intent_acc": 0.9217,
+    "val_slot_token_acc": 0.9496,
+    "seconds": 1370
    },
    {
     "epoch": 3,
-    "loss": 0.098,
-    "val_intent_acc": 0.9959,
-    "val_slot_token_acc": 0.9994,
-    "seconds": 736
+    "loss": 0.2512,
+    "val_intent_acc": 0.9429,
+    "val_slot_token_acc": 0.9638,
+    "seconds": 1055
    },
    {
     "epoch": 4,
-    "loss": 0.0332,
-    "val_intent_acc": 0.9917,
-    "val_slot_token_acc": 0.9997,
-    "seconds": 743
-   },
-   {
-    "epoch": 5,
-    "loss": 0.0107,
-    "val_intent_acc": 0.9959,
-    "val_slot_token_acc": 1.0,
-    "seconds": 582
+    "loss": 0.1322,
+    "val_intent_acc": 0.9539,
+    "val_slot_token_acc": 0.9638,
+    "seconds": 1009
    }
   ],
-  "train_rows": 6550,
-  "val_rows": 727,
-  "seconds": 5404,
+  "train_rows": 9770,
+  "val_rows": 1085,
+  "seconds": 5410,
   "base": "xlm-roberta-base",
-  "kept_vocab": 17063,
+  "kept_vocab": 19651,
   "threads": 10
  },
  "note": "Seed data was written by one author from templates; the test split is held out by template and by filler value. Real speakers will score lower."

@@ -41,3 +41,6 @@ models/
 data/real/history*.jsonl
 data/review/
 data/real/SPEAK_THESE.md
+ml/public_cache/
+ml/out_old_intent_backup/
+ml/pip_install.log

@@ -196,7 +196,7 @@ def test_tool_specs_cover_registry(tmp_path):
         "manage_system_setting", "move_file", "open_application", "open_file", "open_folder",
         "open_url", "open_windows_settings", "play_youtube_video", "read_text_file", "rename_file", "restore_file",
         "take_screenshot", "web_search", "write_text_file",
-        "find_files", "edit_text_file", "media_control", "whatsapp_open_chat", "winget_install",
+        "find_files", "edit_text_file", "media_control", "whatsapp_open_chat", "winget_install", "winget_uninstall", "open_browser_profile", "explorer_navigate",
         "memory_remember", "memory_recall", "memory_forget", "web_answer", "summarise_page", "summarise_file",
         "ui_inspect", "ui_act", "open_terminal", "run_terminal_command", "screen_act", "device_control", "explorer_view", "make_document", "drive_coding_agent",
     }

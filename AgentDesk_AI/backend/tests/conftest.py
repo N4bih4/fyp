@@ -127,3 +127,27 @@ def _agreeable_probe():
 
     with use_probe(AgreeableProbe()) as probe:
         yield probe
+
+
+@pytest.fixture(autouse=True)
+def _no_browsers_installed():
+    """Tests do not depend on the browsers of this PC: with none reported, open_url uses the system default (webbrowser.open).
+    tests/test_ask_first.py sets its own list."""
+    from app.tools import browser_choice
+    browser_choice.set_installed_for_tests([])
+    yield
+    browser_choice.set_installed_for_tests(None)
+
+
+@pytest.fixture(autouse=True)
+def _never_type_into_a_real_browser(monkeypatch):
+    """open_url navigates the conversation's open browser window with the keyboard; a test must never do that to the browser of whoever runs it."""
+    from app.tools import browser_choice
+    monkeypatch.setattr(browser_choice, "navigate_in_place", lambda browser, url: False)
+
+
+@pytest.fixture(autouse=True)
+def _never_raise_a_real_window(monkeypatch):
+    """Opening tools bring their window to the front; a test with a fake window handle must not touch the real desktop."""
+    from app.tools import window_focus
+    monkeypatch.setattr(window_focus, "bring_to_front", lambda hwnd: False)

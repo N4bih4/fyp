@@ -174,7 +174,7 @@ def test_page_actions_pick_the_audible_or_active_youtube_tab_and_never_another_s
     ext.tabs[2]["active"] = False
     ext.calls.clear()
     result, _ = go(ext, action="speed", rate=2)
-    assert not result.success and result.output["needs_confirmation"] and len(ext.calls) == 1   # two idle YouTube tabs: ask, send nothing
+    assert result.success and ext.calls[1][1]["tab_id"] == 3                      # two idle YouTube watch tabs: the newest one (no more "which tab?")
 
 
 def test_with_no_youtube_tab_nothing_is_sent(ext):

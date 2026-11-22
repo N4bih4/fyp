@@ -399,8 +399,14 @@ class GroqClient:
             text = (getattr(result, "text", None) or data.get("text") or "").strip()
             duration = float(data.get("duration") or getattr(result, "duration", 0) or 0)
             self.usage.add("stt", audio_seconds=duration)
+            segments = [seg if isinstance(seg, dict) else (seg.model_dump() if hasattr(seg, "model_dump") else vars(seg)) for seg in (data.get("segments") or [])]
+            numbers = {}
+            if segments:      # Whisper's own doubt about each stretch: how likely it was no speech, how unsure of the words, how repetitive
+                numbers = {"no_speech_prob": min(float(s.get("no_speech_prob") or 0) for s in segments),
+                           "avg_logprob": sum(float(s.get("avg_logprob") or 0) for s in segments) / len(segments),
+                           "compression_ratio": max(float(s.get("compression_ratio") or 0) for s in segments)}
             return {"text": text, "language": data.get("language") or language,
-                    "duration": duration, "model": model}
+                    "duration": duration, "model": model, **numbers}
         raise last_error or AIError("No speech-to-text model is configured.")
 
     # ------------------------------------------------------------ text-to-speech

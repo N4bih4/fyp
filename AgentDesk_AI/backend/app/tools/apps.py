@@ -29,6 +29,8 @@ APP_TARGETS: dict[str, dict[str, list[str]]] = {
         "Linux": ["google-chrome", "chromium", "chromium-browser"],
         "Darwin": ["open", ],  # handled specially below
     },
+    "paint": {"Windows": ["mspaint.exe"]},
+    "task manager": {"Windows": ["taskmgr.exe"]},
     "notepad": {
         "Windows": ["notepad.exe"],
         "Linux": ["gedit", "gnome-text-editor", "kate"],
@@ -163,6 +165,28 @@ def _site_title_hints(url: str) -> list[str]:
     label = host.split(".")[-2] if host.count(".") >= 1 else host
     return [label] if label else []
 
+
+def _bring_to_front(window) -> None:
+    """Show an already open window. pygetwindow's activate() raises odd codes ("Error code from Windows: 18 - There are no more files") even for windows
+    that exist; the live coverage run found "open notepad" failing with it while Notepad was open. Try activate, then Win32 directly; never fail the
+    command over it: the app IS open, and opening a second copy or reporting an error would both be wrong."""
+    try:
+        from .window_focus import bring_to_front
+        if bring_to_front(int(getattr(window, "_hWnd", 0) or 0)):      # really in front, not just a blinking taskbar button
+            return
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        window.activate()
+        return
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        from .desktop import DesktopControlTool
+        DesktopControlTool._win32_force_foreground(int(getattr(window, "_hWnd", 0)))
+    except Exception:  # noqa: BLE001 - the window stays where it is
+        pass
+
 class OpenApplicationArgs(BaseModel):
     app_name: str = Field(description="Application to launch, e.g. 'chrome', 'notepad'")
 
@@ -296,6 +320,23 @@ class OpenApplicationTool(BaseTool):
                     return seen
         return seen
 
+    @staticmethod
+    def _windows_of_process(app: str) -> list:
+        """Open windows whose process is this app's (APP_PROCESSES), as pygetwindow windows; [] when none or when it cannot be asked."""
+        processes = {p.casefold() for p in _APP_PROCESSES.get(app, ())}
+        if not processes:
+            return []
+        try:
+            import pygetwindow
+            from .uia import get_service
+            found = []
+            for w in get_service().backend.windows():
+                if w.process.casefold() in processes and w.handle and w.title:
+                    found.append(pygetwindow.Win32Window(w.handle))
+            return found
+        except Exception:  # noqa: BLE001 - a courtesy lookup; the app is started normally when it fails
+            return []
+
     def _activate_running_app(self, app_name: str) -> str | None:
         if platform.system() != "Windows":
             return None
@@ -327,10 +368,12 @@ class OpenApplicationTool(BaseTool):
             )
         ]
         if not matches:
+            matches = self._windows_of_process(self._canonical_app_name(app_name))           # an Electron app renames its window after the conversation: find it by its process
+        if not matches:
             return None
         active = pyautogui.getActiveWindow()
         target = active if active in matches else matches[0]
-        target.activate()
+        _bring_to_front(target)
         return target.title
 
     def risk_for_args(self, args: BaseModel | None) -> RiskLevel:
@@ -388,6 +431,9 @@ class OpenApplicationTool(BaseTool):
                 if registered:
                     return registered
         if system == "Windows" and candidates:
+            shortcut = self._match_start_menu_shortcut(app)      # installed per user (no PATH entry, no App Paths): the Start Menu knows it
+            if shortcut is not None:
+                return shortcut
             # Let Windows resolve it via PATH / App Paths.
             return candidates[0]
         if system == "Windows":
@@ -473,7 +519,7 @@ class OpenApplicationTool(BaseTool):
         out = result.output or {}
         app = str(out.get("app") or OpenApplicationArgs.model_validate(args.model_dump()).app_name).casefold()
         if out.get("url"):  # ChatGPT fallback opens a website
-            seen, windows = window_check(title_contains=["chatgpt"], processes=BROWSER_PROCESSES)
+            seen, windows = window_check(title_contains=["chatgpt"], processes=BROWSER_PROCESSES, focus=True)
             return verdict([("browser window shows ChatGPT", seen)], windows)
         if app == "gmail":
             seen, windows = window_check(title_contains=["gmail", "inbox"], processes={"chrome.exe"})
@@ -482,14 +528,15 @@ class OpenApplicationTool(BaseTool):
         alive = bool(pid) and current().process_alive(int(pid))
         titles = _APP_TITLES.get(app, [app])
         processes = _APP_PROCESSES.get(app, {f"{app.replace(' ', '')}.exe"})
-        seen, windows = window_check(title_contains=titles, processes=processes, match="any")
+        seen, windows = window_check(title_contains=titles, processes=processes, match="any", focus=True)
         return verdict([("app window is open", seen)], {"pid": pid, "pid_alive": alive, **windows},
                        details=None if seen else "The app did not show a window in time.")
 
 
 class OpenUrlArgs(BaseModel):
     url: str = Field(description="Website URL to open, e.g. https://example.com")
-    browser: Literal["default", "chrome"] = "default"
+    browser: Literal["default", "chrome", "edge", "firefox", "brave", "opera"] = "default"      # default = ask (or use the browser chosen in this conversation)
+    new_tab: bool = Field(default=False, description="True only when the user asked for a NEW tab or window; otherwise the page opens in the browser window the conversation already has")
 
     @field_validator("url")
     @classmethod
@@ -633,13 +680,12 @@ class OpenUrlTool(BaseTool):
                     )
         except Exception as exc:  # noqa: BLE001 - report navigation errors clearly
             return ToolResult(success=False, error=f"Could not navigate the existing YouTube window: {exc}")
-        try:
-            launched = webbrowser.open(a.url)
-        except Exception as exc:  # noqa: BLE001
-            return ToolResult(success=False, error=f"Could not open URL: {exc}")
-        if not launched:
+        asked, opened = _open_with_choice(a.url, a.browser, a.new_tab)
+        if asked is not None:
+            return asked                                   # more than one browser and none chosen yet: ask, never guess
+        if not opened:
             return ToolResult(success=False, error="The system reported that no browser could handle the URL")
-        return ToolResult(success=True, output={"url": a.url, "launched": True, **self._start_if_video(a.url)})
+        return ToolResult(success=True, output={"url": a.url, "launched": True, **opened, **self._start_if_video(a.url)})
 
     @staticmethod
     def _start_if_video(url: str) -> dict:
@@ -689,13 +735,30 @@ class OpenUrlTool(BaseTool):
             return verdict([("extension reports the tab open", out["tab_id"] in ids)],
                            {"tab_id": out["tab_id"], "tabs_seen": len(ids)})
         url = out.get("url") or OpenUrlArgs.model_validate(args.model_dump()).url
-        seen, windows = window_check(title_contains=_site_title_hints(url), processes=BROWSER_PROCESSES)
+        seen, windows = window_check(title_contains=_site_title_hints(url), processes=BROWSER_PROCESSES, focus=True)
         if out.get("is_video"):
             started = bool(out.get("playback_started"))
             return verdict([("browser window shows the site", seen), ("the video is playing", started)], {"url": url, **windows},
                            details=None if started else "The page opened but the video did not start (browser autoplay rules?). Say resume or press Play once.")
         return verdict([("browser window shows the site", seen)], {"url": url, **windows})
 
+
+
+def _open_with_choice(url: str, requested: str | None, new_tab: bool = False) -> tuple[ToolResult | None, dict]:
+    """Open `url` in the browser the user chose; (a question to the user, {}) when there is more than one and none was chosen; ({} ) -> None, {} when the
+    PC reports no browser at all (the system default is tried then). The browser used is remembered in the conversation lane."""
+    from . import browser_choice
+    choice = browser_choice.resolve(requested)
+    if choice.ask is not None:
+        return choice.ask, {}
+    if choice.browser is None:
+        return None, ({"browser": "default"} if webbrowser.open(url) else {})
+    if not new_tab and browser_choice.lane_choice().get("browser") == choice.browser.key and browser_choice.navigate_in_place(choice.browser, url):
+        browser_choice.remember_in_lane(choice.browser.key, choice.profile)
+        return None, {"browser": choice.browser.key, "same_window": True, **({"profile": choice.profile} if choice.profile else {})}
+    browser_choice.open_in(choice.browser, url, choice.profile)
+    browser_choice.remember_in_lane(choice.browser.key, choice.profile)
+    return None, {"browser": choice.browser.key, **({"profile": choice.profile} if choice.profile else {})}
 
 
 def _same_url(a: str, b: str) -> bool:
@@ -760,19 +823,21 @@ class WebSearchTool(BaseTool):
                     },
                 )
         try:
-            launched = webbrowser.open(url)
+            asked, opened = _open_with_choice(url, None)
         except Exception as exc:  # noqa: BLE001 - report system browser errors
             return ToolResult(success=False, error=f"Could not open search results: {exc}")
-        if not launched:
+        if asked is not None:
+            return asked
+        if not opened:
             return ToolResult(success=False, error="The system reported that no browser could handle the search")
-        return ToolResult(success=True, output={"query": query, "url": url, "launched": True})
+        return ToolResult(success=True, output={"query": query, "url": url, "launched": True, **opened})
 
     def verify(self, args: BaseModel, result: ToolResult) -> Verification:
         if not result.success:
             return failed_result(result)
         query = str(result.output.get("query") or "")
         hints = [w for w in re.findall(r"\w+", query) if len(w) > 2][:3] + ["search"]
-        seen, windows = window_check(title_contains=hints, processes=BROWSER_PROCESSES)
+        seen, windows = window_check(title_contains=hints, processes=BROWSER_PROCESSES, focus=True)
         return verdict([("browser window shows the search", seen)], {"url": result.output.get("url"), **windows})
 
 

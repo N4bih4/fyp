@@ -65,6 +65,7 @@ class Dispatcher:
     def __init__(self, team: list[Agent] | None = None):
         self.team = team or load_roster()
         self._current: dict[str, str] = {}      # agent key -> task id
+        self._task_agent: dict[str, str] = {}   # task id -> the agent's name (the lanes need to know who did a task)
         self._lock = threading.Lock()
 
     def _busy(self, db, key: str) -> bool:
@@ -75,14 +76,37 @@ class Dispatcher:
         return task is not None and task.status not in DONE
 
     def status(self, db) -> list[dict]:
+        """Every agent: busy or idle, what it is doing now (task, tool, seconds so far) and how its last job ended, for the team board on screen."""
+        from datetime import datetime, timezone
+
+        def seconds_since(moment) -> int:
+            if moment is None:
+                return 0
+            when = moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
+            return max(0, int((datetime.now(timezone.utc) - when).total_seconds()))
+
+        from ..orchestration import lanes
+        try:
+            lane_rows = {r["agent"].casefold(): r for r in lanes.rows(db)}
+        except Exception:  # noqa: BLE001 - the board must not fail because of lanes
+            lane_rows = {}
         out = []
         with self._lock:
             for a in self.team:
                 tid = self._current.get(a.key)
                 task = db.get(Task, tid) if tid else None
                 busy = task is not None and task.status not in DONE
-                out.append({"name": a.name, "role": a.role, "lead": a.is_lead, "skills": a.skills, "busy": busy,
-                            "task_id": tid if busy else None, "doing": task.command[:120] if busy and task else None})
+                row = {"name": a.name, "role": a.role, "lead": a.is_lead, "skills": a.skills, "busy": busy,
+                       "task_id": tid if busy else None, "doing": task.command[:120] if busy and task else None,
+                       "status": str(task.status) if task is not None else "idle", "tool": None, "seconds": 0, "last": None, "lane": None}
+                if busy and task is not None:
+                    running = [x for x in task.actions if str(x.status) not in ("succeeded", "failed", "skipped", "rejected")]
+                    row["tool"] = (running or list(task.actions) or [None])[0].tool_name if (running or task.actions) else None
+                    row["seconds"] = seconds_since(task.created_at)
+                elif task is not None:
+                    row["last"] = {"command": task.command[:80], "status": str(task.status), "task_id": task.id}
+                row["lane"] = lane_rows.get(a.key)
+                out.append(row)
         return out
 
     def choose(self, db, text: str) -> tuple[Assignment, str]:
@@ -109,6 +133,14 @@ class Dispatcher:
         assignment.task_id = task_id
         with self._lock:
             self._current[assignment.agent.casefold()] = task_id
+            self._task_agent[task_id] = assignment.agent
+            if len(self._task_agent) > 500:
+                for old in list(self._task_agent)[:100]:
+                    self._task_agent.pop(old, None)
+
+    def agent_of(self, task_id: str) -> str | None:
+        with self._lock:
+            return self._task_agent.get(task_id)
 
 
 _dispatcher: Dispatcher | None = None

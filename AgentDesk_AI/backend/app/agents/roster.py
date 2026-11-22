@@ -13,19 +13,19 @@ LEAD = "shadow"
 # Spellings Whisper may write when the user says the name (Latin, Urdu script, Devanagari).
 DEFAULT_ROSTER: list[dict] = [
     {"name": "Shadow", "role": "Team lead: hears every request, hands it to the right free agent, reports back",
-     "aliases": ["shadow", "shado", "شیڈو", "شیڈؤ", "शैडो", "शेडो"],
+     "aliases": ["shadow", "shado", "shaddow", "shadou", "shadoh", "chadow", "shaadow", "شیڈو", "شیڈؤ", "शैडो", "शेडो"],
      "skills": {"browser": 0.6, "files": 0.6, "system": 0.6, "coding": 0.6, "research": 0.6}},
     {"name": "Scout", "role": "Browser automation: search, filters, YouTube, shopping sites",
-     "aliases": ["scout", "اسکاؤٹ", "سکاؤٹ", "स्काउट"],
+     "aliases": ["scout", "skout", "scoot", "اسکاؤٹ", "سکاؤٹ", "स्काउट"],
      "skills": {"browser": 1.0, "research": 0.8, "files": 0.4}},
     {"name": "Atlas", "role": "Files, folders, drives and PC settings",
-     "aliases": ["atlas", "اٹلس", "ایٹلس", "एटलस", "अटलस"],
+     "aliases": ["atlas", "atlus", "at las", "اٹلس", "ایٹلس", "एटलस", "अटलस"],
      "skills": {"files": 1.0, "system": 0.9, "browser": 0.5}},
     {"name": "Forge", "role": "Coding apps: Antigravity, Codex, Claude, VS Code, terminal",
      "aliases": ["forge", "فورج", "फोर्ज"],
      "skills": {"coding": 1.0, "files": 0.6, "system": 0.5, "browser": 0.4}},
     {"name": "Echo", "role": "Research, summaries, documents, mail and media",
-     "aliases": ["echo", "ایکو", "ईको", "इको"],
+     "aliases": ["echo", "eko", "ایکو", "ईको", "इको"],
      "skills": {"research": 1.0, "browser": 0.7, "files": 0.5}},
 ]
 

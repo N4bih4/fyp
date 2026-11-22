@@ -765,9 +765,25 @@ def _start_task(
     writing = mail_flow.try_handle(db, task, command, registry, settings) or message_flow.try_handle(db, task, command, registry, settings)
     if writing is not None:
         return writing   # an e-mail is being written (or started): its words are the e-mail's, not commands
+    from . import address_flow, clarify_flow, lane_flow
+    called = address_flow.greet(db, task, command)
+    if called is not None:
+        return called   # "Shadow": the agent answers and the next sentence is a request to that agent
+    asked_first =clarify_flow.try_handle(db, task, command, registry, settings, auto_approve=auto_approve)
+    if asked_first is not None:
+        return asked_first   # "open a browser" / "open email": ask which one (or the answer to that question)
+    in_lane = lane_flow.try_handle(db, task, command, registry, settings, auto_approve=auto_approve)
+    if in_lane is not None:
+        return in_lane   # first: "haan" may be the answer to a lane's question ("same window?"), not a reply to "Anything else?"
     spoken_about_the_conversation = session_commands.try_handle(db, task, command, registry, settings)
     if spoken_about_the_conversation is not None:
         return spoken_about_the_conversation   # "repeat that", "undo", "no, that's all": never planned as a command
+    handed = address_flow.hand_over(db, task, command)   # after a bare "Shadow" / "Scout": this request is theirs
+    if handed != command:
+        command, task.command = handed, handed[:2000]
+        db.commit()
+    from ..nlu import shadow
+    shadow.observe(task.id, command)   # local intent model in the background: logs only, changes nothing
     from . import session_context
     rewritten = session_context.rewrite(db, command)   # "make a folder here" / "go back" inside an open task: the task's own folder
     if rewritten != command:

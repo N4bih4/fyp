@@ -69,12 +69,12 @@ def get_chat_client(settings: Settings) -> ChatClient:
         raise CloudAnswersNotAllowed(CLOUD_ANSWERS_OFF)
     if _override is not None:
         return _override
+    if settings.groq_configured:        # this PC's own key first (one hop); the hosted brain is the fallback
+        from .ai.groq_client import get_groq_client
+        return _GroqChat(get_groq_client(), settings)
     if settings.cloud_configured:
         from .cloud_client import CloudBrain
         return _CloudChat(CloudBrain(settings.cloud_brain_url, settings.cloud_brain_token))
-    if settings.groq_configured:
-        from .ai.groq_client import get_groq_client
-        return _GroqChat(get_groq_client(), settings)
     raise AIConfigError("No AI service is configured for answers (set GROQ_API_KEYS or CLOUD_BRAIN_URL).")
 
 
@@ -105,7 +105,7 @@ def system_prompt(prefs, facts: list[str], now: datetime | None = None) -> str:
     now = now or datetime.now()
     parts = [
         f"You are {p.name}, a voice assistant on the user's Windows PC. You are being read aloud: "
-        "reply in the user's language and script, plain text only, no lists or markdown.",
+        "reply in English or Roman Urdu (Latin letters only: never Hindi/Devanagari or Urdu script), plain text only, no lists or markdown.",
         f"Today is {now:%A %d %B %Y}, {now:%H:%M}.",
         personas.personality_prompt(p.personality, p.user_name, p.custom_description, p.formality, p.humour, p.verbosity),
         "You can also open apps, manage files and search the web when the user gives a command; for a question just answer it.",

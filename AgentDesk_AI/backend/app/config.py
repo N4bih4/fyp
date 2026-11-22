@@ -47,7 +47,9 @@ class Settings(BaseSettings):
     # Local agent handles PC work. Cloud is explicit unless automatic fallback is opted in.
     ai_cloud_mode: str = "explicit"
     discovery_directories: str = Field(default="", validation_alias=AliasChoices("AGENTDESK_DISCOVERY_DIRECTORIES", "discovery_directories"))
-    ai_timeout_seconds: int = 30
+    ai_timeout_seconds: int = 15          # one model turn: a stuck call is dropped after 15 s so the next key / model is tried (was 30)
+    reply_script: str = "latin"           # "latin" = answers are written in English or Roman Urdu only (never Hindi / Urdu script); "native" = in the script of the question
+    ai_reasoning_effort: str = "low"      # gpt-oss models think before answering; "low" cuts seconds from every planner turn ("" = model default)
     # Speech models on Groq (used by ai/groq_client.py). STT falls back in order.
     groq_stt_model: str = "whisper-large-v3"
     groq_stt_fallback_model: str = "whisper-large-v3-turbo"
@@ -79,7 +81,7 @@ class Settings(BaseSettings):
         default="", validation_alias=AliasChoices("AGENTDESK_ALLOWED_DIRECTORIES", "allowed_directories")
     )
     approved_applications: str = Field(
-        default="chrome,notepad,calc,explorer",
+        default="chrome,notepad,calc,explorer,paint,task manager",
         validation_alias=AliasChoices("AGENTDESK_APPROVED_APPLICATIONS", "approved_applications"),
     )
     test_dir: str = Field(

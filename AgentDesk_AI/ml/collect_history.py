@@ -203,10 +203,10 @@ def example(text: str, tool: str, args: dict, allowed: dict[str, list[str]]) -> 
 
 
 # --------------------------------------------------------------------------------------------- the database
-def read_tasks(db: Path) -> list[tuple[str, str, list[tuple[str, dict]]]]:
+def read_tasks(db: Path, since: str = "") -> list[tuple[str, str, list[tuple[str, dict]]]]:
     con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
     try:
-        tasks = con.execute("select id, command, coalesce(idempotency_key, '') from tasks where status = 'completed' order by created_at").fetchall()
+        tasks = con.execute("select id, command, coalesce(idempotency_key, '') from tasks where status = 'completed' and created_at >= ? order by created_at", (since or "0",)).fetchall()
         out = []
         for task_id, command, key in tasks:
             if key.startswith(TEST_KEY_PREFIXES):
@@ -240,12 +240,14 @@ def disagrees(model, row: dict, confidence: float = 0.8) -> str | None:
     return guess.intent if guess is not None and guess.confidence >= confidence and guess.intent != row["intent"] else None
 
 
-def collect(db: Path, existing: list[dict], allowed: dict[str, list[str]], model=None) -> tuple[list[dict], collections.Counter, list[dict]]:
+def collect(db: Path, existing: list[dict], allowed: dict[str, list[str]], model=None, since: str = "", speaker: str = "") -> tuple[list[dict], collections.Counter, list[dict]]:
     have = {r["text"].casefold() for r in existing}
     new, review, skipped = [], [], collections.Counter()
-    for _task_id, command, actions in read_tasks(db):
+    for _task_id, command, actions in read_tasks(db, since):
         tool, args = actions[0]                           # the first thing that worked is what the sentence asked for
         row, why = example(command, tool, args, allowed)
+        if row is not None and speaker:
+            row["speaker"] = speaker
         if row is None:
             skipped[why] += 1
         elif row["text"].casefold() in have:
@@ -311,6 +313,8 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true", help="print the report, write nothing")
     ap.add_argument("--no-model-check", action="store_true", help="do not compare with the local model (every labelled sentence is accepted)")
     ap.add_argument("--checklist", type=int, metavar="N", help="write data/real/SPEAK_THESE.md with about N sentences per intent per language and exit")
+    ap.add_argument("--speaker", default="", help="who spoke in this session (a nickname, no real name needed): rows are tagged and written to history_<speaker>.jsonl")
+    ap.add_argument("--since", default="", help="only tasks created at or after this UTC time, e.g. '2026-11-14 10:00' (one person's session)")
     a = ap.parse_args()
     spec = load_spec()
     if a.checklist:
@@ -327,8 +331,10 @@ def main() -> int:
         print(f"no database at {db}")
         return 1
     out = Path(a.out)
+    if a.speaker and a.out == str(DATA / "real" / "history.jsonl"):
+        out = DATA / "real" / f"history_{re.sub(r'\W+', '_', a.speaker.strip().lower())}.jsonl"
     existing = read_jsonl(out)
-    new, skipped, review = collect(db, existing, intent_slots(spec), None if a.no_model_check else load_model())
+    new, skipped, review = collect(db, existing, intent_slots(spec), None if a.no_model_check else load_model(), a.since, a.speaker.strip())
     rows = existing + new
     print(report(rows, skipped))
     if not a.dry_run:

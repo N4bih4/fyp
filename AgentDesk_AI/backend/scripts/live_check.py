@@ -499,6 +499,35 @@ def p_install(env: Env) -> Outcome:
     return judge(r, v, bool(v.evidence.get("winget_list_tail")), f"winget list shows {package}")
 
 
+def p_uninstall(env: Env) -> Outcome:
+    package = env.state.get("uninstall_id")
+    if not package:
+        return Outcome(SKIP, "pass --uninstall-id <exact WinGet ID> to uninstall one app (high risk, your choice)")
+    r, v = env.run("winget_uninstall", {"app": package})
+    if not r.success and not IS_WINDOWS:
+        return Outcome(BLOCKED, f"not Windows: {_short(r.error, 90)}")
+    return judge(r, v, v.passed, f"winget list no longer shows {package}")
+
+
+def p_explorer_navigate(env: Env) -> Outcome:
+    """Read-only: the Explorer COM object answers (nothing is opened or moved)."""
+    if not IS_WINDOWS:
+        return Outcome(BLOCKED, "not Windows")
+    from app.tools.explorer_view import get_explorer
+    try:
+        found = len(get_explorer()._windows())
+    except Exception as exc:  # noqa: BLE001
+        return Outcome(FAIL, f"Shell.Application not reachable: {_short(str(exc), 90)}")
+    return Outcome(PASS, f"Shell.Application reachable, {found} Explorer windows")
+
+
+def p_browser_profile(env: Env) -> Outcome:
+    """Read-only: the profiles are listed from the browser's Local State (nothing is opened)."""
+    from app.tools.browser_profiles import list_profiles
+    found = list_profiles("chrome") + list_profiles("edge")
+    return Outcome(PASS if found else BLOCKED, f"{len(found)} browser profiles found" if found else "no Chrome/Edge profiles on this PC")
+
+
 # ---------------------------------------------------------------- memory + knowledge probes
 def _db():
     from app.database import SessionLocal, init_db
@@ -620,6 +649,9 @@ PROBES: list[Probe] = [
     Probe("media_control", "media", p_media),
     Probe("whatsapp_open_chat", "messaging", p_whatsapp),
     Probe("winget_install", "install", p_install),
+    Probe("winget_uninstall", "install", p_uninstall),
+    Probe("open_browser_profile", "read", p_browser_profile),
+    Probe("explorer_navigate", "read", p_explorer_navigate),
 ]
 
 
@@ -703,6 +735,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--media", action="store_true", help="toggle play/pause twice on the current player")
     parser.add_argument("--whatsapp-phone", help="your own number (+country code): pre-fills a test message, never sent")
     parser.add_argument("--install-id", help="exact WinGet ID to really install (high risk; e.g. a small tool you want)")
+    parser.add_argument("--uninstall-id", help="exact WinGet ID to really uninstall (high risk; only an app you do not need)")
     parser.add_argument("--record", action="store_true", help="save the run with evidence to docs/live_runs/")
     parser.add_argument("--api", nargs="?", const="http://127.0.0.1:8000", metavar="URL",
                         help="probe control_browser through the running app (default http://127.0.0.1:8000)")
@@ -714,9 +747,9 @@ def main(argv: list[str] | None = None) -> int:
     enabled |= {"memory"} if args.memory else set()
     enabled |= {"media"} if args.media else set()
     enabled |= {"messaging"} if args.whatsapp_phone else set()
-    enabled |= {"install"} if args.install_id else set()
+    enabled |= {"install"} if (args.install_id or args.uninstall_id) else set()
     sandbox = Path(tempfile.mkdtemp(prefix="agentdesk_live_")) if args.keep else None
-    options = {"whatsapp_phone": args.whatsapp_phone, "install_id": args.install_id, "api": args.api}
+    options = {"whatsapp_phone": args.whatsapp_phone, "install_id": args.install_id, "uninstall_id": args.uninstall_id, "api": args.api}
     rows = run_checks(enabled, set(args.only) if args.only else None, sandbox, options=options)
     if args.record:
         record(rows, enabled)

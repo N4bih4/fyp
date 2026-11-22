@@ -46,7 +46,7 @@ def age(db, seconds):
 # ----------------------------------------------------------------------------------------------- ending the task
 @pytest.mark.parametrize("text,expected", [
     ("end task", "Task ended. Anything else?"), ("that's all", "Task ended. Anything else?"), ("bas", "Task khatam. Aur kuch?"),
-    ("khatam", "Task khatam. Aur kuch?"), ("بس", "ٹاسک ختم۔ اور کچھ؟"), ("बस इतना ही", "टास्क खत्म। और कुछ?"), ("I'm done.", "Task ended. Anything else?")])
+    ("khatam", "Task khatam. Aur kuch?"), ("بس", "Task khatam. Aur kuch?"), ("बस इतना ही", "Task khatam. Aur kuch?"), ("I'm done.", "Task ended. Anything else?")])
 def test_end_phrases_end_an_open_task_at_any_time(db, registry, text, expected):
     open_session(db)                                   # nothing was asked: no "Anything else?" is pending
     task = say(db, registry, text)
@@ -65,12 +65,12 @@ def test_a_plain_no_or_thanks_does_not_end_a_task_unless_it_was_asked(db, regist
 
 
 # ----------------------------------------------------------------------------------- two minutes of silence
-def test_the_server_waits_two_minutes_before_asking(db):
+def test_the_server_waits_fifteen_minutes_before_asking(db):
     open_session(db)
     assert session.idle(db) == ("wait", session.IDLE_ASK_SECONDS)
     age(db, 60)
     result, left = session.idle(db)
-    assert result == "wait" and 55 <= left <= 61
+    assert result == "wait" and session.IDLE_ASK_SECONDS - 65 <= left <= session.IDLE_ASK_SECONDS - 59
     age(db, session.IDLE_ASK_SECONDS + 1)
     assert session.idle(db) == ("ask", 0) and session.current(db).awaiting == "end_task"
 

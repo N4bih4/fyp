@@ -27,6 +27,9 @@ TRIGGERS: dict[str, str] = {
                              r"آواز|روشنی|بلوٹوتھ|वॉल्यूम|आवाज़?|ब्राइटनेस|ब्लूटूथ|वाईफाई|वाई-फाई|وائی ?فائی|"
                              r"barha|kam kar|barhao|ghatao|بڑھا|کم کر",
     "open_windows_settings": r"settings?|windows update|update|display|setting|سیٹنگ|سیٹنگز|सेटिंग",
+    "winget_uninstall": r"uninstall|remove (?:the )?(?:app|software|program)|hatao|hata do|uninstal|اَن ?انسٹال|ان ?انسٹال|अनइंस्टॉल",
+    "explorer_navigate": r"explorer|drives?|ڈرائیو|एक्सप्लोरर|ड्राइव|ایکسپلورر",
+    "open_browser_profile": r"profiles?|prophile|پروفائل|प्रोफ़?ाइल",
     "open_application": r"open|launch|start|run|kholo|khol|kholna|chalao|chalu|کھولو|کھول|چلاؤ|खोलो|खोल|चलाओ|चालू|"
                         r"app|application|notepad|chrome|word|excel|powerpoint|calculator|calc|paint|vlc|spotify|zoom|vs ?code|"
                         r"edge|firefox|teams|telegram|terminal|cmd|نوٹ ?پیڈ|کیلکولیٹر|नोटपैड|कैलकुलेटर",

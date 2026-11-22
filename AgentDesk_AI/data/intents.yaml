@@ -424,3 +424,9 @@ intents:
     roman_ur: "nahi | nahi rehne do | mat karo | cancel kar do"
     ur: "نہیں | نہیں رہنے دو | مت کرو"
     hi: "नहीं | रहने दो | मत करो"
+  unknown:
+    risk: low
+    en: "what is the best pizza place | book me a taxi | turn on the kitchen lights | order a coffee | blah blah | what time does the train leave"
+    roman_ur: "mujhe pizza order karna hai | taxi book karo | batti jala do | kuch bhi | acha theek hai phir"
+    ur: "ٹیکسی بک کرو | پیزا آرڈر کرو | بتی جلا دو"
+    hi: "टैक्सी बुक करो | पिज़्ज़ा ऑर्डर करो"

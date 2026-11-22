@@ -64,3 +64,14 @@ a long number, a password word or a Windows user-name path are skipped; a slot i
 something, not that it was what you asked for, so the local model is asked too: when it is sure (80%+) of a different intent, the sentence goes to
 `data/review/history_review.jsonl` instead (look at it, fix `intent`, move the good lines into `data/real/`). `--no-model-check` turns that off.
 `history.jsonl` and the review file are in `.gitignore`: they are your private commands and stay on this PC.
+
+
+## Many voices (so the agent works for anyone, not only you)
+The model is only as good as the voices it heard. Do one short session per person (about 15 minutes, `data/real/SPEAK_THESE.md`, own words are even better):
+1. Before the person starts, note the UTC time (or just start right after the previous person finished).
+2. They say the sentences into the orb one by one. Different accents, speeds, rooms and a few mistakes are GOOD.
+3. After the session: `backend\.venv\Scripts\python ml\collect_history.py --i-consent --speaker ali --since "2026-11-14 10:00"` (a nickname is enough).
+   This writes `data/real/history_ali.jsonl`, every row tagged with the speaker.
+4. With 3 or more speakers, `ml\build_dataset.py` keeps whole speakers OUT of training and tests on them: that number is the honest "new voice" score.
+5. Aim: 8+ people, at least 3 women/men mix, English + Roman Urdu + Urdu. Then `ml\retrain.ps1` and `ml\evaluate.py`.
+Use `ml\shadow_report.py` afterwards to see, on everyday use, from which confidence the model agrees with what the app really did.

@@ -9,6 +9,8 @@ the user hears what it did. The mouse and keyboard are used only while typing, s
 from __future__ import annotations
 
 import ctypes
+import difflib
+import re
 import time
 from contextlib import nullcontext
 from typing import Any
@@ -30,7 +32,7 @@ from .uia_backend import UiaError
 # best guesses, and the tool says so in its result.
 PROFILES: dict[str, dict[str, Any]] = {
     "antigravity": {"title": "Antigravity", "input": (0.58, 0.89), "new_chat": (0.08, 0.118), "chat_left": 0.17, "verified": True,
-                    "hints": ["ask anything"]},
+                    "hints": ["ask anything"], "projects": True},
     "claude": {"title": "Claude", "input": (0.52, 0.915), "new_chat": None, "chat_left": 0.2, "verified": True,
                "hints": ["enter to send", "reply to claude", "message claude", "how can i help", "queue for later"]},
     "codex": {"title": "Codex", "input": (0.5, 0.9), "new_chat": None, "chat_left": 0.0, "verified": False,
@@ -51,6 +53,8 @@ class CodingAgentArgs(BaseModel):
     app: str = Field(min_length=2, max_length=30, description="antigravity, claude, codex, cursor or chatgpt")
     prompt: str = Field(min_length=1, max_length=MAX_PROMPT, description="The exact prompt to give the coding agent, in the user's own words")
     new_conversation: bool = Field(default=False, description="Start a fresh conversation first")
+    project: str | None = Field(default=None, max_length=120, description="Antigravity only: the project (as it is named in its sidebar) the conversation must belong to. "
+                                "A new conversation is started in it and checked on screen before the prompt is sent.")
     wait_seconds: int = Field(default=180, ge=5, le=900, description="Watch it for at most this long")
     settle_seconds: int = Field(default=10, ge=3, le=60, description="The screen must stay the same this long to count as finished")
 
@@ -206,6 +210,73 @@ def read_screen_text(image, max_chars: int = 1800) -> str:
     return text[-max_chars:]
 
 
+def _name_key(text: str) -> str:
+    """"Photo Translator" / "photo-translator" / "Photo_Translator" -> "photo translator"."""
+    return " ".join(re.sub(r"[-_./\\]+", " ", str(text or "")).casefold().split())
+
+
+def _name_match(wanted: str, seen: str) -> float:
+    a, b = _name_key(wanted), _name_key(seen)
+    if not a or not b:
+        return 0.0
+    if a == b:
+        return 1.0
+    if b.startswith(a) or a.startswith(b):
+        return 0.9
+    if re.search(r"(?<![a-z0-9])" + re.escape(a) + r"(?![a-z0-9])", b):
+        return 0.9                      # "el downloads v": the name with an icon and an arrow around it
+    return difflib.SequenceMatcher(None, a, b).ratio()
+
+
+def _lines(image) -> list:
+    try:
+        return list(get_ocr().recognize(image))
+    except Exception:  # noqa: BLE001 - no OCR: the caller reports that it cannot see
+        return []
+
+
+def project_pill(image, chat_left: float) -> tuple[tuple[float, float], str] | None:
+    """The project chooser on a new conversation: a chip on the row just above the prompt box ("[folder] Downloads v   [laptop] Local Checkout v", the
+    second chip changes to the git branch once a project is chosen). Found as the left-most text on that row, the row being located from the prompt
+    box's placeholder ("Ask anything, @ to mention"). ((x, y) shares of the picture, its text), None when it is not on screen."""
+    h, w = image.height, image.width
+    top, left = int(h * 0.6), int(w * chat_left)
+    lines = _lines(image.crop((left, top, w, h)))
+    box = next((l for l in lines if "ask anything" in l.text.casefold() or "to mention" in l.text.casefold()), None)
+    if box is None:
+        return None
+    mid = (box.rect[1] + box.rect[3]) / 2
+    height = max(box.rect[3] - box.rect[1], 12)
+    row = [l for l in lines if l is not box and l.text.strip() and mid - height * 5 <= (l.rect[1] + l.rect[3]) / 2 <= mid - height * 1.5]
+    if not row:
+        return None
+    pill = min(row, key=lambda l: l.rect[0])
+    r = pill.rect
+    return (((r[0] + r[2]) / 2 + left) / w, ((r[1] + r[3]) / 2 + top) / h), pill.text.strip()
+
+
+def popup_open(image) -> bool:
+    """The chooser list is showing (its fixed entries "New Project" / "No Project" are on screen)."""
+    h, w = image.height, image.width
+    text = " ".join(l.text.casefold() for l in _lines(image.crop((int(w * 0.3), int(h * 0.35), int(w * 0.6), int(h * 0.84)))))
+    return "new project" in text or "no project" in text or "search projects" in text
+
+
+def find_in_popup(image, wanted: str, chat_left: float) -> tuple[float, float] | None:
+    """A project's row in the open chooser list (it opens above the pill): (x, y) shares, or None when no row reads like `wanted`."""
+    h, w = image.height, image.width
+    box = (int(w * 0.3), int(h * 0.35), int(w * 0.6), int(h * 0.84))
+    rows = sorted((l for l in _lines(image.crop(box)) if l.text.strip()), key=lambda l: l.rect[1])
+    rows = rows[1:]                                  # the first line is the search box itself: what was typed there must never be clicked
+    skip = ("recent", "this computer", "ssh host", "new project", "no project", "no matching")
+    best = max(((_name_match(wanted, l.text), l) for l in rows if not any(k in l.text.casefold() for k in skip)),
+               key=lambda p: p[0], default=(0.0, None))
+    if best[1] is None or best[0] < 0.8:
+        return None
+    r = best[1].rect
+    return (((r[0] + r[2]) / 2 + box[0]) / w, ((r[1] + r[3]) / 2 + box[1]) / h)
+
+
 def _same_window(window, front) -> bool:
     """The app's own window is in front. By handle or process, never by title: Antigravity renames its window to the conversation's name."""
     if window.handle and front.handle:
@@ -240,7 +311,11 @@ class CodingAgentTool(BaseTool):
             with ui_lock():
                 screen.focus(window)
                 rect = screen.window_rect(window)
-                if a.new_conversation and profile["new_chat"]:
+                if a.project:
+                    problem = self._enter_project(screen, window, rect, a.project, profile)
+                    if problem:
+                        return ToolResult(success=False, error=problem)
+                elif a.new_conversation and profile["new_chat"]:
                     screen.click(*_rect_at(rect, *profile["new_chat"]))
                     time.sleep(0.8)
                 before = screen.grab(rect)
@@ -257,6 +332,13 @@ class CodingAgentTool(BaseTool):
                 if typed < 0.0003:
                     return ToolResult(success=False, error=f"I clicked where {name}'s prompt box should be, but nothing appeared there. Click the box once and try again.")
                 press("enter")
+                if a.project:                                       # the new-conversation screen (with its project chip) must give way to the conversation
+                    for _ in range(10):
+                        time.sleep(0.6)
+                        if project_pill(screen.grab(rect), profile["chat_left"]) is None:
+                            break
+                    else:
+                        return ToolResult(success=False, error=f"I pressed Enter but {name} still shows the new-conversation screen, so I cannot say the prompt was sent. Check it.")
         except UiaError as exc:
             return ToolResult(success=False, error=str(exc))
         finally:
@@ -281,8 +363,48 @@ class CodingAgentTool(BaseTool):
             pass
         return ToolResult(success=True, output={
             "app": name, "prompt_sent": a.prompt[:200], "finished": finished, "watched_seconds": round(seconds),
-            "still_working_when_stopped_watching": not finished, "screen_text": text, "layout_verified": profile["verified"], "prompt_box_found_by": box_found_by,
+            "still_working_when_stopped_watching": not finished, "screen_text": text, "layout_verified": profile["verified"], "prompt_box_found_by": box_found_by, **({"project": a.project} if a.project else {}),
             **({"note": "This app's prompt box position is a guess, not measured."} if not profile["verified"] else {})})
+
+    @staticmethod
+    def _enter_project(screen, window, rect, project: str, profile) -> str | None:
+        """New conversation, then the project chooser under the prompt box is set to `project` and read back to prove it (Antigravity's chooser has a
+        "Search Projects" box). Returns a sentence when it could not be done: the prompt is then NOT sent."""
+        if not profile.get("projects") or not profile["new_chat"]:
+            return f"{profile['title']} has no project list I can drive yet. Open the project in it yourself, then give the prompt."
+        left, title = profile["chat_left"], profile["title"]
+        screen.click(*_rect_at(rect, *profile["new_chat"]))
+        pill = None
+        for _ in range(8):                                         # the new conversation takes a moment to draw
+            time.sleep(0.6)
+            pill = project_pill(screen.grab(rect), left)
+            if pill is not None:
+                break
+        if pill is None:
+            return f"I cannot see {title}'s project chooser on the new conversation, so I cannot tell which project it is in. I did not send the prompt."
+        if _name_match(project, pill[1]) >= 0.8:
+            return None
+        for _ in range(3):                                         # a click can only focus the chip: look, and click again until the list is open
+            screen.click(*_rect_at(rect, *pill[0]))
+            time.sleep(0.9)
+            if popup_open(screen.grab(rect)):
+                break
+        else:
+            return f"I could not open {title}'s project list. I did not send the prompt."
+        row = find_in_popup(screen.grab(rect), project, left)
+        if row is None:                                            # not among the recent ones: type it into the chooser's search box
+            screen.type_text(next((w for w in re.split(r"[\s_.-]+", project) if len(w) >= 3), project))   # one word: "Phone" finds "Phone-Cleaner"
+            time.sleep(0.8)
+            row = find_in_popup(screen.grab(rect), project, left)
+        if row is None:
+            press("escape")
+            return f"I cannot find a project called '{project}' in {title}'s chooser. Say the name as it is written there. I did not send the prompt."
+        screen.click(*_rect_at(rect, *row))
+        time.sleep(0.8)
+        after = project_pill(screen.grab(rect), left)
+        if after is None or _name_match(project, after[1]) < 0.8:
+            return f"I chose '{project}' but {title} shows '{after[1] if after else 'no project'}'. I did not send the prompt."
+        return None
 
     @staticmethod
     def _watch(service, screen, window, a: CodingAgentArgs, profile) -> tuple[bool, float, float, Any]:

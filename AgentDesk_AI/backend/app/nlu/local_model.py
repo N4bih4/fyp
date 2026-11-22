@@ -17,6 +17,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 THRESHOLD = 0.85
+# Whatever the confidence, these are never run straight from the local model: the app still asks for confirmation (the server decides the risk anyway),
+# and "unknown" means "not for me": hand the sentence to the planner.
+ALWAYS_CONFIRM = frozenset({"delete_file", "shutdown_pc", "restart_pc", "sleep_pc", "email_send", "install_app", "terminal_run", "move_file", "write_file"})
 MAX_LEN = 48
 _PUNCT = ".,?!;:\"'()۔؟،।"
 _lock = threading.Lock()
@@ -31,10 +34,16 @@ class Prediction:
     slots: dict[str, str] = field(default_factory=dict)
     top: list[tuple[str, float]] = field(default_factory=list)
     ms: float = 0.0
+    threshold: float = THRESHOLD
 
     @property
     def confident(self) -> bool:
-        return self.confidence >= THRESHOLD
+        return self.confidence >= self.threshold
+
+    @property
+    def may_act(self) -> bool:
+        """Sure enough to skip the cloud planner: confident, not 'unknown', not a risky intent."""
+        return self.confident and self.intent != "unknown" and self.intent not in ALWAYS_CONFIRM
 
 
 def model_dir() -> Path:
@@ -45,6 +54,9 @@ def model_dir() -> Path:
 
 
 class LocalIntentModel:
+    temperature = 1.0
+    threshold = THRESHOLD
+    last_logits = None
     def __init__(self, directory: Path):
         import numpy as np
         import onnxruntime as ort
@@ -58,6 +70,13 @@ class LocalIntentModel:
         self.unk = self.id_map.get(3, 0)
         self.tok = Tokenizer.from_file(str(directory / "tokenizer.json"))
         self.tok.no_truncation()
+        self.temperature, self.threshold = 1.0, THRESHOLD       # ml/calibrate.py writes calibration.json next to the model
+        try:
+            cal = json.loads((directory / "calibration.json").read_text(encoding="utf-8"))
+            self.temperature, self.threshold = float(cal["temperature"]), float(cal["threshold"])
+        except Exception:  # noqa: BLE001 - no file = the defaults above
+            pass
+        self.last_logits = None
         options = ort.SessionOptions()
         options.intra_op_num_threads = max(1, min(8, os.cpu_count() or 4))
         options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
@@ -79,7 +98,8 @@ class LocalIntentModel:
         arr = np.array([[self.id_map.get(i, self.unk) for i in ids]], dtype=np.int64)
         mask = np.ones_like(arr)
         intent_logits, slot_logits = self.session.run(None, {"input_ids": arr, "attention_mask": mask})
-        z = intent_logits[0] - intent_logits[0].max()
+        self.last_logits = intent_logits[0]
+        z = (intent_logits[0] - intent_logits[0].max()) / self.temperature
         probs = np.exp(z) / np.exp(z).sum()
         order = probs.argsort()[::-1]
         pred = slot_logits[0].argmax(-1)
@@ -99,7 +119,7 @@ class LocalIntentModel:
                 slots.setdefault(name, " ".join(current).strip(_PUNCT))
             current, name = ([word], tag[2:]) if tag.startswith(("B-", "I-")) else ([], None)
         return Prediction(self.intents[int(order[0])], float(probs[order[0]]), slots,
-                          [(self.intents[int(i)], float(probs[i])) for i in order[:3]], (time.perf_counter() - started) * 1000)
+                          [(self.intents[int(i)], float(probs[i])) for i in order[:3]], (time.perf_counter() - started) * 1000, self.threshold)
 
 
 def get_model() -> "LocalIntentModel | None":

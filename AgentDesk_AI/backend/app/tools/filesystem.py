@@ -217,6 +217,7 @@ class FindPathsTool(BaseTool):
 
 class OpenFolderArgs(BaseModel):
     path: str = Field(description="Name or path of the folder to open. If relative or partial name, the system locates it automatically.")
+    new_window: bool = Field(default=False, description="True only when the user asked for a NEW File Explorer window; otherwise the window already open is used")
 
 
 class OpenFolderTool(BaseTool):
@@ -245,6 +246,16 @@ class OpenFolderTool(BaseTool):
                     success=False,
                     error=f"Folder does not exist and no matching folder found: {a.path}",
                 )
+        if not a.new_window:
+            from ..orchestration import lanes
+            hwnd = lanes.explorer_window()                    # the user is already working in a File Explorer window: show the folder THERE
+            if hwnd:
+                try:
+                    from .explorer_view import get_explorer
+                    info = get_explorer().navigate(str(target), hwnd)
+                    return ToolResult(success=True, output={"path": str(target), "launched": True, "hwnd": info["hwnd"], "same_window": True})
+                except Exception:  # noqa: BLE001 - the window went away meanwhile: open a new one below
+                    pass
         try:
             _platform.open_path_with_os(str(target))
         except Exception as exc:  # noqa: BLE001 - report honestly
@@ -255,7 +266,7 @@ class OpenFolderTool(BaseTool):
         if not result.success:
             return failed_result(result)
         target = Path(result.output["path"])
-        seen, windows = window_check(title_contains=[target.name or str(target)], processes={"explorer.exe"})
+        seen, windows = window_check(title_contains=[target.name or str(target)], processes={"explorer.exe"}, focus=True)
         return verdict([("folder exists", target.is_dir()), ("Explorer window shows the folder", seen)],
                        {**file_evidence(target), **windows})
 

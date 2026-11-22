@@ -19,12 +19,12 @@ from sqlalchemy.orm import Session
 from ..models import Preference, Task, TaskStatus, utcnow
 
 KEY = "task_session"
-IDLE_SECONDS = 600       # hard expiry (the window was closed or the page crashed); the soft limit below is what the user meets
-IDLE_ASK_SECONDS = 120   # two minutes without a word: the assistant asks "Shall I end this task?"
+IDLE_SECONDS = 1200      # hard expiry: 20 minutes without a sentence (a conversation continues for as long as the user keeps talking)
+IDLE_ASK_SECONDS = 900   # 15 minutes without a word: the assistant asks "Shall I end this task?"
 MAX_STEPS = 20
 TERMINAL = {TaskStatus.COMPLETED, TaskStatus.PARTIALLY_COMPLETED, TaskStatus.FAILED, TaskStatus.REJECTED, TaskStatus.CANCELLED}
-_FOLDER_TOOLS = {"open_folder": "path", "list_folder": "path", "create_folder": "path"}
-_APP_TOOLS = {"open_application": "app_name", "open_url": "url", "open_folder": "path", "open_file": "path", "control_browser": "target"}
+_FOLDER_TOOLS = {"open_folder": "path", "list_folder": "path", "create_folder": "path", "explorer_navigate": "path"}
+_APP_TOOLS = {"open_application": "app_name", "open_url": "url", "open_folder": "path", "explorer_navigate": "path", "open_file": "path", "control_browser": "target"}
 
 
 @dataclass
@@ -80,6 +80,11 @@ def close(db: Session) -> bool:
     """End the session (the user said "that's all", or stayed silent). True if one was open."""
     was_open = current(db) is not None
     _save(db, None)
+    try:
+        from . import lanes
+        lanes.close_all(db)      # "end task" ends every conversation lane too
+    except Exception:  # noqa: BLE001
+        db.rollback()
     return was_open
 
 
@@ -203,6 +208,11 @@ def wrap(db: Session, task: Task) -> Task:
     try:
         observe(db, task)
     except Exception:  # noqa: BLE001 - the session is a convenience; a task result must reach the user
+        db.rollback()
+    try:
+        from . import lanes
+        lanes.observe(db, task)
+    except Exception:  # noqa: BLE001 - so are the lanes
         db.rollback()
     db.refresh(task)   # saving the session committed: the caller reads the task after its own session is closed
     return task

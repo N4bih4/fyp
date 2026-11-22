@@ -272,3 +272,13 @@ def test_the_extension_id_in_the_native_manifest_comes_from_the_key():
     digest = hashlib.sha256(base64.b64decode(key)).digest()[:16]
     ident = "".join(chr(97 + (b >> 4)) + chr(97 + (b & 15)) for b in digest)
     assert len(ident) == 32 and ident.isalpha() and ident == "ibfgillldmdknbebbfplonomofpmakio"
+
+
+def test_pause_picks_the_newest_watch_page_when_old_youtube_tabs_are_open(monkeypatch):
+    tabs = [{"id": 7, "title": "results", "url": "https://www.youtube.com/results?search_query=x", "active": False, "audible": False},
+            {"id": 8, "title": "old song", "url": "https://www.youtube.com/watch?v=a", "active": False, "audible": False},
+            {"id": 9, "title": "new song", "url": "https://www.youtube.com/watch?v=b", "active": False, "audible": False}]
+    calls = fake_extension(monkeypatch, tabs, {"pause": {"success": True, "paused": True}})
+    result, ver = run(BrowserControlTool(ToolContext()), action="pause")
+    assert result.success and ver.passed
+    assert next(kw for action, kw in calls if action == "pause")["tab_id"] == 9

@@ -81,8 +81,9 @@ SAYS: dict[str, dict[str, str]] = {
 
 
 def say(key: str, lang: str, **slots) -> str:
+    from ..voice.reply_script import reply_lang
     table = SAYS[key]
-    text = table.get(lang) or table["en"]
+    text = table.get(reply_lang(lang)) or table["en"]
     return text.format(**slots)
 
 

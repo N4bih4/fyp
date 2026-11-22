@@ -1,0 +1,164 @@
+{"text": "olly describe the features of a two thousand and seventeen toyota eighty six for me", "intent": "chat", "slots": {}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "do you know any jokes", "intent": "chat", "slots": {}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "i would like it to help analyze ideas", "intent": "chat", "slots": {}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "i need to have better focus olky i couldn't concentrate on a single task", "intent": "chat", "slots": {}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "मुझे इस व्यक्ति के बारे में बताओ", "intent": "chat", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "मैं चाहता हूं कि मैं सभी देशों और लोगों की संस्कृतियां और पसंद प्रदान करूं", "intent": "chat", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "मैं पार्क में गया था", "intent": "chat", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "मुझे मेरे क्षेत्र में शीर्ष रेटेड फिल्म बताएं", "intent": "chat", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "आप क्या कर रहे हो", "intent": "chat", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "क्या तुम मेरे लिए रात का खाना बना सकते हो", "intent": "chat", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "main is vyakti ke bare men aur janana chahata hun", "intent": "chat", "slots": {}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "sab kuchh kaise hai", "intent": "chat", "slots": {}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "chutakule kholo", "intent": "chat", "slots": {}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "liyo dikaipriyo film ke shirshak ka kya arth hai", "intent": "chat", "slots": {}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "is saval ka koi matalab nahin hai", "intent": "chat", "slots": {}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "oli kya apaka din achchha raha", "intent": "chat", "slots": {}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "کیا چل رہا ہے", "intent": "chat", "slots": {}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "ہیلو آپ کیسے ہیں", "intent": "chat", "slots": {}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "کیا آپ نے حال ہی میں کوئی اچھی موسیقی سنی ہے", "intent": "chat", "slots": {}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "مجھے مشہور شخصیت کے بارے میں بتائیں", "intent": "chat", "slots": {}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "اس کا مشکل لفظ ٹھیک طرح سے بولا گیا ہے", "intent": "chat", "slots": {}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "کیا آپ میرے بولنے کے طریقے کی بنیاد پر میرے جذبات کو ٹریک کرسکتے ہیں", "intent": "chat", "slots": {}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "can you create an email for me", "intent": "email_compose", "slots": {}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "i need you to respond to jennifer's email by stating we will be late", "intent": "email_compose", "slots": {"recipient": "jennifer's"}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "reply to amy's email that i will get back to her", "intent": "email_compose", "slots": {"recipient": "amy's"}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "send email to robert what time is dinner", "intent": "email_compose", "slots": {"recipient": "robert what time is dinner"}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "this new email should be added to my contact", "intent": "email_compose", "slots": {}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "send mail to john for money", "intent": "email_compose", "slots": {"recipient": "john"}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "draft response to john's email", "intent": "email_compose", "slots": {"recipient": "john's"}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "send mail to ismail for office opening time table", "intent": "email_compose", "slots": {"recipient": "ismail"}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "send an email to jake to tell him thank you", "intent": "email_compose", "slots": {"recipient": "jake"}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "email to pawel regarding latest news", "intent": "email_compose", "slots": {"recipient": "pawel"}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "संपर्क करने के लिए एक नया ईमेल खोलें", "intent": "email_compose", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "मनोज व्यास को ईमेल भेजें", "intent": "email_compose", "slots": {"recipient": "मनोज व्यास"}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "मेरे संपर्कों से सिद्धि ढूंढें और उसे एक ईमेल भेजें", "intent": "email_compose", "slots": {"recipient": "सिद्धि"}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "नए ईमेल पते पर ईमेल भेजें", "intent": "email_compose", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "ईमेल के द्वारा मैसेज भेजो", "intent": "email_compose", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "मेरे पास एक नया ईमेल पता है क्या आप एक ईमेल भेज सकते हैं", "intent": "email_compose", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "संपर्क को एक ईमेल इसके जैसा भेजें", "intent": "email_compose", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "क्या आप राम को ईमेल भेजेंगे", "intent": "email_compose", "slots": {"recipient": "राम"}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "यह हमारे पास कैसे आया", "intent": "email_compose", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "main chahata hun yah naya imel mere kontekts men aid kiya jae", "intent": "email_compose", "slots": {}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "sonam ka imel ka javab den ki main usake pas vapas aunga", "intent": "email_compose", "slots": {"recipient": "sonam ka"}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "imel ka javab bhejen", "intent": "email_compose", "slots": {}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "mujhe is imel ka javab dena hai", "intent": "email_compose", "slots": {}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "ram ke imel ka javab do", "intent": "email_compose", "slots": {"recipient": "ram ke"}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "ٹوپی کے لئے شفیق کو میل بھیجیں", "intent": "email_compose", "slots": {"recipient": "شفیق"}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "زین کو ای میل بھیجو اور بتاؤ کہ گزشتہ شام خود سر تھی", "intent": "email_compose", "slots": {"recipient": "زین"}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "new alarm for six am", "intent": "reminder", "slots": {"time": "six am"}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "get me up at eight am", "intent": "reminder", "slots": {"time": "eight am"}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "wake me at seven am", "intent": "reminder", "slots": {"time": "seven am"}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "get me up in half an hour", "intent": "reminder", "slots": {"time": "half an hour"}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "set an alarm for me at eight am", "intent": "reminder", "slots": {"time": "eight am"}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "मुझे सुबह छह बजे उठने की कॉल चाहिए", "intent": "reminder", "slots": {"time": "सुबह छह बजे"}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "मुझे सुबह छह बजे जगाओ", "intent": "reminder", "slots": {"time": "सुबह छह बजे"}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "सुबह नौ बजे का अलार्म ऑन कर दो", "intent": "reminder", "slots": {"time": "नौ बजे"}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "subah chhah baje ka alarm banaen", "intent": "reminder", "slots": {"time": "chhah baje"}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "ath baje ka ek alarm set karo", "intent": "reminder", "slots": {"time": "ath baje"}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "mujhe tis minat men uthao", "intent": "reminder", "slots": {"time": "tis minat"}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "مجھے صبح سات بجے اٹھنا ہے", "intent": "reminder", "slots": {"time": "صبح سات بجے"}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "مجھے تین گھنٹے بعد بیدار کرنے کے لیے الارم کا شیڈول بنائیں", "intent": "reminder", "slots": {"time": "تین گھنٹے بعد"}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "میں چھ بجے اٹھنا چاہتا ہوں", "intent": "reminder", "slots": {"time": "چھ بجے"}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "call a car for me", "intent": "unknown", "slots": {}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "post a facebook status update", "intent": "unknown", "slots": {}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "set up a meeting with my tanya for every thursday at ten am", "intent": "unknown", "slots": {}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "find the names of all the rain forests located in south america", "intent": "unknown", "slots": {}, "lang": "en", "is_correction": false, "source": "clinc_oos"}
+{"text": "how much weight should i lift to get buff", "intent": "unknown", "slots": {}, "lang": "en", "is_correction": false, "source": "clinc_oos"}
+{"text": "set event on recurring", "intent": "unknown", "slots": {}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "add cereal to my shopping list", "intent": "unknown", "slots": {}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "hayathis daughter baby shower", "intent": "unknown", "slots": {}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "give directions to pizza hut", "intent": "unknown", "slots": {}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "adjust the light", "intent": "unknown", "slots": {}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "when is my anniversary", "intent": "unknown", "slots": {}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "क्या आप मुझे वर्तमान समय बता सकते हैं", "intent": "unknown", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "शाम सात बजे मीटिंग सेट करें", "intent": "unknown", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "मेरे कैलेंडर में से कल की मीटिंग cancel कर दो", "intent": "unknown", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "कृपया मेरे आस-पास कपड़ों की दुकान देखें", "intent": "unknown", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "क्या चेतन भगत की नई किताब मेरी सूची में है", "intent": "unknown", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "आयोजन करें", "intent": "unknown", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "किक बॉल को सूची को हटा दो पर ध्यान रहे कॉन्टेक्ट्स वैसे ही रहने चाहिए", "intent": "unknown", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "बीस मई कौन सा दिन है", "intent": "unknown", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "निम्नलिखित के लिए एक सूची बनाएं", "intent": "unknown", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "आप मुझे शुक्रवार के नृत्य के बारे में क्या बता सकते हैं", "intent": "unknown", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "tata skai ko bataen ki main abhi bhi hold par hun", "intent": "unknown", "slots": {}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "kripaya chikitsak murari ke karyalay men budhavar ko no ai.ema. par apointament jodaेn", "intent": "unknown", "slots": {}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "avashyak ghatanaon ko riset karane ke lie yad dilaen", "intent": "unknown", "slots": {}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "ek ivent set karen", "intent": "unknown", "slots": {}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "kal subah ke lie havai adde ke lie taiksi buk karen", "intent": "unknown", "slots": {}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "kya aj mere pas lanch det hai", "intent": "unknown", "slots": {}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "kya yahan ke asapas koi rasta hai", "intent": "unknown", "slots": {}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "lait ka rang badalo", "intent": "unknown", "slots": {}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "براہ کرم ویمو پلگ کو بند کر دیں", "intent": "unknown", "slots": {}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "میں کراچی میں کون سی دکانیں ڈھونڈ سکتا ہوں", "intent": "unknown", "slots": {}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "میرے کھانے کے آرڈر کا کیا سٹیٹس ہے", "intent": "unknown", "slots": {}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "ہفتے کی صبح کمال حیدر اور عالیان کے ساتھ برنچ کے لیے کیلنڈر میں اندراج کرو", "intent": "unknown", "slots": {}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "گھر لانے کے لیے سپگیٹی کا گودام سے سپگیٹی آرڈر کریں", "intent": "unknown", "slots": {}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "میں نے کون سے دن مخصوص کیے ہیں", "intent": "unknown", "slots": {}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "ہائے اولی ڈیٹ کا ایجنڈا کیا ہے", "intent": "unknown", "slots": {}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "یہاں اندھیرا ہے", "intent": "unknown", "slots": {}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "ٹرین کس وقت آتی ہے", "intent": "unknown", "slots": {}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "where is the fire", "intent": "volume_change", "slots": {}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "turn up the volume on my speakers", "intent": "volume_change", "slots": {}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "olly speak loudly", "intent": "volume_change", "slots": {}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "could you please lower the tone", "intent": "volume_change", "slots": {}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "touch the mute button", "intent": "volume_change", "slots": {}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "softer", "intent": "volume_change", "slots": {}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "साउंड म्यूट करो", "intent": "volume_change", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "स्पीकर का वॉल्यूम बढ़ाओ", "intent": "volume_change", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "google कृपया और अधिक शांत रहें बच्चा सो रहा है", "intent": "volume_change", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "आवाज़ बंद करो", "intent": "volume_change", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "मैं अपनी स्पीकर का आवाज सुनना चाहता हूं", "intent": "volume_change", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "कृपया आवाज़ कम करें", "intent": "volume_change", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "ध्वनि को म्यूट करें", "intent": "volume_change", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "ध्वनि को बंद करें", "intent": "volume_change", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "kripaya uncha bolo", "intent": "volume_change", "slots": {}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "کیا آپ تھوڑی دیر کے لیے خاموش رہ سکتے ہیں", "intent": "volume_change", "slots": {}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "یہ تھوڑا زور سے بنائیں", "intent": "volume_change", "slots": {}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "برائے مہربانی اسپیکر کی آواز کم کرو", "intent": "volume_change", "slots": {}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "ارے سری اسپیکرز کو خاموش کر دیں", "intent": "volume_change", "slots": {}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "اسپیکرز پر والیوم کو کم کریں", "intent": "volume_change", "slots": {}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "خاموش اسپیکر", "intent": "volume_change", "slots": {}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "what's new in news express", "intent": "web_answer", "slots": {"question": "what's new in news express"}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "what area has at least a thousand miles of open desert", "intent": "web_answer", "slots": {"question": "what area has at least a thousand miles of open desert"}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "how many grams are there for a cup of butter", "intent": "web_answer", "slots": {"question": "how many grams are there for a cup of butter"}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "read me the front page of the new york times", "intent": "web_answer", "slots": {"question": "read me the front page of the new york times"}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "what color are chairs", "intent": "web_answer", "slots": {"question": "what color are chairs"}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "read me the headlines from detroit news", "intent": "web_answer", "slots": {"question": "read me the headlines from detroit news"}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "कृपया भारत में उत्प्रवास कानून के बारे में इस सप्ताह के समाचार प्राप्त करें", "intent": "web_answer", "slots": {"question": "कृपया भारत में उत्प्रवास कानून के बारे में इस सप्ताह के समाचार प्राप्त करें"}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "चीन की महान दीवार कितनी लंबी है", "intent": "web_answer", "slots": {"question": "चीन की महान दीवार कितनी लंबी है"}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "इंडिया टूडे की सुर्खियां", "intent": "web_answer", "slots": {"question": "इंडिया टूडे की सुर्खियां"}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "दैनिक जागरण से सुर्खियां क्या हैं", "intent": "web_answer", "slots": {"question": "दैनिक जागरण से सुर्खियां क्या हैं"}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "आप शाब्दिक को कैसे परिभाषित करते हैं", "intent": "web_answer", "slots": {"question": "आप शाब्दिक को कैसे परिभाषित करते हैं"}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "इंदौर मध्यप्रदेश में आग", "intent": "web_answer", "slots": {"question": "इंदौर मध्यप्रदेश में आग"}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "hamare aur frans ke bich vinimay dar kya hai", "intent": "web_answer", "slots": {"question": "hamare aur frans ke bich vinimay dar kya hai"}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "kanada men dolar ki kimat kitani hai", "intent": "web_answer", "slots": {"question": "kanada men dolar ki kimat kitani hai"}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "selibriti ki kul sanpatti kya hai", "intent": "web_answer", "slots": {"question": "selibriti ki kul sanpatti kya hai"}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "piyano par kitane batan hote hain", "intent": "web_answer", "slots": {"question": "piyano par kitane batan hote hain"}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "برائے مہربانی مجھے بتاؤ ٹیلی فون کس نے ایجاد کیا اور تاریخ کیا ہے", "intent": "web_answer", "slots": {"question": "برائے مہربانی مجھے بتاؤ ٹیلی فون کس نے ایجاد کیا اور تاریخ کیا ہے"}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "مجھے پنجاب کا موسم بتاؤ", "intent": "web_answer", "slots": {"question": "مجھے پنجاب کا موسم بتاؤ"}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "مہربانی کر کہ مجھے بتائیں کس دنن بارش کا دن ہے موسم کے حال کے مطابق", "intent": "web_answer", "slots": {"question": "مہربانی کر کہ مجھے بتائیں کس دنن بارش کا دن ہے موسم کے حال کے مطابق"}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "یاسر جنگ پر تازہ ترین سرخیاں کیا ہیں", "intent": "web_answer", "slots": {"question": "یاسر جنگ پر تازہ ترین سرخیاں کیا ہیں"}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "play all songs by anirudh", "intent": "youtube_play", "slots": {"query": "anirudh"}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "play favorites", "intent": "youtube_play", "slots": {}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "i want to listen to george strait", "intent": "youtube_play", "slots": {"query": "george strait"}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "open bad religion folder", "intent": "youtube_play", "slots": {"query": "bad religion"}, "lang": "en", "is_correction": false, "source": "massive"}
+{"text": "गुल खिलना", "intent": "youtube_play", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "हनी सिंह के लेटेस्ट गाना चलाओ", "intent": "youtube_play", "slots": {"query": "हनी सिंह"}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "इस गीत के समाप्त होने के बाद मैं तुम ही हो सुनना चाहता हूँ", "intent": "youtube_play", "slots": {"query": "तुम ही हो"}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "प्लेलिस्ट से गाना चलाओ", "intent": "youtube_play", "slots": {}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "कृपया ब्रूनो मार्स के सभी गाने बजाएं", "intent": "youtube_play", "slots": {"query": "ब्रूनो मार्स"}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "क्या तुम दिल ना जाने चालू कर सकते हो", "intent": "youtube_play", "slots": {"query": "दिल ना जाने"}, "lang": "hi", "is_correction": false, "source": "massive"}
+{"text": "badatamij dil abhi chalu karo", "intent": "youtube_play", "slots": {"query": "badatamij dil"}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "kripaya sanam baind ka elbam chalu karen", "intent": "youtube_play", "slots": {"query": "sanam baind"}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "hey olly plelist ko chalu karo", "intent": "youtube_play", "slots": {}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "tum hi ho gana chalu karo", "intent": "youtube_play", "slots": {"query": "tum hi ho"}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "atif asalam ko suno", "intent": "youtube_play", "slots": {"query": "atif asalam"}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "kripaya plelist shuru karen sonu nigam aur samachar", "intent": "youtube_play", "slots": {"query": "sonu nigam"}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "mohammad raफ़ी ke kuchh gane chalao", "intent": "youtube_play", "slots": {"query": "mohammad raफ़ी"}, "lang": "roman_ur", "is_correction": false, "source": "massive_translit"}
+{"text": "رفتہ رفتہ صنم تیسرے نمبر پہ ہے میری قطار میں رکھو", "intent": "youtube_play", "slots": {"query": "رفتہ رفتہ صنم"}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "کیا آپ عاطف اسلم کا گانا چلا سکتے ہیں", "intent": "youtube_play", "slots": {"query": "عاطف اسلم"}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "کچھ حدیقہ کیانی چلاؤ", "intent": "youtube_play", "slots": {"query": "حدیقہ کیانی"}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "میں کچھ دھنیں سننا چاہتا ہوں", "intent": "youtube_play", "slots": {}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "رفتہ رفتہ صنم چلائیں", "intent": "youtube_play", "slots": {"query": "رفتہ رفتہ صنم"}, "lang": "ur", "is_correction": false, "source": "massive"}
+{"text": "وائیٹل سائنز چلائیں", "intent": "youtube_play", "slots": {"query": "وائیٹل سائنز"}, "lang": "ur", "is_correction": false, "source": "massive"}

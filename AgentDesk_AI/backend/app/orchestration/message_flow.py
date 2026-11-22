@@ -102,7 +102,8 @@ SAYS = {
 
 
 def say(key: str, lang: str, **slots) -> str:
-    return (SAYS[key].get(lang) or SAYS[key]["en"]).format(**slots)
+    from ..voice.reply_script import reply_lang
+    return (SAYS[key].get(reply_lang(lang)) or SAYS[key]["en"]).format(**slots)
 
 
 def _finish(db: Session, task: Task, text: str) -> Task:

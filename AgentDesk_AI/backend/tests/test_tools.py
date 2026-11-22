@@ -56,6 +56,7 @@ def test_registry_lists_all_tools(ctx: ToolContext):
         "download_web_content",
         "drive_coding_agent",
         "edit_text_file",
+        "explorer_navigate",
         "explorer_view",
         "extract_file",
         "find_files",
@@ -70,6 +71,7 @@ def test_registry_lists_all_tools(ctx: ToolContext):
         "memory_remember",
         "move_file",
         "open_application",
+        "open_browser_profile",
         "open_file",
         "open_folder",
         "open_terminal",
@@ -92,6 +94,7 @@ def test_registry_lists_all_tools(ctx: ToolContext):
         "web_search",
         "whatsapp_open_chat",
         "winget_install",
+        "winget_uninstall",
         "write_text_file",
     ]
 
@@ -1172,3 +1175,17 @@ def test_desktop_control_window_state_validation():
     })
     assert len(parsed.steps) == 1
     assert parsed.steps[0].action == "minimize_window"
+
+
+def test_an_app_installed_per_user_is_opened_through_its_start_menu_shortcut(monkeypatch, tmp_path):
+    """"Antigravity": it has an exe name but no PATH / App Paths entry, only a Start Menu shortcut. The old code handed Windows the bare exe name
+    (WinError 2: "cannot find the file")."""
+    from app.tools import apps
+    lnk = tmp_path / "Antigravity.lnk"
+    lnk.write_text("x")
+    monkeypatch.setattr(apps.platform, "system", lambda: "Windows")
+    monkeypatch.setattr(apps.shutil, "which", lambda c: None)
+    tool = apps.OpenApplicationTool(ToolContext())
+    monkeypatch.setattr(tool, "_windows_registered_app_path", lambda c: None)
+    monkeypatch.setattr(tool, "_match_start_menu_shortcut", lambda name: lnk)
+    assert tool._find_executable("antigravity") == lnk
