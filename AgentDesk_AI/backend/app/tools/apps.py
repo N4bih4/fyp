@@ -163,7 +163,7 @@ _APP_TITLES: dict[str, list[str]] = {
     "word": ["word"], "excel": ["excel"], "powerpoint": ["powerpoint"], "microsoft edge": ["edge"],
     "powershell": ["powershell"], "chrome": ["google chrome"], "notepad": ["notepad"],
 }
-_SITE_TITLES = {"youtube.com": ["youtube"], "mail.google.com": ["gmail", "inbox"], "web.whatsapp.com": ["whatsapp"],
+_SITE_TITLES = {"youtube.com": ["youtube"], "mail.google.com": ["gmail", "inbox", "compose mail", "mail.google.com"], "web.whatsapp.com": ["whatsapp"],
                 "chatgpt.com": ["chatgpt"], "drive.google.com": ["google drive", "my drive"]}
 
 

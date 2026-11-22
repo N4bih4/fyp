@@ -98,7 +98,9 @@ _START = [
     re.compile(r"^(?:please )?(?:write|send|compose|draft) (?:a )?mail to (?P<n>.+)$"),
     re.compile(r"^(?P<n>.+?) ko (?:e-?mail|mail) (?:bhejo|bhej do|karo|kar do|likho|likh do|bhejna hai|likhni hai)$"),
     re.compile(r"^(?:e-?mail|mail) (?:likho|banao|karo|bhejo|likhni hai)(?: (?P<n>.+) ko)?$"),
+    re.compile(r"^(?P<n>\S+@.+?) ko (?:e-?mail|mail) (?:draft )?(?:bhejo|bhej do|karo|kar do|likho|likh do)(?: .+)?$"),
 ]
+_ADDRESS = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
 _NOT_NAMES = {"settings", "app", "client", "address", "account", "provider", "setup", "me", "myself"}
 _CANCEL = re.compile(r"^(?:cancel|discard|delete|scrap|drop)(?: the| this| my)?(?: e-?mail| draft| message)?$|^never ?mind$|^(?:email|mail) (?:cancel|hata do|delete karo)$")
 _FINISH = re.compile(r"^(?:stop dictation|stop dictating|end dictation|finish dictation|done|i am done|i m done|that s all|that is all|that s it|finished|bas|bas itna|bas itna hi|khatam|ho gaya)$")
@@ -119,6 +121,17 @@ _CONTINUE = re.compile(r"^(?:continue|resume|open|show)(?: my| the)?(?: unfinish
 _ADD = re.compile(r"^(?:add|write|type|append) (?P<t>.+)$", re.I)
 
 
+def address_and_purpose(command: str) -> tuple[str, str]:
+    """("zainu@gmail.com", "help in study") from "draft an email to zainu@gmail.com asking for help in study"; ("", "") without an address."""
+    m = _ADDRESS.search(command or "")
+    if not m:
+        return "", ""
+    after = (command[m.end():] or "").strip(" .,!?")
+    after = re.sub(r"^(?:ko\s+)?(?:(?:e-?mail|mail)\s+)?(?:(?:draft|likho|karo|kar do|bhejo|likh do)\s+)*", "", after, flags=re.I)
+    after = re.sub(r"^(?:asking(?: him| her| them)?(?: for)?|ask(?: him| her| them)?(?: for)?|requesting|about|regarding|saying|that|for|ke liye|ke bare mein|ke|ki|mein)\s+", "", after, flags=re.I)
+    return m.group(0), after.strip(" .,!?")[:120]
+
+
 def parse_start(command: str) -> tuple[bool, str] | None:
     """(is an e-mail command, the name that was said or ""). The name keeps the capitals the speech-to-text gave it."""
     text = _PUNCT.sub(" ", (command or "").strip()).strip()
@@ -128,6 +141,9 @@ def parse_start(command: str) -> tuple[bool, str] | None:
             name = (m.groupdict().get("n") or "").strip()
             if name.casefold() in _NOT_NAMES:
                 return None
+            address, _ = address_and_purpose(command)
+            if address and _PUNCT.sub(" ", address.split("@")[0]).strip().casefold() in name.casefold():   # the clean-up above turned "uzma.kiran" into "uzma kiran"
+                name = address                     # a whole address is the recipient; the words after it are what the mail is about, not part of the name
             return True, name
     return None
 
@@ -169,7 +185,9 @@ def try_handle(db: Session, task: Task, command: str, registry: ToolRegistry, se
     if draft is None:
         if start is None:
             return None
-        return _begin(db, task, start[1], lang, settings)
+        if start[1] and address_and_purpose(command)[0] == start[1]:
+            return None                   # "draft an email to a@gmail.com ...": local_agent opens Gmail's compose window instead of dictation
+        return _begin(db, task, start[1], lang, settings, address_and_purpose(command)[1] if start[1] == address_and_purpose(command)[0] else "")
     text = norm(command)
     if text in ("stop", "wait", "hold on"):
         return None                       # the kill switch and "wait" belong to the session; the draft stays as it is
@@ -179,7 +197,7 @@ def try_handle(db: Session, task: Task, command: str, registry: ToolRegistry, se
     return _continue(db, task, draft, command, text, lang, registry, settings)
 
 
-def _begin(db: Session, task: Task, name: str, lang: str, settings: Settings) -> Task:
+def _begin(db: Session, task: Task, name: str, lang: str, settings: Settings, purpose: str = "") -> Task:
     provider = _connected(db, settings)
     if provider is None:
         return _finish(db, task, say("not_connected", lang))
@@ -188,10 +206,10 @@ def _begin(db: Session, task: Task, name: str, lang: str, settings: Settings) ->
         draft.state = "to"
         drafts.save(db, draft)
         return _finish(db, task, say("who", lang))
-    return _resolve_to(db, task, draft, name, lang, settings)
+    return _resolve_to(db, task, draft, name, lang, settings, purpose)
 
 
-def _resolve_to(db: Session, task: Task, draft: drafts.Draft, spoken: str, lang: str, settings: Settings) -> Task:
+def _resolve_to(db: Session, task: Task, draft: drafts.Draft, spoken: str, lang: str, settings: Settings, purpose: str = "") -> Task:
     try:
         found = contacts.resolve(spoken, service.provider_for(draft.provider, settings))
     except (MailError, NotConnected) as exc:
@@ -209,6 +227,11 @@ def _resolve_to(db: Session, task: Task, draft: drafts.Draft, spoken: str, lang:
     draft.set_recipients([found.contacts[0].as_dict()])
     draft.candidates, draft.wanted_name = [], ""
     if draft.state in ("to", "to_choose"):
+        if purpose:                                # "... asking for help in study": that is the subject, so the next thing to say is the message itself
+            draft.set_subject(purpose[0].upper() + purpose[1:])
+            draft.state = "body"
+            drafts.save(db, draft)
+            return _finish(db, task, say("go_ahead", lang))
         draft.state = "subject"
         drafts.save(db, draft)
         return _finish(db, task, say("subject", lang))

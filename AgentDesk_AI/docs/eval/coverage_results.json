@@ -19,7 +19,7 @@
   },
   "file_delete": {
    "en": {
-    "state": "cloud",
+    "state": "ask",
     "detail": "I'm not sure what to do with that. Do you want me to open something, f"
    },
    "ru": {
@@ -79,7 +79,7 @@
    "hi": {
     "state": "local",
     "detail": "open_application {\"app_name\": \"कैलकुलेटर\"}",
-    "risk": "high"
+    "risk": "?"
    }
   },
   "app_open_paint": {
@@ -96,7 +96,7 @@
    "hi": {
     "state": "local",
     "detail": "open_application {\"app_name\": \"पेंट\"}",
-    "risk": "high"
+    "risk": "?"
    }
   },
   "app_open_explorer": {
@@ -111,7 +111,7 @@
     "risk": "low"
    },
    "hi": {
-    "state": "cloud",
+    "state": "ask",
     "detail": "Yeh naam nahi mila. File/folder ka exact path batayein."
    }
   },
@@ -146,52 +146,55 @@
    "hi": {
     "state": "local",
     "detail": "open_application {\"app_name\": \"वर्ड\"}",
-    "risk": "high"
+    "risk": "?"
    }
   },
   "app_open_vscode": {
    "en": {
     "state": "local",
     "detail": "open_application {\"app_name\": \"vs code\"}",
-    "risk": "high"
+    "risk": "low"
    },
    "ru": {
     "state": "local",
     "detail": "open_application {\"app_name\": \"vs code\"}",
-    "risk": "high"
+    "risk": "low"
    },
    "hi": {
     "state": "local",
     "detail": "open_application {\"app_name\": \"वीएस कोड\"}",
-    "risk": "high"
+    "risk": "?"
    }
   },
   "app_close_notepad": {
    "en": {
-    "state": "cloud",
+    "state": "ask",
     "detail": "'notepad' ki khuli window nahi mili. Khuli window ka naam batayein."
    },
    "ru": {
-    "state": "cloud",
+    "state": "ask",
     "detail": "'notepad' ki khuli window nahi mili. Khuli window ka naam batayein."
    },
    "hi": {
-    "state": "cloud",
+    "state": "ask",
     "detail": "'notepad' ki khuli window nahi mili. Khuli window ka naam batayein."
    }
   },
   "app_switch": {
    "en": {
-    "state": "cloud",
-    "detail": ""
+    "state": "local",
+    "detail": "control_desktop {\"target_window\": \"chrome\", \"steps\": [{\"action\": \"focus_window\"}]}",
+    "risk": "low"
    },
    "ru": {
-    "state": "cloud",
-    "detail": ""
+    "state": "local",
+    "detail": "control_desktop {\"target_window\": \"chrome\", \"steps\": [{\"action\": \"focus_window\"}]}",
+    "risk": "low"
    },
    "hi": {
-    "state": "cloud",
-    "detail": ""
+    "state": "local",
+    "detail": "control_desktop {\"target_window\": \"chrome\", \"steps\": [{\"action\": \"focus_window\"}]}",
+    "risk": "low"
    }
   },
   "app_list_windows": {
@@ -214,116 +217,119 @@
   "win_minimize": {
    "en": {
     "state": "local",
-    "detail": "control_desktop {\"target_window\": \"Claude\", \"steps\": [{\"action\": \"minimize_window\"}]}",
+    "detail": "control_desktop {\"target_window\": \"/results?search_query=popular+songs - Google Search",
     "risk": "low"
    },
    "ru": {
     "state": "local",
-    "detail": "control_desktop {\"target_window\": \"Claude\", \"steps\": [{\"action\": \"minimize_window\"}]}",
+    "detail": "control_desktop {\"target_window\": \"/results?search_query=popular+songs - Google Search",
     "risk": "low"
    },
    "hi": {
     "state": "local",
-    "detail": "control_desktop {\"target_window\": \"Claude\", \"steps\": [{\"action\": \"minimize_window\"}]}",
+    "detail": "control_desktop {\"target_window\": \"/results?search_query=popular+songs - Google Search",
     "risk": "low"
    }
   },
   "win_maximize": {
    "en": {
     "state": "local",
-    "detail": "control_desktop {\"target_window\": \"Claude\", \"steps\": [{\"action\": \"maximize_window\"}]}",
+    "detail": "control_desktop {\"target_window\": \"/results?search_query=popular+songs - Google Search",
     "risk": "low"
    },
    "ru": {
     "state": "local",
-    "detail": "control_desktop {\"target_window\": \"Claude\", \"steps\": [{\"action\": \"maximize_window\"}]}",
+    "detail": "control_desktop {\"target_window\": \"/results?search_query=popular+songs - Google Search",
     "risk": "low"
    },
    "hi": {
     "state": "local",
-    "detail": "control_desktop {\"target_window\": \"Claude\", \"steps\": [{\"action\": \"maximize_window\"}]}",
+    "detail": "control_desktop {\"target_window\": \"/results?search_query=popular+songs - Google Search",
     "risk": "low"
    }
   },
   "win_show_desktop": {
    "en": {
-    "state": "cloud",
-    "detail": ""
+    "state": "local",
+    "detail": "control_desktop {\"steps\": [{\"action\": \"show_desktop\"}]}",
+    "risk": "low"
    },
    "ru": {
-    "state": "cloud",
-    "detail": ""
+    "state": "local",
+    "detail": "control_desktop {\"steps\": [{\"action\": \"show_desktop\"}]}",
+    "risk": "low"
    },
    "hi": {
-    "state": "cloud",
-    "detail": ""
+    "state": "local",
+    "detail": "control_desktop {\"steps\": [{\"action\": \"show_desktop\"}]}",
+    "risk": "low"
    }
   },
   "win_close_window": {
    "en": {
     "state": "local",
-    "detail": "control_desktop {\"target_window\": \"Claude\", \"steps\": [{\"action\": \"close_window\"}]}",
+    "detail": "control_desktop {\"target_window\": \"/results?search_query=popular+songs - Google Search",
     "risk": "high"
    },
    "ru": {
     "state": "local",
-    "detail": "control_desktop {\"target_window\": \"Claude\", \"steps\": [{\"action\": \"close_window\"}]}",
+    "detail": "control_desktop {\"target_window\": \"/results?search_query=popular+songs - Google Search",
     "risk": "high"
    },
    "hi": {
     "state": "local",
-    "detail": "control_desktop {\"target_window\": \"Claude\", \"steps\": [{\"action\": \"close_window\"}]}",
+    "detail": "control_desktop {\"target_window\": \"/results?search_query=popular+songs - Google Search",
     "risk": "high"
    }
   },
   "file_open_downloads": {
    "en": {
     "state": "local",
-    "detail": "explorer_navigate {\"path\": \"C:\\\\Users\\\\HP\\\\Downloads\"}",
+    "detail": "explorer_navigate {\"path\": \"C:\\\\Users\\\\HP 440 G8\\\\Downloads\"}",
     "risk": "low"
    },
    "ru": {
     "state": "local",
-    "detail": "explorer_navigate {\"path\": \"C:\\\\Users\\\\HP\\\\Downloads\"}",
+    "detail": "explorer_navigate {\"path\": \"C:\\\\Users\\\\HP 440 G8\\\\Downloads\"}",
     "risk": "low"
    },
    "hi": {
     "state": "local",
-    "detail": "explorer_navigate {\"path\": \"C:\\\\Users\\\\HP\\\\Downloads\"}",
+    "detail": "explorer_navigate {\"path\": \"C:\\\\Users\\\\HP 440 G8\\\\Downloads\"}",
     "risk": "low"
    }
   },
   "file_open_documents": {
    "en": {
     "state": "local",
-    "detail": "explorer_navigate {\"path\": \"C:\\\\Users\\\\HP\\\\Documents\"}",
+    "detail": "explorer_navigate {\"path\": \"C:\\\\Users\\\\HP 440 G8\\\\Documents\"}",
     "risk": "low"
    },
    "ru": {
     "state": "local",
-    "detail": "explorer_navigate {\"path\": \"C:\\\\Users\\\\HP\\\\Documents\"}",
+    "detail": "explorer_navigate {\"path\": \"C:\\\\Users\\\\HP 440 G8\\\\Documents\"}",
     "risk": "low"
    },
    "hi": {
     "state": "local",
-    "detail": "explorer_navigate {\"path\": \"C:\\\\Users\\\\HP\\\\Documents\"}",
+    "detail": "explorer_navigate {\"path\": \"C:\\\\Users\\\\HP 440 G8\\\\Documents\"}",
     "risk": "low"
    }
   },
   "file_open_desktop": {
    "en": {
     "state": "local",
-    "detail": "explorer_navigate {\"path\": \"C:\\\\Users\\\\HP\\\\Desktop\"}",
+    "detail": "explorer_navigate {\"path\": \"C:\\\\Users\\\\HP 440 G8\\\\Desktop\"}",
     "risk": "low"
    },
    "ru": {
     "state": "local",
-    "detail": "explorer_navigate {\"path\": \"C:\\\\Users\\\\HP\\\\Desktop\"}",
+    "detail": "explorer_navigate {\"path\": \"C:\\\\Users\\\\HP 440 G8\\\\Desktop\"}",
     "risk": "low"
    },
    "hi": {
     "state": "local",
-    "detail": "explorer_navigate {\"path\": \"C:\\\\Users\\\\HP\\\\Desktop\"}",
+    "detail": "explorer_navigate {\"path\": \"C:\\\\Users\\\\HP 440 G8\\\\Desktop\"}",
     "risk": "low"
    }
   },
@@ -347,38 +353,41 @@
   "file_list_downloads": {
    "en": {
     "state": "local",
-    "detail": "list_folder {\"path\": \"C:\\\\Users\\\\HP\\\\Downloads\"}",
+    "detail": "list_folder {\"path\": \"C:\\\\Users\\\\HP 440 G8\\\\Downloads\"}",
     "risk": "low"
    },
    "ru": {
     "state": "local",
-    "detail": "list_folder {\"path\": \"C:\\\\Users\\\\HP\\\\Downloads\"}",
+    "detail": "list_folder {\"path\": \"C:\\\\Users\\\\HP 440 G8\\\\Downloads\"}",
     "risk": "low"
    },
    "hi": {
     "state": "local",
-    "detail": "list_folder {\"path\": \"C:\\\\Users\\\\HP\\\\Downloads\"}",
+    "detail": "list_folder {\"path\": \"C:\\\\Users\\\\HP 440 G8\\\\Downloads\"}",
     "risk": "low"
    }
   },
   "file_find": {
    "en": {
-    "state": "cloud",
-    "detail": ""
+    "state": "local",
+    "detail": "find_files {\"name\": \"resume\"}",
+    "risk": "low"
    },
    "ru": {
-    "state": "cloud",
-    "detail": ""
+    "state": "local",
+    "detail": "find_files {\"name\": \"resume\"}",
+    "risk": "low"
    },
    "hi": {
-    "state": "cloud",
-    "detail": ""
+    "state": "local",
+    "detail": "find_files {\"name\": \"रिज्यूमे\"}",
+    "risk": "low"
    }
   },
   "file_create_folder": {
    "en": {
     "state": "local",
-    "detail": "create_folder {\"path\": \"C:\\\\Users\\\\HP\\\\Desktop\\\\coverage test\"}",
+    "detail": "create_folder {\"path\": \"C:\\\\Users\\\\HP 440 G8\\\\Desktop\\\\coverage test\"}",
     "risk": "medium"
    },
    "ru": {
@@ -392,58 +401,58 @@
   },
   "file_copy": {
    "en": {
-    "state": "cloud",
-    "detail": "Which file or folder do you mean? Tell me its name."
+    "state": "ask",
+    "detail": "Kaunsa path? Number ya exact address batayein. Preview ke liye 'previe"
    },
    "ru": {
-    "state": "cloud",
-    "detail": ""
+    "state": "ask",
+    "detail": "Kaunsa path? Number ya exact address batayein. Preview ke liye 'previe"
    },
    "hi": {
-    "state": "cloud",
-    "detail": ""
+    "state": "ask",
+    "detail": "Kaunsa path? Number ya exact address batayein. Preview ke liye 'previe"
    }
   },
   "file_move": {
    "en": {
-    "state": "cloud",
-    "detail": "I'm not sure what to do with that. Do you want me to open something, f"
+    "state": "ask",
+    "detail": "Kaunsa path? Number ya exact address batayein. Preview ke liye 'previe"
    },
    "ru": {
-    "state": "cloud",
-    "detail": ""
+    "state": "ask",
+    "detail": "Kaunsa path? Number ya exact address batayein. Preview ke liye 'previe"
    },
    "hi": {
-    "state": "cloud",
-    "detail": ""
+    "state": "ask",
+    "detail": "Kaunsa path? Number ya exact address batayein. Preview ke liye 'previe"
    }
   },
   "file_rename": {
    "en": {
-    "state": "cloud",
-    "detail": "I'm not sure what to do with that. Do you want me to open something, f"
+    "state": "ask",
+    "detail": "Kaunsa path? Number ya exact address batayein. Preview ke liye 'previe"
    },
    "ru": {
-    "state": "cloud",
-    "detail": ""
+    "state": "ask",
+    "detail": "Kaunsa path? Number ya exact address batayein. Preview ke liye 'previe"
    },
    "hi": {
-    "state": "cloud",
-    "detail": ""
+    "state": "ask",
+    "detail": "Kaunsa path? Number ya exact address batayein. Preview ke liye 'previe"
    }
   },
   "file_read": {
    "en": {
-    "state": "cloud",
-    "detail": ""
+    "state": "ask",
+    "detail": "Kaunsa path? Number ya exact address batayein. Preview ke liye 'previe"
    },
    "ru": {
-    "state": "cloud",
-    "detail": ""
+    "state": "ask",
+    "detail": "Kaunsa path? Number ya exact address batayein. Preview ke liye 'previe"
    },
    "hi": {
-    "state": "cloud",
-    "detail": ""
+    "state": "ask",
+    "detail": "Kaunsa path? Number ya exact address batayein. Preview ke liye 'previe"
    }
   },
   "file_write": {
@@ -462,12 +471,13 @@
   },
   "file_zip": {
    "en": {
-    "state": "cloud",
-    "detail": ""
+    "state": "ask",
+    "detail": "Kaunsa path? Number ya exact address batayein. Preview ke liye 'previe"
    },
    "ru": {
-    "state": "cloud",
-    "detail": ""
+    "state": "local",
+    "detail": "compress_folder {\"folder_path\": \"C:\\\\Users\\\\HP 440 G8\\\\Documents\"}",
+    "risk": "medium"
    },
    "hi": {
     "state": "cloud",
@@ -476,16 +486,19 @@
   },
   "file_trash": {
    "en": {
-    "state": "cloud",
-    "detail": ""
+    "state": "local",
+    "detail": "list_trash {}",
+    "risk": "low"
    },
    "ru": {
-    "state": "cloud",
-    "detail": ""
+    "state": "local",
+    "detail": "list_trash {}",
+    "risk": "low"
    },
    "hi": {
-    "state": "cloud",
-    "detail": ""
+    "state": "local",
+    "detail": "list_trash {}",
+    "risk": "low"
    }
   },
   "file_summarise": {
@@ -1533,16 +1546,19 @@
   },
   "chat_whatsapp": {
    "en": {
-    "state": "cloud",
-    "detail": ""
+    "state": "local",
+    "detail": "whatsapp_open_chat {\"contact\": \"ahmed\", \"text\": \"i am late\"}",
+    "risk": "medium"
    },
    "ru": {
-    "state": "cloud",
-    "detail": ""
+    "state": "local",
+    "detail": "whatsapp_open_chat {\"contact\": \"ahmed\", \"text\": \"main late hoon\"}",
+    "risk": "medium"
    },
    "hi": {
-    "state": "cloud",
-    "detail": ""
+    "state": "local",
+    "detail": "whatsapp_open_chat {\"contact\": \"अहमद\", \"text\": \"मैं लेट हूँ\"}",
+    "risk": "medium"
    }
   },
   "code_terminal": {
@@ -1564,16 +1580,19 @@
   },
   "code_git_status": {
    "en": {
-    "state": "cloud",
-    "detail": ""
+    "state": "local",
+    "detail": "run_terminal_command {\"command\": \"git status\"}",
+    "risk": "low"
    },
    "ru": {
-    "state": "cloud",
-    "detail": ""
+    "state": "local",
+    "detail": "run_terminal_command {\"command\": \"git status\"}",
+    "risk": "low"
    },
    "hi": {
-    "state": "cloud",
-    "detail": ""
+    "state": "local",
+    "detail": "run_terminal_command {\"command\": \"git status\"}",
+    "risk": "low"
    }
   },
   "code_agent": {
@@ -1648,16 +1667,19 @@
   },
   "info_recall": {
    "en": {
-    "state": "cloud",
-    "detail": ""
+    "state": "local",
+    "detail": "memory_recall {\"topic\": \"locker number\"}",
+    "risk": "low"
    },
    "ru": {
-    "state": "cloud",
-    "detail": ""
+    "state": "local",
+    "detail": "memory_recall {\"topic\": \"locker number\"}",
+    "risk": "low"
    },
    "hi": {
-    "state": "cloud",
-    "detail": ""
+    "state": "local",
+    "detail": "memory_recall {\"topic\": \"लॉकर नंबर\"}",
+    "risk": "low"
    }
   },
   "info_document": {
@@ -2066,64 +2088,64 @@
    ]
   },
   "yt_pause": {
-   "status": "completed",
+   "status": "failed",
    "tools": [
     "control_browser"
    ],
-   "seconds": 2.2,
-   "note": "YouTube video pause kar di.",
-   "state": "pass",
-   "detail": "completed and verified"
+   "seconds": 0.1,
+   "note": "",
+   "state": "fail",
+   "detail": "failed ['control_browser'] ['Cannot access contents of the page. Extension manifest must request permission t']"
   },
   "yt_resume": {
    "status": "failed",
    "tools": [
     "control_browser"
    ],
-   "seconds": 0.1,
+   "seconds": 0.0,
    "note": "",
    "state": "fail",
-   "detail": "failed ['control_browser'] ['I cannot see a browser window showing YouTube.']"
+   "detail": "failed ['control_browser'] ['Cannot access contents of the page. Extension manifest must request permission t']"
   },
   "yt_next": {
    "status": "failed",
    "tools": [
     "control_browser"
    ],
-   "seconds": 0.1,
+   "seconds": 0.0,
    "note": "",
    "state": "fail",
-   "detail": "failed ['control_browser'] ['I cannot see a browser window showing YouTube.']"
+   "detail": "failed ['control_browser'] ['Cannot access contents of the page. Extension manifest must request permission t']"
   },
   "yt_skip_ad": {
    "status": "failed",
    "tools": [
     "control_browser"
    ],
-   "seconds": 0.1,
+   "seconds": 0.0,
    "note": "",
    "state": "fail",
-   "detail": "failed ['control_browser'] ['That control needs the browser helper (the Agent X extension): it is not connect']"
+   "detail": "failed ['control_browser'] ['Cannot access contents of the page. Extension manifest must request permission t']"
   },
   "yt_seek": {
    "status": "failed",
    "tools": [
     "control_browser"
    ],
-   "seconds": 0.1,
+   "seconds": 0.0,
    "note": "",
    "state": "fail",
-   "detail": "failed ['control_browser'] ['I cannot see a browser window showing YouTube.']"
+   "detail": "failed ['control_browser'] ['Cannot access contents of the page. Extension manifest must request permission t']"
   },
   "yt_speed": {
    "status": "failed",
    "tools": [
     "control_browser"
    ],
-   "seconds": 0.1,
+   "seconds": 0.0,
    "note": "",
    "state": "fail",
-   "detail": "failed ['control_browser'] ['That control needs the browser helper (the Agent X extension): it is not connect']"
+   "detail": "failed ['control_browser'] ['Cannot access contents of the page. Extension manifest must request permission t']"
   },
   "yt_mute": {
    "status": "failed",
@@ -2133,28 +2155,48 @@
    "seconds": 0.1,
    "note": "",
    "state": "fail",
-   "detail": "failed ['control_browser'] ['I cannot see a browser window showing YouTube.']"
+   "detail": "failed ['control_browser'] ['Cannot access contents of the page. Extension manifest must request permission t']"
   },
   "yt_fullscreen": {
    "status": "failed",
    "tools": [
     "control_browser"
    ],
-   "seconds": 0.1,
+   "seconds": 0.0,
    "note": "",
    "state": "fail",
-   "detail": "failed ['control_browser'] ['I cannot see a browser window showing YouTube.']"
+   "detail": "failed ['control_browser'] ['Cannot access contents of the page. Extension manifest must request permission t']"
   },
   "yt_now_playing": {
    "status": "failed",
    "tools": [
     "control_browser"
    ],
-   "seconds": 0.1,
+   "seconds": 0.0,
    "note": "",
    "state": "fail",
-   "detail": "failed ['control_browser'] ['That control needs the browser helper (the Agent X extension): it is not connect']"
+   "detail": "failed ['control_browser'] ['Cannot access contents of the page. Extension manifest must request permission t']"
+  },
+  "file_write": {
+   "state": "pass",
+   "detail": "written, approved, verified and read back from disk"
+  },
+  "file_read": {
+   "state": "pass",
+   "detail": "read the file back"
+  },
+  "web_open_gmail": {
+   "state": "fail",
+   "detail": "{'status': 'failed', 'tools': ['open_url'], 'errors': ['Browser did not confirm the requested tab navigation.'], 'verified': True, 'note': ''}"
+  },
+  "chat_whatsapp": {
+   "state": "pass",
+   "detail": "asked for the number first (contact not saved); cancelled, nothing sent: What is ahmed's number, with the country code?"
+  },
+  "app_close_notepad": {
+   "state": "pass",
+   "detail": "closed Notepad by name without a card (the user named app and action) and verified the window is gone"
   }
  },
- "when": "2026-11-22 17:27"
+ "when": "2026-11-22 22:03"
 }

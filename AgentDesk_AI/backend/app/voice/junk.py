@@ -17,7 +17,7 @@ HALLUCINATIONS = {
 INTERJECTIONS = {"aduh", "aduhh", "aduly", "ouch", "oops", "ugh", "huh", "tsk", "haha", "hehe", "wow", "yay", "phew", "hmm", "thank you", "thanks", "thank you very much",
                  "shukriya", "shukria", "thanks a lot"}
 _ADDRESS = re.compile(r"https?://|\bwww\.|\b[\w-]+\.(?:com|org|net|au|uk|pk|io|co|info)\b|=\"")
-_WEB_VERB = re.compile(r"\b(?:open|go\s+to|visit|browse|search|play|summari[sz]e|read|translate|download|save|share|check|watch|send|copy|bookmark|kholo|khol|chalao|chalo|dhundo|dhoondo|dikhao|parho|dekho|bhejo|save\s+karo)\b|کھولو|खोलो", re.I)
+_WEB_VERB = re.compile(r"\b(?:open|go\s+to|visit|browse|search|play|summari[sz]e|read|translate|download|save|share|check|watch|send|copy|bookmark|kholo|khol|chalao|chalo|dhundo|dhoondo|dikhao|parho|dekho|bhejo|save\s+karo|e-?mail|mail|draft|compose|write|likho|message)\b|کھولو|खोलो", re.I)
 _FOREIGN_SCRIPT = re.compile("[Ѐ-ӿͰ-Ͽ฀-๿぀-ヿ㐀-鿿가-힯]")      # Cyrillic, Greek, Thai, kana, CJK, Hangul
 # Languages this assistant is spoken in. Whisper names the language it detected; anything else (Italian, Indonesian, Somali ... on room noise) is not a command.
 SPOKEN_LANGUAGES = {"english", "en", "urdu", "ur", "hindi", "hi", "punjabi", "pa", "arabic", "ar", "persian", "fa", "sindhi", "sd", "pashto", "ps"}

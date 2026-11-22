@@ -1,0 +1,924 @@
+{
+ "summary": {
+  "date": "2026-11-22T21:54:18",
+  "minutes": 3.0,
+  "rounds": 18,
+  "commands": 141,
+  "completed": 124,
+  "statuses": {
+   "completed": 124,
+   "failed": 17
+  },
+  "p50": 0.23,
+  "p90": 0.63,
+  "max": 1.67,
+  "median_by_group": {
+   "battery": 0.05,
+   "explorer": 0.23,
+   "app": 0.49,
+   "system": 0.21,
+   "cloud": 0.04
+  },
+  "start": {
+   "t": 1795366277,
+   "rss_mb": 4.4,
+   "threads": 1,
+   "handles": 83,
+   "children": 11,
+   "windows": 8
+  },
+  "end": {
+   "t": 1795366458,
+   "rss_mb": 4.5,
+   "threads": 3,
+   "handles": 83,
+   "children": 14,
+   "windows": 10
+  },
+  "samples": [
+   {
+    "t": 1795366277,
+    "rss_mb": 4.4,
+    "threads": 1,
+    "handles": 83,
+    "children": 11,
+    "windows": 8
+   },
+   {
+    "t": 1795366339,
+    "rss_mb": 4.4,
+    "threads": 1,
+    "handles": 83,
+    "children": 14,
+    "windows": 9
+   },
+   {
+    "t": 1795366399,
+    "rss_mb": 4.4,
+    "threads": 1,
+    "handles": 83,
+    "children": 14,
+    "windows": 9
+   },
+   {
+    "t": 1795366458,
+    "rss_mb": 4.5,
+    "threads": 3,
+    "handles": 83,
+    "children": 14,
+    "windows": 10
+   }
+  ],
+  "rss_mb_growth": 0.023,
+  "threads_growth": 2.0,
+  "handles_growth": 0.0
+ },
+ "results": [
+  {
+   "command": "battery status",
+   "group": "battery",
+   "status": "completed",
+   "seconds": 0.03
+  },
+  {
+   "command": "C drive kholo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 1.67
+  },
+  {
+   "command": "Users ka folder open karo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.24
+  },
+  {
+   "command": "back",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.28
+  },
+  {
+   "command": "open calculator",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.42
+  },
+  {
+   "command": "calculator band karo",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.64
+  },
+  {
+   "command": "volume kitni hai",
+   "group": "system",
+   "status": "completed",
+   "seconds": 0.67
+  },
+  {
+   "command": "what is the capital of france",
+   "group": "cloud",
+   "status": "failed",
+   "seconds": 0.04
+  },
+  {
+   "command": "battery status",
+   "group": "battery",
+   "status": "completed",
+   "seconds": 0.07
+  },
+  {
+   "command": "C drive kholo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.18
+  },
+  {
+   "command": "Users ka folder open karo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.23
+  },
+  {
+   "command": "back",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.24
+  },
+  {
+   "command": "open calculator",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.4
+  },
+  {
+   "command": "calculator band karo",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.65
+  },
+  {
+   "command": "volume kitni hai",
+   "group": "system",
+   "status": "completed",
+   "seconds": 0.23
+  },
+  {
+   "command": "what is the capital of france",
+   "group": "cloud",
+   "status": "failed",
+   "seconds": 0.04
+  },
+  {
+   "command": "battery status",
+   "group": "battery",
+   "status": "completed",
+   "seconds": 0.05
+  },
+  {
+   "command": "C drive kholo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.18
+  },
+  {
+   "command": "Users ka folder open karo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.22
+  },
+  {
+   "command": "back",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.24
+  },
+  {
+   "command": "open calculator",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.45
+  },
+  {
+   "command": "calculator band karo",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.72
+  },
+  {
+   "command": "volume kitni hai",
+   "group": "system",
+   "status": "completed",
+   "seconds": 0.19
+  },
+  {
+   "command": "what is the capital of france",
+   "group": "cloud",
+   "status": "failed",
+   "seconds": 0.04
+  },
+  {
+   "command": "battery status",
+   "group": "battery",
+   "status": "completed",
+   "seconds": 0.05
+  },
+  {
+   "command": "C drive kholo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.24
+  },
+  {
+   "command": "Users ka folder open karo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.22
+  },
+  {
+   "command": "back",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.22
+  },
+  {
+   "command": "open calculator",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.45
+  },
+  {
+   "command": "calculator band karo",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.64
+  },
+  {
+   "command": "volume kitni hai",
+   "group": "system",
+   "status": "completed",
+   "seconds": 0.21
+  },
+  {
+   "command": "what is the capital of france",
+   "group": "cloud",
+   "status": "failed",
+   "seconds": 0.05
+  },
+  {
+   "command": "battery status",
+   "group": "battery",
+   "status": "completed",
+   "seconds": 0.09
+  },
+  {
+   "command": "C drive kholo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.51
+  },
+  {
+   "command": "Users ka folder open karo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.33
+  },
+  {
+   "command": "back",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.26
+  },
+  {
+   "command": "open calculator",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.46
+  },
+  {
+   "command": "calculator band karo",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.64
+  },
+  {
+   "command": "volume kitni hai",
+   "group": "system",
+   "status": "completed",
+   "seconds": 0.17
+  },
+  {
+   "command": "what is the capital of france",
+   "group": "cloud",
+   "status": "failed",
+   "seconds": 0.04
+  },
+  {
+   "command": "battery status",
+   "group": "battery",
+   "status": "completed",
+   "seconds": 0.03
+  },
+  {
+   "command": "C drive kholo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.24
+  },
+  {
+   "command": "Users ka folder open karo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.21
+  },
+  {
+   "command": "back",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.22
+  },
+  {
+   "command": "open calculator",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.46
+  },
+  {
+   "command": "calculator band karo",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.63
+  },
+  {
+   "command": "volume kitni hai",
+   "group": "system",
+   "status": "completed",
+   "seconds": 0.22
+  },
+  {
+   "command": "what is the capital of france",
+   "group": "cloud",
+   "status": "failed",
+   "seconds": 0.05
+  },
+  {
+   "command": "battery status",
+   "group": "battery",
+   "status": "completed",
+   "seconds": 0.06
+  },
+  {
+   "command": "C drive kholo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.19
+  },
+  {
+   "command": "Users ka folder open karo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.23
+  },
+  {
+   "command": "back",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.24
+  },
+  {
+   "command": "open calculator",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.49
+  },
+  {
+   "command": "calculator band karo",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.64
+  },
+  {
+   "command": "volume kitni hai",
+   "group": "system",
+   "status": "completed",
+   "seconds": 0.35
+  },
+  {
+   "command": "what is the capital of france",
+   "group": "cloud",
+   "status": "failed",
+   "seconds": 0.04
+  },
+  {
+   "command": "battery status",
+   "group": "battery",
+   "status": "completed",
+   "seconds": 0.04
+  },
+  {
+   "command": "C drive kholo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.18
+  },
+  {
+   "command": "Users ka folder open karo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.28
+  },
+  {
+   "command": "back",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.25
+  },
+  {
+   "command": "open calculator",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.42
+  },
+  {
+   "command": "calculator band karo",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.66
+  },
+  {
+   "command": "volume kitni hai",
+   "group": "system",
+   "status": "completed",
+   "seconds": 0.22
+  },
+  {
+   "command": "what is the capital of france",
+   "group": "cloud",
+   "status": "failed",
+   "seconds": 0.04
+  },
+  {
+   "command": "battery status",
+   "group": "battery",
+   "status": "completed",
+   "seconds": 0.06
+  },
+  {
+   "command": "C drive kholo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.19
+  },
+  {
+   "command": "Users ka folder open karo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.26
+  },
+  {
+   "command": "back",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.25
+  },
+  {
+   "command": "open calculator",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.4
+  },
+  {
+   "command": "calculator band karo",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.64
+  },
+  {
+   "command": "volume kitni hai",
+   "group": "system",
+   "status": "completed",
+   "seconds": 0.22
+  },
+  {
+   "command": "what is the capital of france",
+   "group": "cloud",
+   "status": "failed",
+   "seconds": 0.04
+  },
+  {
+   "command": "battery status",
+   "group": "battery",
+   "status": "completed",
+   "seconds": 0.06
+  },
+  {
+   "command": "C drive kholo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.18
+  },
+  {
+   "command": "Users ka folder open karo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.22
+  },
+  {
+   "command": "back",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.22
+  },
+  {
+   "command": "open calculator",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.46
+  },
+  {
+   "command": "calculator band karo",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.63
+  },
+  {
+   "command": "volume kitni hai",
+   "group": "system",
+   "status": "completed",
+   "seconds": 0.19
+  },
+  {
+   "command": "what is the capital of france",
+   "group": "cloud",
+   "status": "failed",
+   "seconds": 0.05
+  },
+  {
+   "command": "battery status",
+   "group": "battery",
+   "status": "completed",
+   "seconds": 0.04
+  },
+  {
+   "command": "C drive kholo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.19
+  },
+  {
+   "command": "Users ka folder open karo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.23
+  },
+  {
+   "command": "back",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.23
+  },
+  {
+   "command": "open calculator",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.48
+  },
+  {
+   "command": "calculator band karo",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.63
+  },
+  {
+   "command": "volume kitni hai",
+   "group": "system",
+   "status": "completed",
+   "seconds": 0.19
+  },
+  {
+   "command": "what is the capital of france",
+   "group": "cloud",
+   "status": "failed",
+   "seconds": 0.05
+  },
+  {
+   "command": "battery status",
+   "group": "battery",
+   "status": "completed",
+   "seconds": 0.04
+  },
+  {
+   "command": "C drive kholo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.21
+  },
+  {
+   "command": "Users ka folder open karo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.23
+  },
+  {
+   "command": "back",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.22
+  },
+  {
+   "command": "open calculator",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.48
+  },
+  {
+   "command": "calculator band karo",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.63
+  },
+  {
+   "command": "volume kitni hai",
+   "group": "system",
+   "status": "completed",
+   "seconds": 0.23
+  },
+  {
+   "command": "what is the capital of france",
+   "group": "cloud",
+   "status": "failed",
+   "seconds": 0.02
+  },
+  {
+   "command": "battery status",
+   "group": "battery",
+   "status": "completed",
+   "seconds": 0.04
+  },
+  {
+   "command": "C drive kholo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.2
+  },
+  {
+   "command": "Users ka folder open karo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.25
+  },
+  {
+   "command": "back",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.23
+  },
+  {
+   "command": "open calculator",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.47
+  },
+  {
+   "command": "calculator band karo",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.64
+  },
+  {
+   "command": "volume kitni hai",
+   "group": "system",
+   "status": "completed",
+   "seconds": 0.18
+  },
+  {
+   "command": "what is the capital of france",
+   "group": "cloud",
+   "status": "failed",
+   "seconds": 0.04
+  },
+  {
+   "command": "battery status",
+   "group": "battery",
+   "status": "completed",
+   "seconds": 0.11
+  },
+  {
+   "command": "C drive kholo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.24
+  },
+  {
+   "command": "Users ka folder open karo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.24
+  },
+  {
+   "command": "back",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.23
+  },
+  {
+   "command": "open calculator",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.46
+  },
+  {
+   "command": "calculator band karo",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.64
+  },
+  {
+   "command": "volume kitni hai",
+   "group": "system",
+   "status": "completed",
+   "seconds": 0.18
+  },
+  {
+   "command": "what is the capital of france",
+   "group": "cloud",
+   "status": "failed",
+   "seconds": 0.05
+  },
+  {
+   "command": "battery status",
+   "group": "battery",
+   "status": "completed",
+   "seconds": 0.04
+  },
+  {
+   "command": "C drive kholo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.2
+  },
+  {
+   "command": "Users ka folder open karo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.24
+  },
+  {
+   "command": "back",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.24
+  },
+  {
+   "command": "open calculator",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.43
+  },
+  {
+   "command": "calculator band karo",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.64
+  },
+  {
+   "command": "volume kitni hai",
+   "group": "system",
+   "status": "completed",
+   "seconds": 0.16
+  },
+  {
+   "command": "what is the capital of france",
+   "group": "cloud",
+   "status": "failed",
+   "seconds": 0.06
+  },
+  {
+   "command": "battery status",
+   "group": "battery",
+   "status": "completed",
+   "seconds": 0.07
+  },
+  {
+   "command": "C drive kholo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.18
+  },
+  {
+   "command": "Users ka folder open karo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.23
+  },
+  {
+   "command": "back",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.22
+  },
+  {
+   "command": "open calculator",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.48
+  },
+  {
+   "command": "calculator band karo",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.66
+  },
+  {
+   "command": "volume kitni hai",
+   "group": "system",
+   "status": "completed",
+   "seconds": 0.29
+  },
+  {
+   "command": "what is the capital of france",
+   "group": "cloud",
+   "status": "failed",
+   "seconds": 0.04
+  },
+  {
+   "command": "battery status",
+   "group": "battery",
+   "status": "completed",
+   "seconds": 0.06
+  },
+  {
+   "command": "C drive kholo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.19
+  },
+  {
+   "command": "Users ka folder open karo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.22
+  },
+  {
+   "command": "back",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.23
+  },
+  {
+   "command": "open calculator",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.45
+  },
+  {
+   "command": "calculator band karo",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.64
+  },
+  {
+   "command": "volume kitni hai",
+   "group": "system",
+   "status": "completed",
+   "seconds": 0.2
+  },
+  {
+   "command": "what is the capital of france",
+   "group": "cloud",
+   "status": "failed",
+   "seconds": 0.03
+  },
+  {
+   "command": "battery status",
+   "group": "battery",
+   "status": "completed",
+   "seconds": 0.04
+  },
+  {
+   "command": "C drive kholo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.18
+  },
+  {
+   "command": "Users ka folder open karo",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.25
+  },
+  {
+   "command": "back",
+   "group": "explorer",
+   "status": "completed",
+   "seconds": 0.23
+  },
+  {
+   "command": "open calculator",
+   "group": "app",
+   "status": "completed",
+   "seconds": 0.43
+  }
+ ]
+}

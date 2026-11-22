@@ -31,6 +31,22 @@ _SW_RESTORE = 9
 # and inspecting these windows remains supported.
 _INPUT_ACTIONS = {"click", "type_text", "press_key", "hotkey", "scroll"}
 _WINDOW_STATE_ACTIONS = {"minimize_window", "maximize_window", "restore_window", "focus_window"}
+# Read-only or whole-desktop steps: no target window is needed and none can be hurt ("show desktop" only minimises, nothing is closed or typed).
+_NO_TARGET_ACTIONS = {"inspect", "show_desktop"}
+_DESKTOP_CLASSES = {"progman", "workerw"}
+
+
+def _desktop_in_front() -> bool:
+    """True when the Windows desktop itself (not an app window) is the foreground window."""
+    if sys.platform != "win32":
+        return False
+    try:
+        hwnd = ctypes.windll.user32.GetForegroundWindow()
+        buffer = ctypes.create_unicode_buffer(64)
+        ctypes.windll.user32.GetClassNameW(hwnd, buffer, 64)
+        return buffer.value.casefold() in _DESKTOP_CLASSES
+    except Exception:  # noqa: BLE001 - no evidence is not a pass
+        return False
 _SAVE_PROMPT_WORDS = ("save", "don't save", "dont save", "محفوظ", "सहेज", "सेव")
 _SHELL_PROCESSES = {
     "powershell.exe", "pwsh.exe", "cmd.exe", "windowsterminal.exe", "wt.exe", "conhost.exe",
@@ -70,14 +86,14 @@ class DesktopStep(BaseModel):
 
     action: (
         Literal[
-            "inspect", "close_window", "close_tab", "minimize_window", "maximize_window", "restore_window", "focus_window",
+            "inspect", "close_window", "close_tab", "minimize_window", "maximize_window", "restore_window", "focus_window", "show_desktop",
             "click", "type_text", "press_key", "hotkey", "scroll",
         ]
         | None
     ) = None
     type: (
         Literal[
-            "inspect", "close_window", "close_tab", "minimize_window", "maximize_window", "restore_window", "focus_window",
+            "inspect", "close_window", "close_tab", "minimize_window", "maximize_window", "restore_window", "focus_window", "show_desktop",
             "click", "type_text", "press_key", "hotkey", "scroll", "key", "text",
         ]
         | None
@@ -142,6 +158,7 @@ class DesktopStep(BaseModel):
             "maximize_window": set(),
             "restore_window": set(),
             "focus_window": set(),
+            "show_desktop": set(),
             "click": {"x", "y"},
             "type_text": {"text"},
             "press_key": {"key"},
@@ -179,7 +196,7 @@ class DesktopControlArgs(BaseModel):
 
     @model_validator(mode="after")
     def require_target_for_input(self):
-        needs_target = any(step.action != "inspect" for step in self.steps)
+        needs_target = any(step.action not in _NO_TARGET_ACTIONS for step in self.steps)
         if needs_target and not (self.target_window and self.target_window.strip()):
             raise ValueError("target_window is required for keyboard and mouse actions")
         if any(step.action in _WINDOW_STATE_ACTIONS | {"close_window", "close_tab"} for step in self.steps[:-1]):
@@ -192,7 +209,7 @@ class DesktopControlTool(BaseTool):
     description = (
         "Inspect the active window and list open titles; close one uniquely identified tab "
         "(close_tab / Ctrl+W) or app window (close_window / Alt+F4); minimize (minimize_window); "
-        "maximize (maximize_window); restore (restore_window); bring to front (focus_window); "
+        "maximize (maximize_window); restore (restore_window); bring to front (focus_window); show the desktop (show_desktop, no target needed); "
         "or perform a short bounded mouse/keyboard sequence. "
         "Inspect first and pass a listed title as target_window. Never substitute a different "
         "window when the requested app/site is not listed; Ctrl+W closes the active tab in the matched window."
@@ -204,7 +221,7 @@ class DesktopControlTool(BaseTool):
         if args is None:
             return RiskLevel.HIGH
         parsed = DesktopControlArgs.model_validate(args.model_dump())
-        if all(step.action in {"inspect"} | _WINDOW_STATE_ACTIONS for step in parsed.steps):
+        if all(step.action in _NO_TARGET_ACTIONS | _WINDOW_STATE_ACTIONS for step in parsed.steps):
             return RiskLevel.LOW
         return RiskLevel.HIGH
 
@@ -214,7 +231,7 @@ class DesktopControlTool(BaseTool):
         parsed = DesktopControlArgs.model_validate(args.model_dump())
         if parsed.target_window_id is not None and any(step.action == "close_window" for step in parsed.steps):
             return RiskLevel.HIGH  # batch/window-ID closes require explicit review
-        if all(step.action in {"inspect"} | _WINDOW_STATE_ACTIONS for step in parsed.steps):
+        if all(step.action in _NO_TARGET_ACTIONS | _WINDOW_STATE_ACTIONS for step in parsed.steps):
             return RiskLevel.LOW
         if not parsed.target_window:
             return RiskLevel.HIGH
@@ -509,6 +526,8 @@ class DesktopControlTool(BaseTool):
                     windows = probe.windows()
                     record["windows_now"] = len(windows)
                     checks.append(("desktop windows re-read", bool(windows)))
+                elif action == "show_desktop":
+                    checks.append(("the desktop is in front", _desktop_in_front()))
                 elif action == "close_window":
                     checks.append((f"window {hwnd or step.get('window')!r} is gone", seen is None))
                 elif action == "close_tab":
@@ -550,7 +569,7 @@ class DesktopControlTool(BaseTool):
         input_hwnd = None
         try:
             for step in parsed.steps:
-                if step.action != "inspect":
+                if step.action not in _NO_TARGET_ACTIONS:
                     title = parsed.target_window.strip()
                     if parsed.target_window_id is not None:
                         identified = [window for window in pyautogui.getAllWindows() if self._window_hwnd(window) == parsed.target_window_id and getattr(window, "title", "") == title]
@@ -680,6 +699,12 @@ class DesktopControlTool(BaseTool):
                             "screen_size": list(pyautogui.size()),
                         }
                     )
+                elif step.action == "show_desktop":
+                    already = _desktop_in_front()   # Win+D toggles: never press it when the desktop is already showing
+                    if not already:
+                        pyautogui.hotkey("win", "d")
+                        time.sleep(0.6)
+                    completed.append({"action": "show_desktop", "already_showing": already})
                 elif step.action == "click":
                     width, height = pyautogui.size()
                     if step.x >= width or step.y >= height:

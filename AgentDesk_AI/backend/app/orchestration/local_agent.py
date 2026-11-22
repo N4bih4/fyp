@@ -177,10 +177,10 @@ def _resolve(task, intent, registry):
         if not result.success or not candidates:
             return _ask(task, intent, "Yeh naam nahi mila. File/folder ka exact path batayein.")
         # A time-limited search over every drive may not finish: that only matters for destructive operations.
-        unfinished = result.output.get("truncated") and op not in {"open", "list"}
+        unfinished = result.output.get("truncated") and op not in {"open", "list", "read"}
         # Opening is harmless: with several folders of exactly this name, open the one touched most recently and say
         # which others exist. Anything that changes files still asks.
-        sure = (result.output.get("confident") or result.output.get("exact")) and op in {"open", "list"}
+        sure = (result.output.get("confident") or result.output.get("exact")) and op in {"open", "list", "read"}
         others = candidates[1:4] if sure and len(candidates) > 1 else []
         if not sure and (len(candidates) > 1 or unfinished or result.output.get("alias_matches")):
             candidates = candidates[:6]   # never read out dozens of paths
@@ -199,6 +199,8 @@ def _resolve(task, intent, registry):
         return _action("rename_file", {"path": source, "new_name": intent["new_name"].strip().strip('"')})
     if op == "delete":
         return _action("delete_file", {"path": source, "include_contents": intent.get("include_contents", False)})
+    if op == "read":
+        return _action("read_text_file", {"path": source})
     if op == "compress":
         return _action("compress_folder", {"folder_path": source})
     if op == "extract":
@@ -244,7 +246,8 @@ def prepare_local_request(db, task, registry):
     from ..ai.document_commands import document_followup, document_plan
     from ..ai.coverage_commands import coverage_plan
     from ..ai.profile_commands import drive_plan, profile_followup, profile_plan
-    media = document_followup(spoken, recent) or profile_followup(routed, _last_acting_task(db, task)) or profile_plan(routed) or drive_plan(routed) or coverage_plan(routed) or document_plan(routed) or youtube_followup(routed, recent) or browser_plan(routed) or device_plan(routed)
+    from ..ai.parity_commands import gmail_draft_plan, parity_intent, parity_plan
+    media = gmail_draft_plan(spoken, db) or document_followup(spoken, recent) or profile_followup(routed, _last_acting_task(db, task)) or profile_plan(routed) or drive_plan(routed) or coverage_plan(routed) or document_plan(routed) or youtube_followup(routed, recent) or browser_plan(routed) or device_plan(routed) or parity_plan(routed)
     if media is not None:
         return media
     pieces = re.split(r"\s+(?:and|aur|और|اور)\s+", routed, flags=re.IGNORECASE)
@@ -260,7 +263,7 @@ def prepare_local_request(db, task, registry):
     if window is not None:
         return window
     canonical = command_grammar(routed)
-    intent = _parse(canonical)
+    intent = _parse(canonical) or parity_intent(canonical)
     if intent is not None:
         return _resolve(task, intent, registry)
     raw = canonical

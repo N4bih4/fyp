@@ -7,7 +7,8 @@
     ... --md                                                                              # write docs/COVERAGE.md from the saved results
 
 ROUTING (in process, a throw-away database, nothing is executed): the three sentences of a row (English, Roman Urdu, Hindi) are planned by the LOCAL
-planner. Result per sentence: `local` = a plan with the right tool and a risk at least as high as the row asks, `cloud` = the local planner did not
+planner. Result per sentence: `local` = a plan with the right tool and a risk at least as high as the row asks, `ask` = the local planner understood
+the sentence but needs an answer first (which file, which window): no cloud call, `cloud` = the local planner did not
 understand it (the cloud planner would be asked: slower, needs internet), `wrong` = a plan with a tool the row does not accept, `risk` = the right tool but
 LOWER risk than required (a safety failure).
 LIVE (needs the app running; the API token is read from the user's AgentDesk folder): rows with live="run" are executed and must finish `completed` with every action verified; live="approval" rows are sent and must stop at
@@ -71,7 +72,8 @@ def route_all(rows: list[Row]) -> dict[str, dict]:
                 actions = list(getattr(plan, "actions", None) or []) if plan is not None else []
                 if not actions:
                     note = (getattr(plan, "note", "") or "")[:70] if plan is not None else ""
-                    per[lang] = {"state": "cloud", "detail": note}
+                    # a local plan with only a question ("which file?", "exact window title?") never reaches the cloud: it is `ask`, not `cloud`
+                    per[lang] = {"state": "ask" if note else "cloud", "detail": note}
                     continue
                 first = actions[0]
                 try:

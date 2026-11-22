@@ -470,11 +470,11 @@ def r_paths(ctx: _Ctx):
     if not path:
         return None
     if ctx.has("WRITE"):
-        m = re.match(r"^write (.+?) (?:to|in|into) (\S+)$", ctx.norm.text, re.I)
+        m = re.match(r"^write (.+?) (?:to|in|into) ((?:[A-Za-z]:|~)[\\/].+|\S+)$", ctx.norm.text, re.I)   # a Windows path may contain spaces ("C:\Users\HP 440 G8\x.txt")
         if m:
             return _plan(ctx, "write_file", [step("write_text_file", path=m.group(2), content=m.group(1), overwrite=False)],
                          BASE, "path.write")
-        m = re.match(r"^(?:overwrite|replace the text of|replace) (\S+) with (.+)$", ctx.norm.text, re.I)
+        m = re.match(r"^(?:overwrite|replace the text of|replace) ((?:[A-Za-z]:|~)[\\/].+?|\S+) with (.+)$", ctx.norm.text, re.I)
         if m:  # replacing existing content is high risk (server policy) and can be undone from the checkpoint
             return _plan(ctx, "write_file", [step("write_text_file", path=m.group(1), content=m.group(2), overwrite=True)],
                          BASE, "path.overwrite")
