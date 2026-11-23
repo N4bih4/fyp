@@ -45,7 +45,17 @@ def strip_leading_article(text):
 
 def clean_transcript(text):
     """What the command parsers get from a spoken or typed command: no final punctuation, no article after the verb."""
-    return strip_leading_article(strip_end_punctuation(text))
+    return fix_misheard(strip_leading_article(strip_end_punctuation(text)))
+
+
+_DEVICE_WORDS = r"(?:bluetooth|blue\s+tooth|wi-?\s*fi|wifi|airplane\s+mode|night\s+light|hotspot|dark\s+mode|do\s+not\s+disturb)"
+
+
+def fix_misheard(text):
+    """Whisper writes "of" for "off": "Turn of Bluetooth", "Bluetooth of". Only the switch-a-device shapes are rewritten, nothing else."""
+    text = re.sub(rf"\b(turn|switch)\s+of\b(?=\s+(?:the\s+|my\s+)?{_DEVICE_WORDS}\b)", r"\1 off", text, flags=re.I)
+    text = re.sub(rf"\b({_DEVICE_WORDS})\s+of\s*$", r"\1 off", text, flags=re.I)
+    return text
 
 
 def normalize_speech(text):

@@ -11,7 +11,26 @@ export interface VadOptions {
   endSilenceMs: number;
 }
 
-export const DEFAULT_VAD: VadOptions = { threshold: 0.018, minSpeechMs: 160, endSilenceMs: 450 };
+// minSpeechMs 120: the first soft syllable (the "N" of a name) starts the recording sooner. endSilenceMs 700: a natural pause after the name or between two
+// words ("Nabiha ... open the FYP folder") no longer ends the sentence in the middle (it was 450 ms, so one request arrived as two pieces).
+export const DEFAULT_VAD: VadOptions = { threshold: 0.018, minSpeechMs: 120, endSilenceMs: 700 };
+/** Once speech has started, a level above this share of the threshold still counts as speech: a sentence trailing off quietly is not "silence". */
+export const SPEECH_HOLD_RATIO = 0.8;
+
+/** The room's background level: follows the quietest moments down at once, and only QUIET frames raise it slowly (speech-level frames never do, or a
+ *  soft speaker would push the threshold up until nothing is heard). */
+export function nextNoiseFloor(floor: number, level: number, threshold: number, inSpeech: boolean): number {
+  if (inSpeech) return floor;
+  if (floor === 0) return level;
+  if (level < floor) return floor * 0.9 + level * 0.1;             // follows quiet moments down, but one quiet frame cannot collapse it
+  if (level < threshold) return floor * 0.995 + level * 0.005;
+  return floor;
+}
+
+/** The speech threshold for this room: a few times its background level, but never so high that normal talking is missed. */
+export function adaptiveThreshold(floor: number): number {
+  return Math.min(0.04, Math.max(0.010, floor * 3));
+}
 
 /** Energy-based end-of-speech detector. Feed it one RMS value per audio frame. */
 export class VadSegmenter {
@@ -42,7 +61,8 @@ export class VadSegmenter {
       }
       return null;
     }
-    this.silenceMs = loud ? 0 : this.silenceMs + frameMs;
+    const holding = rms >= this.options.threshold * SPEECH_HOLD_RATIO;
+    this.silenceMs = holding ? 0 : this.silenceMs + frameMs;
     if (this.silenceMs >= this.options.endSilenceMs) {
       this.reset();
       return 'speech_end';

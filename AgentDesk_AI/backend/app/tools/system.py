@@ -422,8 +422,15 @@ class TakeScreenshotTool(BaseTool):
     args_schema = TakeScreenshotArgs
 
     def _default_path(self) -> Path:
+        """Pictures\\AgentDesk Screenshots, where the user looks for it. The developer test folder (hidden inside the project) was the old default, so a
+        screenshot WAS taken but nobody could find it. The test folder stays the fallback when Pictures is not an allowed folder."""
         stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        return self.ctx.test_dir / "screenshots" / f"screenshot_{stamp}.png"
+        pictures = Path.home() / "Pictures" / "AgentDesk Screenshots"
+        try:
+            resolve_within_allowed(str(pictures), self.ctx.allowed_directories)
+            return pictures / f"screenshot_{stamp}.png"
+        except ValueError:
+            return self.ctx.test_dir / "screenshots" / f"screenshot_{stamp}.png"
 
     def execute(self, args: BaseModel) -> ToolResult:
         a = TakeScreenshotArgs.model_validate(args.model_dump())
@@ -451,7 +458,8 @@ class TakeScreenshotTool(BaseTool):
             img.save(dest)
         except OSError as exc:
             return ToolResult(success=False, error=f"Could not save screenshot: {exc}")
-        return ToolResult(success=True, output={"path": str(dest)})
+        return ToolResult(success=True, output={"path": str(dest), "folder": str(dest.parent),
+                                                "spoken": f"Screenshot saved in {dest.parent.name}."})
 
     def verify(self, args: BaseModel, result: ToolResult) -> Verification:
         if not result.success:

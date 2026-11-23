@@ -205,6 +205,13 @@ def open_in(browser: Browser, url: str | None = None, profile: str | None = None
 _PROCESS = {"chrome": "chrome.exe", "edge": "msedge.exe", "firefox": "firefox.exe", "brave": "brave.exe", "opera": "opera.exe"}
 
 
+def is_this_app(title: str) -> bool:
+    """True for the browser window whose front tab is AgentDesk itself (its page title, or its address in the title). Typing an address into THAT window
+    would replace the assistant's own page: "open gmail" turned the AgentDesk tab into Gmail."""
+    text = (title or "").casefold()
+    return "agentdesk" in text or "127.0.0.1:8000" in text or "localhost:8000" in text
+
+
 def navigate_in_place(browser: Browser, url: str) -> bool:
     """Show `url` in the window the browser already has open (Ctrl+L, the address, Enter) instead of opening one more tab: the conversation stays in
     one browser window until the user says "new tab". False (nothing typed) when the browser has no window, or its window could not be brought to the front."""
@@ -224,6 +231,8 @@ def navigate_in_place(browser: Browser, url: str) -> bool:
         except UiaError:
             front = None
         target = front if front is not None and front.process.casefold() == wanted else windows[0]
+        if is_this_app(getattr(target, "title", "")):
+            return False                       # never replace the page the assistant itself runs in: the caller opens a NEW tab
         old_clip = None
         with ui_lock():
             screen.focus(target)

@@ -477,6 +477,19 @@ class DesktopControlTool(BaseTool):
             raise
 
     @classmethod
+    def _wait_until_closed(cls, window: Any, title: str, pyautogui, seconds: float, step: float = 0.25) -> bool:
+        """True when the window is STILL open after waiting up to `seconds`; False as soon as it is gone. Word, Excel, Chrome and other big apps take
+        1-3 seconds to shut down after the close request: judging after 0.6 s reported "still open, failed" for a window that closed a moment later."""
+        waited = 0.0
+        while True:
+            if not cls._window_is_open(window, title, pyautogui):
+                return False
+            if waited >= seconds:
+                return True
+            time.sleep(step)
+            waited += step
+
+    @classmethod
     def _window_is_open(cls, window: Any, title: str, pyautogui) -> bool:
         hwnd = cls._window_hwnd(window)
         if sys.platform == "win32" and hwnd:
@@ -607,14 +620,12 @@ class DesktopControlTool(BaseTool):
                             continue
                         closed_title = target.title
                         posted = self._request_window_close(target)
-                        time.sleep(0.6)
-                        still_open = self._window_is_open(target, closed_title, pyautogui)
+                        still_open = self._wait_until_closed(target, closed_title, pyautogui, 6.0)
                         used_hotkey = False
                         if still_open:
                             used_hotkey = self._hotkey_on_target(target, pyautogui, "alt", "f4")
                             if used_hotkey:
-                                time.sleep(0.75)
-                                still_open = self._window_is_open(target, closed_title, pyautogui)
+                                still_open = self._wait_until_closed(target, closed_title, pyautogui, 4.0)
                         meta = self._window_metadata(target)
                         completed.append(
                             {

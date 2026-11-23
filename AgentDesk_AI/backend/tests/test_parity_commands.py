@@ -125,7 +125,7 @@ def test_file_sentences_become_workflow_intents(text, intent):
 
 
 @pytest.mark.parametrize("text", ["read this page", "read the email", "read it", "rename report.txt to ../x/final.txt", "copy report.txt", "move to desktop",
-                                  "open notes.txt", "delete report.txt", "read my mind"])
+                                  "open notes.txt", "read my mind"])
 def test_file_workflow_rules_do_not_fire_on_other_sentences(text):
     assert pc.parity_intent(text) is None
 
@@ -336,3 +336,526 @@ def test_gmail_compose_window_titles_count_as_the_site():
     hints = _site_title_hints("https://mail.google.com/mail/?view=cm&fs=1&to=a@b.com")
     assert any(h in "compose mail - me@gmail.com - gmail - google chrome" for h in hints)
     assert any(h in "mail.google.com/mail/?view=cm&fs=1 - google chrome" for h in hints)
+
+
+# ------------------------------------------------------------------------------------------------ screenshots are saved where the user looks
+def test_screenshot_default_folder_is_pictures_not_the_hidden_test_folder(tmp_path):
+    from pathlib import Path
+    from app.tools.base import ToolContext
+    from app.tools.system import TakeScreenshotTool
+    tool = TakeScreenshotTool(ToolContext(allowed_directories=[Path.home()], test_dir=tmp_path))
+    assert tool._default_path().parent == Path.home() / "Pictures" / "AgentDesk Screenshots"
+
+
+def test_screenshot_falls_back_to_the_test_folder_when_pictures_is_not_allowed(tmp_path):
+    from app.tools.base import ToolContext
+    from app.tools.system import TakeScreenshotTool
+    tool = TakeScreenshotTool(ToolContext(allowed_directories=[tmp_path], test_dir=tmp_path))
+    assert tool._default_path().parent == tmp_path / "screenshots"
+
+
+# ------------------------------------------------------------------------------------------------ "FIP folder" means FYP
+@pytest.mark.parametrize("heard,meant", [("fip", "fyp"), ("FIP", "fyp"), ("fib", "fyp"), ("f y p", "fyp"), ("एफ आई पी", "fyp"), ("devpos", None)])
+def test_mis_heard_names_get_sound_alike_variants(heard, meant):
+    variants = pc.spoken_variants(heard)
+    assert (meant in variants) if meant else variants == []
+
+
+def test_long_or_odd_names_get_no_variants():
+    assert pc.spoken_variants("my semester six lecture notes") == [] and pc.spoken_variants("") == []
+
+
+class _OnlyFyp(_FakeFindPaths):
+    def execute(self, args):
+        from app.tools.base import ToolResult
+        found = ["E:/fyp"] if args["name"].casefold() == "fyp" else []
+        return ToolResult(success=True, output={"candidates": found, "exact": bool(found), "confident": bool(found)})
+
+
+class _OnlyFypRegistry(_FakeRegistry):
+    def __init__(self):
+        self.tool = _OnlyFyp([])
+
+
+def test_open_fip_folder_opens_the_fyp_folder_and_says_so():
+    intent = {"op": "open", "kind": "folder", "source": "fip"}
+    plan = local_agent._resolve(_Task(), intent, _OnlyFypRegistry())
+    assert plan.actions[0].tool == "open_folder" and plan.actions[0].args["path"] == "E:/fyp".replace("/", "\\") or plan.actions[0].args["path"] == "E:/fyp"
+    assert "fyp" in plan.note.casefold() and "fip" in plan.note.casefold()
+
+
+def test_a_guessed_spelling_never_deletes_without_asking():
+    intent = {"op": "delete", "kind": "folder", "source": "fip", "include_contents": False}
+    plan = local_agent._resolve(_Task(), intent, _OnlyFypRegistry())
+    assert not plan.actions and "fyp" in plan.note.casefold()
+
+
+def test_an_exact_name_is_not_rewritten():
+    intent = {"op": "open", "kind": "folder", "source": "fyp"}
+    plan = local_agent._resolve(_Task(), intent, _OnlyFypRegistry())
+    assert plan.actions and "samjha" not in (plan.note or "")
+
+
+# ------------------------------------------------------------------------------------------------ delete: noun after the name, "is zip" means IS.zip
+@pytest.mark.parametrize("text,source,kind", [
+    ("delete is zip folder", "is.zip", "file"),
+    ("delete IS dot zip", "IS.zip", "file"),
+    ("delete notes.txt", "notes.txt", "file"),
+    ("delete the old photos folder", "old photos", "folder"),
+    ("report.txt delete karo", "report.txt", "file"),
+    ("photos folder delete karo", "photos", "folder"),
+    ("report.txt डिलीट करो", "report.txt", "file"),
+])
+def test_delete_sentences_become_a_delete_workflow(text, source, kind):
+    intent = pc.parity_intent(text)
+    assert intent is not None and intent["op"] == "delete" and intent["kind"] == kind
+    assert intent["source"].casefold() == source.casefold() and intent["include_contents"] is False
+
+
+@pytest.mark.parametrize("text", ["delete it", "delete this", "delete everything", "delete all files", "delete", "delete that file"])
+def test_delete_never_guesses_what_it_or_everything_means(text):
+    assert pc.parity_intent(text) is None
+
+
+def test_delete_of_a_found_zip_still_needs_the_approval_card():
+    plan = _resolve("delete is zip folder", ["E:/7th sem/IS.zip"])
+    assert [a.tool for a in plan.actions] == ["delete_file"]
+    from app.tools.registry import ToolRegistry
+    tool = ToolRegistry().get("delete_file")
+    assert tool.risk_for_args(tool.validate_args(plan.actions[0].args)).value in {"high", "medium"}
+
+
+@pytest.mark.parametrize("text", ["Deleted IS zip folder", "deleting is zip folder", "removed notes.txt", "Delete IS zip folder."])
+def test_delete_is_understood_when_speech_to_text_changes_the_tense(text):
+    intent = pc.parity_intent(text)
+    assert intent is not None and intent["op"] == "delete"
+
+
+@pytest.mark.parametrize("heard,fixed", [
+    ("Turn of Bluetooth", "Turn off Bluetooth"), ("switch of wifi", "switch off wifi"), ("Bluetooth of", "Bluetooth off"),
+    ("wi-fi of", "wi-fi off"), ("turn off bluetooth", "turn off bluetooth"), ("the turn of events", "the turn of events"), ("kitchen of", "kitchen of"),
+])
+def test_of_is_heard_for_off_only_on_device_commands(heard, fixed):
+    from app.ai.speech_commands import fix_misheard
+    assert fix_misheard(heard) == fixed
+
+
+# ------------------------------------------------------------------------------------------------ closing by a SIMILAR name, with the user's yes
+def test_similar_window_titles_are_found_for_a_mis_heard_name():
+    from app.ai.window_commands import similar_titles
+    titles = ["diagrams - File Explorer", "Calculator", "AgentDesk AI - Google Chrome", "DevOps - File Explorer"]
+    assert similar_titles("diagramms", titles) == ["diagrams - File Explorer"]
+    assert similar_titles("devops", titles)[:1] == ["DevOps - File Explorer"]
+    assert similar_titles("zzzz", titles) == [] and similar_titles("ab", titles) == []
+
+
+class _Windows:
+    def __init__(self, titles):
+        self.titles = titles
+
+    def validate_args(self, args):
+        return args
+
+    def execute(self, args):
+        from app.tools.base import ToolResult
+        return ToolResult(success=True, output={"completed_steps": [{"action": "inspect", "open_windows": self.titles, "windows": []}]})
+
+
+class _WindowRegistry:
+    def __init__(self, titles):
+        self.tool = _Windows(titles)
+
+    def get(self, name):
+        return self.tool
+
+
+def test_a_near_identical_window_name_is_closed_without_a_question():
+    from app.ai.window_commands import window_plan
+    plan = window_plan(_Task(), _WindowRegistry(["diagrams - File Explorer", "Calculator"]), "diagramms folder close")
+    assert plan.actions and plan.actions[0].args["target_window"] == "diagrams - File Explorer" and plan.actions[0].confirm is False
+
+
+def test_a_looser_window_name_closes_only_through_the_approval_popup():
+    from app.ai.window_commands import window_plan
+    plan = window_plan(_Task(), _WindowRegistry(["DevOps - File Explorer", "Calculator"]), "devopz folder close")
+    assert plan.actions and plan.actions[0].confirm is True
+    assert plan.actions[0].args["target_window"] == "DevOps - File Explorer" and "Approve" in plan.note
+
+
+def test_several_look_alike_windows_are_chosen_by_number():
+    import json
+    from app.ai.window_commands import window_plan
+    task = _Task()
+    plan = window_plan(task, _WindowRegistry(["lab one - File Explorer", "lab two - File Explorer"]), "lab folder close")
+    assert not plan.actions and len(json.loads(task.agent_state_json)["window_choices"]) == 2
+
+
+def test_haan_confirms_the_single_guess_and_a_number_picks_one():
+    import json
+    from types import SimpleNamespace
+    state = json.dumps({"provider": "local", "window_choices": ["diagrams - File Explorer"]})
+    original = SimpleNamespace(agent_state_json=state, actions=[], command="diagramms folder close")
+    for reply in ("haan", "yes", "1"):
+        registry = SimpleNamespace(ctx=SimpleNamespace(discovery_directories=[], allowed_directories=[]))
+        plan = local_agent.correction_plan(_Task(), original, reply, registry)
+        assert plan is not None and plan.actions[0].args["target_window"] == "diagrams - File Explorer"
+        assert plan.actions[0].args["steps"] == [{"action": "close_window"}]
+
+
+def test_an_exact_named_window_is_still_closed_directly():
+    from app.ai.window_commands import window_plan
+    plan = window_plan(_Task(), _WindowRegistry(["diagrams - File Explorer"]), "close diagrams folder")
+    assert plan.actions and plan.actions[0].args["target_window"] == "diagrams - File Explorer"
+
+
+def test_which_youtube_tab_is_answered_by_number():
+    import json
+    from types import SimpleNamespace
+    from app.ai.clarify_answers import browser_answer
+    tabs = [{"id": 11, "title": "Lo Maan Liya Humne"}, {"id": 22, "title": "GUZARISH - SATINDER"}]
+    action = SimpleNamespace(tool_name="control_browser", status="failed", args_json=json.dumps({"action": "close", "target": "youtube"}),
+                             result_json=json.dumps({"success": False, "output": {"candidates": tabs, "needs_confirmation": True}}))
+    original = SimpleNamespace(actions=[action])
+    plan = browser_answer(original, "2")
+    assert plan.actions[0].args == {"action": "close", "target": "youtube", "tab_id": 22}
+    assert browser_answer(original, "guzarish").actions[0].args["tab_id"] == 22
+    assert browser_answer(original, "something else") is None
+
+
+# ------------------------------------------------------------------------------------------------ "close my drive tab": a similar tab is offered, never closed on a guess
+def test_similar_tabs_say_whether_the_user_plainly_meant_them():
+    from app.tools.browser import similar_tabs
+    tabs = [{"id": 1, "title": "My Drive - Google Drive"}, {"id": 2, "title": "AgentDesk AI"}, {"id": 3, "title": "GUZARISH - SATINDER"}]
+    assert [(t["id"], plain) for t, plain in similar_tabs(tabs, "my drive")] == [(1, True)]
+    assert [(t["id"], plain) for t, plain in similar_tabs(tabs, "google drive")] == [(1, True)]
+    assert [(t["id"], plain) for t, plain in similar_tabs(tabs, "guzarish")] == [(3, True)]
+    assert [(t["id"], plain) for t, plain in similar_tabs(tabs, "agentdesc")] == [(2, False)]
+    assert similar_tabs(tabs, "calendar") == [] and similar_tabs(tabs, "") == [] and similar_tabs(tabs, "a") == []
+
+
+def test_a_single_guessed_tab_needs_a_yes_and_then_runs_on_that_tab_id():
+    import json
+    from types import SimpleNamespace
+    from app.ai.clarify_answers import browser_answer
+    action = SimpleNamespace(tool_name="control_browser", status="failed", args_json=json.dumps({"action": "close", "target": "my drive"}),
+                             result_json=json.dumps({"success": False, "output": {"candidates": [{"id": 7, "title": "My Drive - Google Drive"}], "needs_confirmation": True}}))
+    original = SimpleNamespace(actions=[action])
+    for reply in ("haan", "yes", "1"):
+        assert browser_answer(original, reply).actions[0].args == {"action": "close", "target": "my drive", "tab_id": 7}
+    assert browser_answer(original, "no") is None and browser_answer(original, "nahi") is None
+
+
+# ------------------------------------------------------------------------------------------------ the Approve / Reject popup for a guess
+def test_a_plan_action_marked_confirm_always_waits_for_the_popup(db):
+    from app.ai.base import Plan, PlanAction
+    from app.config import get_settings
+    from app.orchestration import executor
+    registry = ToolRegistry()
+    asked = executor.plan_task(db, executor.create_task(db, "show what I deleted"), registry, get_settings(),
+                               preplanned=Plan(actions=[PlanAction(tool="list_trash", args={}, confirm=True)]))
+    assert asked.status == "awaiting_approval" and asked.actions[0].status == "pending" and asked.actions[0].risk == "medium"
+    plain = executor.plan_task(db, executor.create_task(db, "show what I deleted"), registry, get_settings(),
+                               preplanned=Plan(actions=[PlanAction(tool="list_trash", args={})]))
+    assert plain.status != "awaiting_approval"
+
+
+def _tab_world(monkeypatch):
+    from app.browser_bridge import bridge
+    tabs = [{"id": 5, "title": "AgentDesk AI", "url": "http://127.0.0.1:8000/", "active": True, "audible": False}]
+    asked = []
+
+    def request(action, **kwargs):
+        asked.append(action)
+        if action == "close":
+            tabs.clear()                                         # the tab is really gone afterwards (the tool re-reads the list to verify)
+        return {"success": True, "tabs": list(tabs)} if action == "inspect" else {"success": True, "closed": True}
+
+    monkeypatch.setattr(bridge, "request", request)
+    return asked
+
+
+def test_a_plainly_named_tab_is_closed_and_a_looser_spelling_is_only_offered(monkeypatch):
+    from app.tools.base import ToolContext
+    from app.tools.browser import BrowserControlTool
+    asked = _tab_world(monkeypatch)
+    tool = BrowserControlTool(ToolContext.from_settings())
+    assert tool.execute(tool.validate_args({"action": "close", "target": "agentdesk"})).success and "close" in asked
+    asked = _tab_world(monkeypatch)                              # a fresh browser: the first test closed its tab
+    offered = tool.execute(tool.validate_args({"action": "close", "target": "agentdesc"}))
+    assert not offered.success and offered.output["guess"]["id"] == 5 and "close" not in asked
+
+
+def test_a_guessed_tab_becomes_a_pending_close_with_the_real_tab_id(db, monkeypatch):
+    from app.ai.base import Plan, PlanAction
+    from app.config import get_settings
+    from app.orchestration import executor
+    asked = _tab_world(monkeypatch)
+    registry = ToolRegistry()
+    task = executor.plan_task(db, executor.create_task(db, "close agentdesc tab"), registry, get_settings(),
+                              preplanned=Plan(actions=[PlanAction(tool="control_browser", args={"action": "close", "target": "agentdesc"})]))
+    task = executor.run_task(db, task.id, registry, get_settings())
+    assert task.status == "awaiting_approval" and "AgentDesk AI" in task.plan_note
+    pending = [a for a in task.actions if a.status == "pending"]
+    assert len(pending) == 1 and pending[0].risk == "medium" and '"tab_id": 5' in pending[0].args_json
+    assert "close" not in asked                                   # nothing was closed before the user approves
+    approved = executor.approve_task(db, task.id, [pending[0].id])
+    done = executor.run_task(db, approved.id, registry, get_settings())
+    assert "close" in asked and done.actions[-1].status == "succeeded"
+
+
+# ------------------------------------------------------------------------------------------------ "close gmail" with two Gmail tabs open: both are closed
+@pytest.mark.parametrize("text,target", [
+    ("close gmail", "gmail"), ("close gmail tab", "gmail"), ("close gmail tabs", "gmail"), ("close the gmail tabs", "gmail"), ("close both gmail tabs", "gmail"),
+    ("close all gmail tabs", "gmail"), ("gmail tab band karo", "gmail"), ("gmail ke tabs band karo", "gmail"), ("gmail ke dono tab band karo", "gmail"),
+    ("sab gmail tab band kar do", "gmail"), ("जीमेल के टैब बंद करो", "gmail"), ("जीमेल टैब बंद करो", "gmail"),
+    ("close youtube", "youtube"), ("close all youtube tabs", "youtube"), ("youtube band karo", "youtube"),
+    ("close my drive tab", "drive"), ("close google drive", "google drive"), ("close example domain tab", "example domain"),
+])
+def test_close_tab_sentences_name_the_tabs_not_the_quantity(text, target):
+    from app.ai.browser_commands import browser_plan
+    plan = browser_plan(text)
+    assert plan is not None and plan.actions[0].args == {"action": "close", "target": target}
+
+
+def _browser(monkeypatch, tabs):
+    """A fake browser: close removes the tab, inspect lists what is open."""
+    from app.browser_bridge import bridge
+    log = []
+
+    def request(action, **kwargs):
+        if action == "inspect":
+            return {"success": True, "tabs": [dict(t) for t in tabs]}
+        if action == "close":
+            log.append(kwargs["tab_id"])
+            tabs[:] = [t for t in tabs if t["id"] != kwargs["tab_id"]]
+            return {"success": True, "closed": True}
+        return {"success": False, "error": "not used"}
+
+    monkeypatch.setattr(bridge, "request", request)
+    return log
+
+
+def _open_tabs():
+    def tab(i, title, url):
+        return {"id": i, "title": title, "url": url, "active": False, "audible": False}
+    return [tab(1, "Inbox (567) - me@gmail.com - Gmail", "https://mail.google.com/mail/u/0/"), tab(2, "Inbox (567) - me@gmail.com - Gmail", "https://mail.google.com/mail/u/0/"),
+            tab(3, "Lo Maan Liya Humne - YouTube", "https://www.youtube.com/watch"), tab(4, "GUZARISH - YouTube", "https://www.youtube.com/watch"),
+            tab(5, "My Drive - Google Drive", "https://drive.google.com/drive/my-drive"), tab(6, "AgentDesk AI", "http://127.0.0.1:8000/"),
+            tab(7, "N4bih4/fyp", "https://github.com/N4bih4/fyp")]
+
+
+def _close(monkeypatch, target):
+    from app.tools.base import ToolContext
+    from app.tools.browser import BrowserControlTool
+    tabs = _open_tabs()
+    log = _browser(monkeypatch, tabs)
+    tool = BrowserControlTool(ToolContext.from_settings())
+    args = tool.validate_args({"action": "close", "target": target})
+    result = tool.execute(args)
+    return tool, args, result, log, tabs
+
+
+@pytest.mark.parametrize("target,closed", [
+    ("gmail", {1, 2}), ("youtube", {3, 4}), ("drive", {5}), ("my drive", {5}), ("google drive", {5}), ("github", {7}),
+    ("gmial", {1, 2}), ("yutube", {3, 4}), ("gogle drive", {5}), ("githb", {7}), ("agentdesk", {6}), ("guzarish", {4}), ("inbox", {1, 2}),
+])
+def test_every_tab_that_plainly_matches_the_name_is_closed_without_a_question(monkeypatch, target, closed):
+    tool, args, result, log, tabs = _close(monkeypatch, target)
+    assert result.success and set(log) == closed
+    assert tool.verify(args, result).passed is True
+    assert {t["id"] for t in tabs}.isdisjoint(closed)
+
+
+@pytest.mark.parametrize("target", ["jimail", "agentdesc"])
+def test_a_looser_spelling_is_never_closed_without_the_popup(monkeypatch, target):
+    tool, args, result, log, tabs = _close(monkeypatch, target)
+    assert not result.success and result.output["needs_confirmation"] is True and log == []
+
+
+@pytest.mark.parametrize("target", ["calendar", "netflix", "zzzz"])
+def test_a_name_nothing_looks_like_closes_nothing(monkeypatch, target):
+    tool, args, result, log, tabs = _close(monkeypatch, target)
+    assert not result.success and log == [] and len(tabs) == 7
+
+
+def test_closing_several_tabs_never_includes_this_apps_own_tab(monkeypatch):
+    from app.tools.base import ToolContext
+    from app.tools.browser import BrowserControlTool
+    tabs = [{"id": 1, "title": "Gmail helper", "url": "https://mail.google.com/", "active": False, "audible": False},
+            {"id": 2, "title": "AgentDesk Gmail", "url": "http://127.0.0.1:8000/", "active": True, "audible": False},
+            {"id": 3, "title": "Gmail", "url": "https://mail.google.com/mail/u/1/", "active": False, "audible": False}]
+    log = _browser(monkeypatch, tabs)
+    tool = BrowserControlTool(ToolContext.from_settings())
+    result = tool.execute(tool.validate_args({"action": "close", "target": "gmail"}))
+    assert result.success and set(log) == {1, 3} and [t["id"] for t in tabs] == [2]
+
+
+def test_more_than_eight_matching_tabs_ask_instead_of_closing_them_all(monkeypatch):
+    from app.tools.base import ToolContext
+    from app.tools.browser import BrowserControlTool
+    tabs = [{"id": i, "title": f"Video {i} - YouTube", "url": "https://www.youtube.com/watch", "active": False, "audible": False} for i in range(1, 11)]
+    log = _browser(monkeypatch, tabs)
+    tool = BrowserControlTool(ToolContext.from_settings())
+    result = tool.execute(tool.validate_args({"action": "close", "target": "youtube"}))
+    assert not result.success and log == [] and len(tabs) == 10
+
+
+# ------------------------------------------------------------------------------------------------ "open gmail" must not replace the AgentDesk tab
+@pytest.mark.parametrize("title,own", [
+    ("AgentDesk AI - Google Chrome", True), ("127.0.0.1:8000 - Google Chrome", True), ("agentdesk ai", True),
+    ("Inbox (3) - me@gmail.com - Gmail - Google Chrome", False), ("My Drive - Google Drive - Google Chrome", False), ("", False),
+])
+def test_the_assistants_own_browser_tab_is_recognised(title, own):
+    from app.tools.browser_choice import is_this_app
+    assert is_this_app(title) is own
+
+
+def test_navigate_in_place_never_types_into_the_agentdesk_window(monkeypatch):
+    from types import SimpleNamespace
+    import importlib.util
+    from app.tools import browser_choice as stubbed, coding_agent, screen, uia
+    # conftest replaces navigate_in_place for every test; load a private copy of the real module to test the real function
+    spec = importlib.util.spec_from_file_location("app.tools._browser_choice_real", stubbed.__file__)
+    browser_choice = importlib.util.module_from_spec(spec)
+    browser_choice.__package__ = "app.tools"
+    import sys
+    sys.modules[spec.name] = browser_choice                  # dataclasses look the module up by name
+    try:
+        spec.loader.exec_module(browser_choice)
+    finally:
+        sys.modules.pop(spec.name, None)
+    typed = []
+    window = SimpleNamespace(process="chrome.exe", title="AgentDesk AI - Google Chrome", handle=1)
+    service = SimpleNamespace(backend=SimpleNamespace(windows=lambda: [window]), window=lambda _=None: window)
+    monkeypatch.setattr(uia, "get_service", lambda: service)
+    monkeypatch.setattr(screen, "get_screen", lambda: SimpleNamespace(focus=lambda w: None))
+    monkeypatch.setattr(coding_agent, "press", lambda *keys: typed.append(keys))
+    monkeypatch.setattr(coding_agent, "set_clipboard", lambda text: typed.append(text))
+    monkeypatch.setattr(coding_agent, "get_clipboard", lambda: "")
+    chrome = SimpleNamespace(key="chrome")
+    assert browser_choice.navigate_in_place(chrome, "https://mail.google.com") is False and typed == []
+    window.title = "Some Other Page - Google Chrome"
+    assert browser_choice.navigate_in_place(chrome, "https://mail.google.com") is True and typed      # other pages still use the one-window behaviour
+
+
+# ------------------------------------------------------------------------------------------------ a slow app (Word) that closes 2 seconds after the request is a SUCCESS
+def test_a_window_that_closes_after_a_couple_of_seconds_is_not_reported_as_still_open(monkeypatch):
+    clock = {"now": 0.0}
+    monkeypatch.setattr(desktop.time, "sleep", lambda seconds: clock.__setitem__("now", clock["now"] + seconds))
+    monkeypatch.setattr(desktop.DesktopControlTool, "_window_is_open", classmethod(lambda cls, window, title, pyautogui: clock["now"] < 2.0))
+    assert desktop.DesktopControlTool._wait_until_closed(object(), "Document1 - Word", None, 6.0) is False
+    assert 2.0 <= clock["now"] < 2.5                               # it stopped waiting as soon as the window was gone
+
+
+def test_a_window_that_never_closes_is_still_reported_after_the_wait(monkeypatch):
+    clock = {"now": 0.0}
+    monkeypatch.setattr(desktop.time, "sleep", lambda seconds: clock.__setitem__("now", clock["now"] + seconds))
+    monkeypatch.setattr(desktop.DesktopControlTool, "_window_is_open", classmethod(lambda cls, window, title, pyautogui: True))
+    assert desktop.DesktopControlTool._wait_until_closed(object(), "Unsaved - Word", None, 6.0) is True
+    assert 6.0 <= clock["now"] <= 6.5
+
+
+def test_closing_word_after_a_slow_shutdown_succeeds_end_to_end(monkeypatch):
+    """The whole close step: the request is posted, the window is still there at first, gone after 2 s, and Alt+F4 is never needed."""
+    import sys
+    import types
+    clock = {"now": 0.0}
+    monkeypatch.setattr(desktop.time, "sleep", lambda seconds: clock.__setitem__("now", clock["now"] + seconds))
+    window = types.SimpleNamespace(title="Document1 - Word", _hWnd=77)
+    fake = types.SimpleNamespace(FAILSAFE=True, getAllWindows=lambda: [window] if clock["now"] < 2.0 else [], getActiveWindow=lambda: window)
+    monkeypatch.setitem(sys.modules, "pyautogui", fake)
+    tool = ToolRegistry().get("control_desktop")
+    hotkeys = []
+    monkeypatch.setattr(desktop.DesktopControlTool, "_resolve_window", classmethod(lambda cls, pg, title: window))
+    monkeypatch.setattr(desktop.DesktopControlTool, "_request_window_close", classmethod(lambda cls, w: True))
+    monkeypatch.setattr(desktop.DesktopControlTool, "_hotkey_on_target", classmethod(lambda cls, w, pg, *keys: hotkeys.append(keys) or False))
+    monkeypatch.setattr(desktop.DesktopControlTool, "_window_is_open", classmethod(lambda cls, w, title, pg: clock["now"] < 2.0))
+    monkeypatch.setattr(desktop.DesktopControlTool, "_window_metadata", classmethod(lambda cls, w: {"pid": 1}))
+    monkeypatch.setattr(desktop.DesktopControlTool, "_window_hwnd", classmethod(lambda cls, w: 77))
+    args = tool.validate_args({"target_window": "Document1 - Word", "steps": [{"action": "close_window"}]})
+    result = tool.execute(args)
+    assert result.success, result.error
+    assert hotkeys == []                                            # nothing was pressed: the close request alone was enough
+    assert result.output["completed_steps"][0]["closed"] is True
+
+
+# ------------------------------------------------------------------------------------------------ "open World" means Word: near spellings open, doubtful ones ask through the popup
+def _app_tool(monkeypatch, labels):
+    from pathlib import Path
+    from app.tools.apps import OpenApplicationTool
+    from app.tools.base import ToolContext
+    tool = OpenApplicationTool(ToolContext.from_settings())
+    monkeypatch.setattr(tool, "_start_menu_shortcuts", lambda: [Path(f"{label}.lnk") for label in labels])
+    return tool
+
+
+START_MENU = ["Word 2016", "WinRAR help", "WinRAR", "Readme", "Visual Studio Code", "Excel 2016", "PowerPoint 2016", "Google Chrome", "Notepad"]
+
+
+@pytest.mark.parametrize("heard,opens", [
+    ("world", "Word 2016"), ("word", "Word 2016"), ("wurd", "Word 2016"), ("excell", "Excel 2016"), ("exel", "Excel 2016"),
+    ("power point", "PowerPoint 2016"), ("note pad", "Notepad"),
+])
+def test_a_near_spelling_of_an_installed_app_opens_that_app(monkeypatch, heard, opens):
+    tool = _app_tool(monkeypatch, START_MENU)
+    found = tool._match_start_menu_shortcut(heard)
+    assert found is not None and found.stem == opens
+
+
+def test_an_unrelated_name_does_not_open_a_guess(monkeypatch):
+    tool = _app_tool(monkeypatch, START_MENU)
+    assert tool._match_start_menu_shortcut("zzqqxx") is None
+
+
+def test_one_clearly_best_doubtful_app_is_offered_not_opened(monkeypatch):
+    from pathlib import Path
+    tool = _app_tool(monkeypatch, START_MENU)
+    monkeypatch.setattr(tool, "_rank_start_menu_shortcuts", lambda name: [(0.55, [Path("Word 2016.lnk")]), (0.30, [Path("WinRAR.lnk")])])
+    assert tool._best_app_guess("zork") == "Word 2016"
+    monkeypatch.setattr(tool, "_rank_start_menu_shortcuts", lambda name: [(0.55, [Path("Word 2016.lnk")]), (0.52, [Path("WinRAR.lnk")])])
+    assert tool._best_app_guess("zork") is None                      # two look alike: the user picks from a list
+    monkeypatch.setattr(tool, "_rank_start_menu_shortcuts", lambda name: [(0.40, [Path("Word 2016.lnk")])])
+    assert tool._best_app_guess("zork") is None                      # too weak to even suggest
+
+
+def test_a_doubtful_app_name_becomes_an_approve_popup_with_the_real_app_name(db, monkeypatch):
+    from pathlib import Path
+    from app.ai.base import Plan, PlanAction
+    from app.config import get_settings
+    from app.orchestration import executor
+    from app.tools.apps import OpenApplicationTool
+    registry = ToolRegistry()
+    tool = registry.get("open_application")
+    monkeypatch.setattr(OpenApplicationTool, "_find_executable", lambda self, app: None)
+    monkeypatch.setattr(OpenApplicationTool, "_activate_running_app", lambda self, app: None)
+    monkeypatch.setattr(OpenApplicationTool, "_match_start_menu_shortcut", lambda self, app: None)
+    monkeypatch.setattr(OpenApplicationTool, "_rank_start_menu_shortcuts", lambda self, name: [(0.55, [Path("Word 2016.lnk")]), (0.30, [Path("WinRAR.lnk")])])
+    task = executor.plan_task(db, executor.create_task(db, "open zorkword"), registry, get_settings(),
+                              preplanned=Plan(actions=[PlanAction(tool="open_application", args={"app_name": "zorkword"})]))
+    if task.status == "awaiting_approval":                          # the tool's own risk may already ask first; approve that one
+        task = executor.approve_task(db, task.id, [a.id for a in task.actions if a.status == "pending"])
+    task = executor.run_task(db, task.id, registry, get_settings())
+    assert task.status == "awaiting_approval" and "Word 2016" in task.plan_note
+    pending = [a for a in task.actions if a.status == "pending"]
+    assert len(pending) == 1 and '"app_name": "Word 2016"' in pending[0].args_json and pending[0].risk in {"medium", "high"}
+
+
+# ------------------------------------------------------------------------------------------------ "close Axel 316" / "کلوز ایکسل" / "close exsel" all mean Excel
+@pytest.mark.parametrize("spoken", ["Axel 316", "axel", "exel", "Excell", "exsel", "एक्सेल", "ایکسل", "microsoft excel", "ms-excel", "Excel 316", "Excel"])
+def test_every_spoken_form_of_excel_closes_the_excel_window(spoken):
+    from app.ai.window_commands import window_plan
+    plan = window_plan(_Task(), _WindowRegistry(["Book1 - Excel", "AgentDesk AI - Google Chrome"]), f"close {spoken}")
+    assert plan.actions and plan.actions[0].args["target_window"] == "Book1 - Excel", spoken
+
+
+@pytest.mark.parametrize("spoken,title", [("world", "Document1 - Word"), ("Ward 12", "Document1 - Word"), ("वर्ड", "Document1 - Word"), ("ورڈ", "Document1 - Word"),
+                                           ("power point", "Presentation1 - PowerPoint"), ("پاور پوائنٹ", "Presentation1 - PowerPoint")])
+def test_word_and_powerpoint_in_any_spelling_or_script(spoken, title):
+    from app.ai.window_commands import window_plan
+    plan = window_plan(_Task(), _WindowRegistry([title, "Calculator"]), f"close {spoken}")
+    assert plan.actions and plan.actions[0].args["target_window"] == title, spoken
+
+
+def test_spoken_app_name_drops_the_numbers_speech_to_text_appends():
+    from app.ai.window_commands import spoken_app_name
+    assert spoken_app_name("Axel 316") == "excel" and spoken_app_name("316") == "316" and spoken_app_name("Notepad 2") == "Notepad"

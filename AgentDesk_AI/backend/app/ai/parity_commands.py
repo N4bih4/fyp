@@ -182,11 +182,47 @@ def parity_plan(text: str) -> Plan | None:
     return None
 
 
+# ------------------------------------------------------------------------------------------------ how a name was probably meant
+# Speech-to-text writes what it HEARD: "FIP folder" for FYP, "dev ops" for DevOps. A short name that matches nothing is retried with the usual
+# sound-alike letters; the caller only ever opens/reads such a match (anything that changes a file asks first).
+_ACRONYMS = {"fip": "fyp", "fib": "fyp", "fyb": "fyp", "fyip": "fyp", "fep": "fyp", "phyp": "fyp", "fyp": "fyp", "f y p": "fyp", "f i p": "fyp",
+             "ef wai pee": "fyp", "ef y p": "fyp", "एफवाईपी": "fyp", "एफआईपी": "fyp",
+             "एफ वाई पी": "fyp", "एफ आई पी": "fyp"}
+_SOUND_ALIKES = {"i": "y", "y": "i", "b": "p", "p": "b", "v": "w", "w": "v", "d": "t", "t": "d", "k": "q", "q": "k", "e": "a", "a": "e", "s": "z", "z": "s"}
+
+
+def spoken_variants(name: str) -> list[str]:
+    """Other spellings of a name that was probably mis-heard, most likely first ("fip" -> "fyp"); [] for a long or odd name."""
+    word = _norm(name).casefold()
+    if not word or len(word) > 40:
+        return []
+    found: list[str] = []
+    meant = {_norm(k).casefold(): v for k, v in _ACRONYMS.items()}.get(word)   # keys go through the same clean-up as the heard word
+    if meant and meant != word:
+        found.append(meant)
+    if re.fullmatch(r"[a-z]{2,5}", word):
+        for i, letter in enumerate(word):
+            swap = _SOUND_ALIKES.get(letter)
+            if swap:
+                candidate = word[:i] + swap + word[i + 1:]
+                if candidate != word and candidate not in found:
+                    found.append(candidate)
+    return found[:12]
+
+
 # ------------------------------------------------------------------------------------------------ file workflows for local_agent._resolve
 def _kind(noun: str | None, name: str) -> str:
     if noun:
         return "folder" if noun.casefold() in {"folder", "फोल्डर"} else "file"
     return "file" if _FILE_EXT.search(name) else "folder"
+
+
+def _archive_name(name: str) -> str:
+    """"is zip" / "IS dot zip" -> "IS.zip": speech-to-text puts a space where the dot is."""
+    return re.sub(r"^(.+?)\s+(?:dot\s+)?zip$", r"\1.zip", name.strip(), flags=re.I)
+
+
+_PRONOUN = re.compile(r"(?:it|this|that|these|those|ise|isko|usko|ye|yeh|woh|wo|इसे|इसको|उसे|यह|वह)", re.I)
 
 
 def parity_intent(text: str) -> dict | None:
@@ -211,6 +247,17 @@ def parity_intent(text: str) -> dict | None:
         new_name = m.group(3).strip().strip('"')
         if new_name and not re.search(r"[\\/:]", new_name):
             return {"op": "rename", "kind": _kind(m.group(1), m.group(2)), "source": m.group(2).strip(), "new_name": new_name}
+        return None
+    # delete: "delete is zip folder", "delete notes.txt", "report.txt delete karo", "report.txt डिलीट करो" (the noun may come before or after the name)
+    m = (re.fullmatch(_FILLER + r"(?:delete[ds]?|deleting|remove[ds]?|removing)\s+(?:the\s+|this\s+|that\s+)?(?:(file|folder)\s+)?(.+?)(?:\s+(file|folder))?", raw, re.I)
+         or re.fullmatch(_FILLER + r"(?:(file|folder|फाइल|फोल्डर)\s+)?(.+?)(?:\s+(file|folder|फाइल|फोल्डर))?\s+(?:delete|dilete)\s+(?:karo|kar\s+do|kro|kardo|kijiye)", raw, re.I)
+         or re.fullmatch(_FILLER + r"(?:(file|folder|फाइल|फोल्डर)\s+)?(.+?)(?:\s+(file|folder|फाइल|फोल्डर))?\s+डिलीट\s+(?:करो|कर\s+दो)", raw, re.I))
+    if m:
+        name = _archive_name(m.group(2))
+        noun = m.group(1) or m.group(3)
+        if name and name.casefold() not in {"file", "folder", "फाइल", "फोल्डर"} and not _PRONOUN.fullmatch(name) and not re.search(r"\b(?:everything|all|sab|सब)\b", name, re.I):
+            kind = "file" if name.casefold().endswith(".zip") else _kind(noun, name)   # a zip is a file even when the user says "folder"
+            return {"op": "delete", "kind": kind, "source": name, "include_contents": False}
         return None
     m = (re.fullmatch(_FILLER + rf"(?:read|read\s+out|open\s+and\s+read)\s+(?:the\s+)?{noun}(.+)", raw, re.I)
          or re.fullmatch(_FILLER + rf"{noun}(.+?)\s+(?:ko\s+)?(?:parho|padho|parh\s+do|padh\s+do|parh\s+kar\s+sunao|padh\s+kar\s+sunao)", raw, re.I)

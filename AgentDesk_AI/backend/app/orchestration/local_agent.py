@@ -58,6 +58,8 @@ def correction_plan(task, original, reply, registry):
             return close_action(choices[int(reply.strip()) - 1])
         if reply.strip() in choices:
             return close_action(reply.strip())
+        if len(choices) == 1 and normalize_speech(reply) in {"yes", "haan", "han", "ji", "ji haan", "haan kar do", "ہاں", "हाँ", "हां"}:
+            return close_action(choices[0])
         task.agent_state_json = original.agent_state_json
         return Plan(note="Window ka number ya listed exact title batayein.\n" + "\n".join(f"{i+1}. {title}" for i, title in enumerate(choices)))
     workflow = state.get("workflow")
@@ -170,10 +172,20 @@ def _resolve(task, intent, registry):
         return _action("create_folder", {"path": str(dest / name)})
     source = _path(intent["source"])
     others: list[str] = []
+    heard_as = None
     if not Path(source).is_absolute():
         tool = registry.get("find_paths")
         result = tool.execute(tool.validate_args({"name": source, "kind": intent["kind"]}))
         candidates = result.output.get("candidates", [])
+        heard_as = None
+        if not result.success or not candidates:
+            # "FIP folder" is almost surely "FYP": retry with the sound-alike spellings before saying "not found".
+            from ..ai.parity_commands import spoken_variants
+            for alternative in spoken_variants(source):
+                retry = tool.execute(tool.validate_args({"name": alternative, "kind": intent["kind"]}))
+                if retry.success and retry.output.get("candidates"):
+                    result, candidates, heard_as = retry, retry.output["candidates"], alternative
+                    break
         if not result.success or not candidates:
             return _ask(task, intent, "Yeh naam nahi mila. File/folder ka exact path batayein.")
         # A time-limited search over every drive may not finish: that only matters for destructive operations.
@@ -181,6 +193,10 @@ def _resolve(task, intent, registry):
         # Opening is harmless: with several folders of exactly this name, open the one touched most recently and say
         # which others exist. Anything that changes files still asks.
         sure = (result.output.get("confident") or result.output.get("exact")) and op in {"open", "list", "read"}
+        if heard_as and op not in {"open", "list", "read"}:
+            sure = False
+            intent["candidates"] = candidates[:6]            # a guessed spelling never deletes, moves or renames anything without a yes
+            return _ask(task, intent, f"'{source}' nahi mila; shayad '{heard_as}'? Number ya exact address batayein.\n" + "\n".join(f"{i+1}. {p}" for i, p in enumerate(candidates[:6])))
         others = candidates[1:4] if sure and len(candidates) > 1 else []
         if not sure and (len(candidates) > 1 or unfinished or result.output.get("alias_matches")):
             candidates = candidates[:6]   # never read out dozens of paths
@@ -206,6 +222,8 @@ def _resolve(task, intent, registry):
     if op == "extract":
         return _action("extract_file", {"zip_path": source})
     plan = _action("list_folder" if op == "list" else "open_folder" if intent["kind"] == "folder" else "open_file", {"path": source})
+    if heard_as:
+        plan.note = f"'{intent['source']}' nahi mila; '{heard_as}' samjha aur khol diya."
     if others:
         plan.note = f"{source} khol diya (sabse haal ka). Aur bhi mile: " + "; ".join(others)
     return plan

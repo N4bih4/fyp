@@ -37,11 +37,30 @@ def _same_action_plan(action) -> Plan:
     return Plan(actions=[PlanAction(tool=action.tool_name, args=json.loads(action.args_json or "{}"))], note="Local agent ne plan tayyar kiya; cloud API use nahi hui.")
 
 
+def _tab_answer(original, reply: str) -> Plan | None:
+    """"Which tab?" (several tabs matched "close youtube"): the number, ordinal or a piece of the title picks one, and the SAME action runs on that tab id."""
+    action = next((a for a in original.actions if a.tool_name == "control_browser" and a.status == "failed" and a.result_json and '"needs_confirmation"' in a.result_json), None)
+    if action is None:
+        return None
+    try:
+        tabs = (json.loads(action.result_json).get("output") or {}).get("candidates") or []
+        args = json.loads(action.args_json or "{}")
+    except ValueError:
+        return None
+    index = pick_index([str(t.get("title", "")) for t in tabs], reply) if len(tabs) > 1 else None
+    if len(tabs) == 1 and re.sub(r"[^\w\s]", "", str(reply).casefold()).strip() in {"yes", "haan", "han", "ji", "ji haan", "haan kar do", "1", "ہاں", "हाँ", "हां"}:
+        index = 0
+    if index is None or not isinstance(tabs[index].get("id"), int):
+        return None
+    args["tab_id"] = tabs[index]["id"]
+    return Plan(actions=[PlanAction(tool="control_browser", args=args)], note="Local agent ne plan tayyar kiya; cloud API use nahi hui.")
+
+
 def browser_answer(original, reply: str) -> Plan | None:
     from ..tools import browser_choice
     action = next((a for a in original.actions if a.status == "failed" and a.result_json and '"asking"' in a.result_json), None)
     if action is None:
-        return None
+        return _tab_answer(original, reply)
     try:
         out = json.loads(action.result_json).get("output") or {}
     except ValueError:

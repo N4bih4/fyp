@@ -11,6 +11,7 @@ class PlanAction(BaseModel):
     tool: str = Field(description="Registered tool name, e.g. 'create_folder'")
     args: dict[str, Any] = Field(default_factory=dict, description="Arguments for the tool")
     rationale: str = Field(default="", description="Why this action is needed")
+    confirm: bool = Field(default=False, description="True when the target was only GUESSED from a similar name: the user must approve it first")
 
 
 class Plan(BaseModel):

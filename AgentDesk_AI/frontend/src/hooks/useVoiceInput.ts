@@ -1,6 +1,7 @@
 import { useRef, type MutableRefObject } from 'react';
 import { authMessage, hasApiToken, voiceApi, type Preferences } from '../api';
 import { afterInterruption, isSpeechEcho } from '../voice';
+import { stripWakeWord, wakeWords } from '../wakeWord';
 import { WhisperRecognition } from '../speech/whisperRecognition';
 import type { SpeechRecognitionConstructor, SpeechRecognitionLike } from '../speech/recognitionTypes';
 import { errMsg } from '../taskFormat';
@@ -19,6 +20,10 @@ interface Params {
 /** Microphone side of the voice loop: start/stop listening, queue spoken commands, handle recogniser events. */
 export function useVoiceInput({ voice: v, prefs, voiceLanguage, setCommand, setBanner, submittingRef, runCommandRef }: Params) {
   const idleTimerRef = useRef<number | null>(null);
+  /** True when the assistant was waiting for an answer (follow-up window) while this sentence was heard: no wake word is needed then. */
+  const followUpHeardRef = useRef(false);
+  /** After the name was said alone ("Nabiha") the next sentence, within 8 s, is the command: no second name needed. */
+  const armedUntilRef = useRef(0);
   const stopHandsFree = (message: string) => {
     const queuedCount = v.voiceQueueRef.current.length;
     v.handsFreeRef.current = false;
@@ -151,7 +156,9 @@ export function useVoiceInput({ voice: v, prefs, voiceLanguage, setCommand, setB
       }
       const recognition = (useWhisper ? new WhisperRecognition() : new Recognition!()) as unknown as SpeechRecognitionLike;
       if (recognition instanceof WhisperRecognition) {
-        recognition.prompt = [prefs?.persona.name, 'Chrome kholo, Notepad band karo, VS Code open karo, Antigravity chalao, folder banao Documents mein, volume kam karo, YouTube, WhatsApp, Excel, Word, Desktop, Downloads'].filter(Boolean).join(', ');
+        // Whisper spells what it expects: the WAKE WORD (twice, it is the word that matters most) and the assistant's name come first.
+        const names = wakeWords(prefs?.persona.wake_word ?? '');
+        recognition.prompt = [...names, ...names, prefs?.persona.name, 'Chrome kholo, Notepad band karo, VS Code open karo, Antigravity chalao, folder banao Documents mein, volume kam karo, YouTube, WhatsApp, Excel, Word, Desktop, Downloads, FYP folder, FYP report, DevOps, Gmail, screenshot'].filter(Boolean).join(', ');
         recognition.onspeechstart = () => {
           // Barge-in: the user began talking while the assistant was speaking.
           if (!v.voiceSpeakingRef.current && !v.playerRef.current?.speaking) return;
@@ -171,6 +178,7 @@ export function useVoiceInput({ voice: v, prefs, voiceLanguage, setCommand, setB
         // Ignore the assistant's own short reply if the microphone hears it.
         if (v.voiceSpeakingRef.current && isSpeechEcho(heard, v.spokenTextRef.current)) return;
         if (heard && v.followUpTimerRef.current !== null) {
+          followUpHeardRef.current = true;
           window.clearTimeout(v.followUpTimerRef.current);
           v.followUpTimerRef.current = null;
         }
@@ -202,14 +210,37 @@ export function useVoiceInput({ voice: v, prefs, voiceLanguage, setCommand, setB
           const transcript = v.voiceCommandRef.current.trim();
           v.voiceCommandRef.current = '';
           if (!transcript || !v.handsFreeRef.current) return;
-          v.voiceQueueRef.current.push(transcript);
+          // Hands-free hears the whole room (a fan, music, a video): with a wake word set, only a sentence that starts with the name is a command.
+          // Pressing the microphone for ONE command (push to talk) and answering a question the assistant just asked need no name.
+          let command = transcript;
+          const wake = (prefs?.persona.wake_word ?? '').trim();
+          const armed = Date.now() < armedUntilRef.current;
+          const answering = followUpHeardRef.current || armed;
+          followUpHeardRef.current = false;
+          armedUntilRef.current = 0;
+          if (wake && v.listenModeRef.current === 'hands_free' && !answering) {
+            const addressed = stripWakeWord(transcript, wake);
+            if (addressed === null) {
+              v.setHeard('');
+              v.setVoiceMessage(`Ignored: I heard "${transcript}". Start with "${wake}" (any accent is fine).`);
+              return;
+            }
+            if (!addressed) {
+              v.setHeard('');
+              v.setVoiceMessage(`Ji, boliye. (${wake} sun rahi hai)`);
+              armedUntilRef.current = Date.now() + 8000;
+              return;
+            }
+            command = addressed;
+          }
+          v.voiceQueueRef.current.push(command);
           // Noise must not pile up: a command that waited behind three newer ones is stale, so only the newest three are kept.
           while (v.voiceQueueRef.current.length > 3) v.voiceQueueRef.current.shift();
           v.setHeard('');
           v.setVoiceMessage(
             v.voiceTaskActiveRef.current
-              ? `Queued: ${transcript}. ${v.voiceQueueRef.current.length} command(s) waiting.`
-              : `Starting: ${transcript}`,
+              ? `Queued: ${command}. ${v.voiceQueueRef.current.length} command(s) waiting.`
+              : `Starting: ${command}`,
           );
           v.drainVoiceQueueRef.current();
           if (v.listenModeRef.current === 'push_to_talk') {

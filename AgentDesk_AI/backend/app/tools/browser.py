@@ -22,6 +22,47 @@ def select_tabs(tabs, target):
     return [t for t in tabs if target and target in {t.get("title", "").casefold(), t.get("url", "").casefold()}]
 
 
+def similar_tabs(tabs, target):
+    """[(tab, close)] for tabs that look like the spoken name. close=True: the title CONTAINS every word of the name ("my drive" -> "My Drive - Google
+    Drive") or is almost spelled the same (a letter off), so the user plainly meant it. close=False: a looser spelling difference ("driving" for
+    "drive"): only ever offered through the Approve / Reject popup, never closed on that guess."""
+    import difflib
+    import re
+    want = re.findall(r"\w+", (target or "").casefold())
+    if not want or len("".join(want)) < 3:
+        return []
+    found = []
+    for tab in tabs:
+        title = (tab.get("title") or "").casefold()
+        head = re.split(r"\s[-\u2013\u2014|]\s", title)[0].strip()
+        words = set(re.findall(r"\w+", title))
+        ratio = difflib.SequenceMatcher(None, " ".join(want), head).ratio()
+        # the site itself: "github" for github.com even when the title is just the repository name
+        host = (urlsplit(tab.get("url", "")).hostname or "").casefold()
+        labels = {part for part in host.split(".") if part not in {"www", "com", "org", "net", "edu", "gov", "pk", "io", "co", "in", "uk", "app", "dev"}}
+        label_ratio = max((difflib.SequenceMatcher(None, "".join(want), label).ratio() for label in labels), default=0.0)
+        if all(w in words for w in want) or ratio >= 0.9 or all(w in labels for w in want) or label_ratio >= 0.85:
+            found.append((tab, True))
+        elif ratio >= 0.72 or label_ratio >= 0.72:
+            found.append((tab, False))
+    return found
+
+
+def site_guesses(tabs, target):
+    """[(tab, close)] for a MIS-SPELT site name ("gmial", "yutube"): the tabs of the nearest known site. close=True when the spelling is nearly right."""
+    import difflib
+    word = (target or "").casefold().strip()
+    near = difflib.get_close_matches(word, list(SITES), n=1, cutoff=0.7) if word else []
+    if not near:
+        return []
+    plain = difflib.SequenceMatcher(None, word, near[0]).ratio() >= 0.8
+    return [(tab, plain) for tab in select_tabs(tabs, near[0])]
+
+
+def _is_this_app(tab) -> bool:
+    return str(tab.get("url", "")).startswith(("http://127.0.0.1:8000", "http://localhost:8000"))
+
+
 def _clean_tabs(raw) -> list[dict]:
     """The extension is outside this process; accept only well-formed tab records."""
     tabs = []
@@ -203,6 +244,21 @@ class BrowserControlTool(BaseTool):
             matches = [t for t in tabs if t.get("active")]
         else:
             matches = [t for t in tabs if t["id"] == a.tab_id] if a.tab_id is not None else select_tabs(tabs, a.target)
+        if not matches and a.tab_id is None and a.action != "search" and a.target.strip().casefold() not in SITES:
+            guesses = similar_tabs(tabs, a.target)
+            seen = {t["id"] for t, _ in guesses}
+            guesses += [(t, plain) for t, plain in site_guesses(tabs, a.target) if t["id"] not in seen]
+            close = [t for t, plain in guesses if plain]
+            if close:
+                matches = close                                   # plainly the tab(s) the user named: no question
+            elif guesses:
+                shown = [t for t, _ in guesses[:5]]
+                listed = "; ".join(f"{i}. {t.get('title', '')}" for i, t in enumerate(shown, 1))
+                output = {"candidates": [public_tab(t) for t in shown], "needs_confirmation": True}
+                if len(shown) == 1:
+                    output["guess"] = public_tab(shown[0])         # one looser match: the executor turns it into the Approve / Reject popup
+                return ToolResult(success=False, output=output,
+                                  error="Exact tab nahi mila; milta-julta tab mila, abhi kuch nahi badla. Kaunsa? Number batayein: " + listed)
         if a.action in YOUTUBE_ONLY:
             matches = select_tabs(matches, "youtube")
             # For media only, an unambiguous audible (or the one active) YouTube tab is a meaningful target.
@@ -226,9 +282,11 @@ class BrowserControlTool(BaseTool):
             output = {"action": "search", "tab_id": opened.get("tab_id"), "searched": " ".join((a.query or "").split()), "opened_new_tab": True}
             output["spoken"] = _spoken(a, output)
             return ToolResult(success=True, output=output)
+        if a.action == "close" and a.tab_id is None and 1 < len(matches) <= 8:
+            return self._close_many(matches)
         if len(matches) != 1:
             shown = "; ".join(f"tab {t['id']}: {t.get('title', '')}" for t in matches)
-            return ToolResult(success=False, output={"candidates": [public_tab(t) for t in matches], "needs_confirmation": True}, error="Matching tab nahi mila; unrelated tab ko touch nahi kiya." if not matches else "Multiple matching tabs. Exact title ya tab ID batayein: " + shown)
+            return ToolResult(success=False, output={"candidates": [public_tab(t) for t in matches], "needs_confirmation": True}, error="Matching tab nahi mila; unrelated tab ko touch nahi kiya." if not matches else "Multiple matching tabs. Kaunsa tab? Number batayein: " + "; ".join(f"{i}. {t.get('title', '')}" for i, t in enumerate(matches, 1)))
         tab = matches[0]
         extra = {k: v for k, v in a.model_dump().items() if k in {"seconds", "position", "rate", "level", "index", "amount", "exit", "name", "field", "text", "max_chars", "query"}
                  and v is not None and v is not False}
@@ -254,6 +312,24 @@ class BrowserControlTool(BaseTool):
         output = {"action": a.action, "tab_id": tab["id"], "title": tab.get("title"), **{k: v for k, v in result.items() if k in keep}}
         output["spoken"] = _spoken(a, output)
         return ToolResult(success=True, output=output)
+
+    @staticmethod
+    def _close_many(matches: list[dict]) -> ToolResult:
+        """"close gmail" with two Gmail tabs open: both are closed (the name decides WHICH tabs, what is open decides how many). This app's own tab is
+        never one of them."""
+        targets = [t for t in matches if not _is_this_app(t)] or matches
+        closed, failed = [], []
+        for tab in targets:
+            reply = bridge.request("close", tab_id=tab["id"], expected_url=tab.get("url", ""))
+            (closed if reply.get("success") and reply.get("closed") is True else failed).append(tab)
+        if not closed:
+            return ToolResult(success=False, error="Browser ne koi tab band nahi kiya (tab badal gaye hain); dobara try karein.")
+        output = {"action": "close", "tab_id": closed[0]["id"], "title": closed[0].get("title"), "closed": True, "closed_tab_ids": [t["id"] for t in closed],
+                  "spoken": f"{len(closed)} tabs band kar diye."}
+        if failed:
+            output["not_closed_tab_ids"] = [t["id"] for t in failed]
+            output["spoken"] += f" {len(failed)} band nahi hue."
+        return ToolResult(success=not failed, output=output, error=None if not failed else f"{len(failed)} tab band nahi hue.")
 
     @staticmethod
     def _by_keyboard(a: BrowserControlArgs) -> ToolResult:
@@ -296,7 +372,8 @@ class BrowserControlTool(BaseTool):
         tab_id = result.output.get("tab_id")
         evidence = {"tab_id": tab_id, "tabs_now": len(ids), "extension_reply": {k: result.output.get(k) for k in ("closed", "paused")}}
         if a.action == "close":
-            return verdict([("extension confirmed close", result.output.get("closed") is True), ("tab is gone", tab_id not in ids)], evidence)
+            gone = result.output.get("closed_tab_ids") or [tab_id]
+            return verdict([("extension confirmed close", result.output.get("closed") is True), ("tab is gone" if len(gone) == 1 else "all the tabs are gone", not (set(gone) & ids))], evidence)
         return verdict([("extension confirmed video state", result.output.get("paused") is (a.action == "pause")),
                         ("tab still open", tab_id in ids)], evidence)
 

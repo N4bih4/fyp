@@ -230,7 +230,7 @@ export function CharactersPage({ persona, catalog, language, speechReady, onSave
           Play sample in the selected language
         </button>
         <div className="mt-4 grid gap-4 md:grid-cols-3">
-          {([['name', 'Assistant name', 40], ['user_name', 'Your name', 40], ['wake_word', 'Wake phrase (saved; always-listening wake word is not built yet)', 30]] as const).map(([k, label, max]) => (
+          {([['name', 'Assistant name', 40], ['user_name', 'Your name', 40], ['wake_word', 'Wake word(s): hands-free listens only to sentences that start with it, in any accent or spelling (e.g. "Nabiha, open the FYP folder"). Several names: "Nabiha, Zara". Empty = hear everything', 30]] as const).map(([k, label, max]) => (
             <label key={k} className="text-sm">{label}
               <input className="mt-1 w-full rounded border p-2" maxLength={max} value={draft[k]}
                 onChange={(e) => setDraft({ ...draft, [k]: e.target.value })}

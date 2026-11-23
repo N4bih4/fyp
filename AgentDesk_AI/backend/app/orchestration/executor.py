@@ -201,8 +201,11 @@ def plan_task(db: Session, task: Task, registry: ToolRegistry, settings: Setting
         parsed = tool.validate_args(action.args)
         risk = _risk_for_task_action(tool, parsed, task.command)
         strict = _strict_policy(db)  # user setting: approve every action (never looser than the server)
+        confirm = bool(getattr(action, "confirm", False))          # a guessed target: always the Approve / Reject popup
+        if confirm and not needs_approval(risk):
+            risk = RiskLevel.MEDIUM
         status = ActionStatus.PENDING if needs_approval(risk) or strict else ActionStatus.APPROVED
-        if auto_approve and not strict:
+        if auto_approve and not strict and not confirm:
             status = ActionStatus.APPROVED
         any_pending = any_pending or status == ActionStatus.PENDING
         db.add(
@@ -470,12 +473,43 @@ def _run_task(db: Session, task_id: str, registry: ToolRegistry, settings: Setti
         if failed_action and json.loads(failed_action.result_json or "{}").get("output", {}).get("needs_confirmation"):
             # "Closest installed apps: ...": ask the user which one. (Setting FAILED first and then AWAITING_INPUT was an illegal
             # state change: /run answered HTTP 500 and the task stayed "executing" forever.)
-            task.status = TaskStatus.AWAITING_INPUT
             output = json.loads(failed_action.result_json or "{}").get("output", {})
+            guess = output.get("guess")
+            if failed_action.tool_name == "open_application" and isinstance(guess, dict) and guess.get("app"):
+                args = json.loads(failed_action.args_json or "{}")
+                wanted = str(args.get("app_name", "")).strip()
+                args["app_name"] = str(guess["app"])
+                db.add(Action(task_id=task.id, seq=max(a.seq for a in task.actions) + 1, tool_name="open_application",
+                              args_json=json.dumps(args), risk=RiskLevel.MEDIUM.value, status=ActionStatus.PENDING))
+                task.status = TaskStatus.AWAITING_APPROVAL
+                task.plan_note = f"'{wanted}' naam ki app nahi mili; milti-julti app: '{guess['app']}'. Approve karein to yahi khulegi."
+                task.error = None
+                task.updated_at = utcnow()
+                db.commit()
+                db.refresh(task)
+                return task
+            if failed_action.tool_name == "control_browser" and isinstance(guess, dict) and isinstance(guess.get("id"), int):
+                args = json.loads(failed_action.args_json or "{}")
+                wanted = str(args.get("target", "")).strip()
+                args["tab_id"] = guess["id"]
+                db.add(Action(task_id=task.id, seq=max(a.seq for a in task.actions) + 1, tool_name="control_browser",
+                              args_json=json.dumps(args), risk=RiskLevel.MEDIUM.value, status=ActionStatus.PENDING))
+                task.status = TaskStatus.AWAITING_APPROVAL
+                task.plan_note = f"'{wanted}' naam ka tab nahi mila; milta-julta tab: '{str(guess.get('title', ''))[:80]}'. Approve karein to yahi tab band hoga."
+                task.error = None
+                task.updated_at = utcnow()
+                db.commit()
+                db.refresh(task)
+                return task
+            task.status = TaskStatus.AWAITING_INPUT
             candidates = [str(c) for c in output.get("candidates") or []][:3]
             asked = str(json.loads(failed_action.args_json or "{}").get("app_name", "")).strip()
             # a short question the user can read and hear, not the wording meant for the model
             question = output.get("question")   # tools that ask their own question (ui_act: "Which one do you mean ...?")
+            raw_candidates = output.get("candidates") or []
+            if not question and raw_candidates and isinstance(raw_candidates[0], dict):
+                # browser tabs: numbered titles, so "2" or a piece of the title picks one (clarify_answers._tab_answer runs the same action on that tab)
+                question = ("Kya yeh tab hai? 'haan' batayein:\n" if len(raw_candidates) == 1 else "Kaunsa tab? Number ya title ka hissa batayein:\n") + "\n".join(f"{i}. {str(c.get('title') or c.get('id'))[:90]}" for i, c in enumerate(raw_candidates[:6], 1))
             task.plan_note = (question if question else f"I couldn't find \"{asked}\". Did you mean {' or '.join(candidates)}? Say yes, or the exact name." if candidates else error)
             task.error = None
         else:

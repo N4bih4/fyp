@@ -122,6 +122,34 @@ APP_ALIASES = {
     "powerpoint": "powerpoint",
     "ppt": "powerpoint",
     "ms powerpoint": "powerpoint",
+    "world": "word",
+    "ward": "word",
+    "wurd": "word",
+    "vard": "word",
+    "ms-word": "word",
+    "वर्ड": "word",
+    "ورڀ": "word",
+    "axel": "excel",
+    "axle": "excel",
+    "exel": "excel",
+    "excell": "excel",
+    "excel sheet": "excel",
+    "eksel": "excel",
+    "ekcel": "excel",
+    "ex cel": "excel",
+    "ms-excel": "excel",
+    "एक्सेल": "excel",
+    "ऐक्सेल": "excel",
+    "ایکسل": "excel",
+    "ایکسیل": "excel",
+    "ایکسل شیٹ": "excel",
+    "power point": "powerpoint",
+    "powerpoynt": "powerpoint",
+    "ms-powerpoint": "powerpoint",
+    "पावरपॉइंट": "powerpoint",
+    "पावर पॉइंट": "powerpoint",
+    "پاور پوائنٹ": "powerpoint",
+    "پاورپوائنٹ": "powerpoint",
     # ChatGPT
     "gpt": "chatgpt",
     "chatgpt": "chatgpt",
@@ -312,7 +340,12 @@ class OpenApplicationTool(BaseTool):
                 return 0.95
             if query in label or label in query:
                 return 0.90
-            return max(SequenceMatcher(None, query, label).ratio(), entity_match.score(query, label))
+            # Labels are stored without spaces and carry versions ("word2016", "winrarhelp"): compare the spoken name with the label minus its version number and
+            # with the label's first letters, so "world" (heard for "Word") lands on "Word 2016" and not on whichever label looks similar as a whole.
+            core = re.sub(r"v?\d+(?:\.\d+)*$", "", label)
+            parts = [core] + ([label[: len(query) + k] for k in (-1, 0, 1)] if len(label) > len(query) else [])
+            word_score = max((SequenceMatcher(None, query, part).ratio() for part in parts if len(part) >= 3), default=0.0) * 0.97
+            return max(SequenceMatcher(None, query, label).ratio(), entity_match.score(query, label), word_score)
 
         scores = sorted(
             (
@@ -323,6 +356,18 @@ class OpenApplicationTool(BaseTool):
             reverse=True,
         )
         return scores
+
+    def _best_app_guess(self, app_name: str) -> str | None:
+        """The one installed app that clearly looks most like the spoken name (a gap to the runner-up), else None."""
+        ranked = [(score, paths) for score, paths in self._rank_start_menu_shortcuts(app_name) if score >= 0.5]
+        if not ranked:
+            return None
+        best, paths = ranked[0]
+        if len({p.stem.casefold() for p in paths}) != 1:
+            return None
+        if len(ranked) > 1 and best - ranked[1][0] < 0.08:
+            return None
+        return paths[0].stem
 
     def _candidate_app_names(self, app_name: str, limit: int = 5) -> list[str]:
         seen: list[str] = []
@@ -626,9 +671,10 @@ class OpenApplicationTool(BaseTool):
                 candidates = self._candidate_app_names(a.app_name)
                 if candidates:
                     shown = ", ".join(candidates)
+                    guess = self._best_app_guess(a.app_name)
                     return ToolResult(
                         success=False,
-                        output={"candidates": candidates, "needs_confirmation": True},
+                        output={"candidates": candidates, "needs_confirmation": True, **({"guess": {"app": guess}} if guess else {})},
                         error=(
                             f"Application '{app}' is not an exact unique match. "
                             f"Closest installed apps: {shown}. Ask the user which one to open, "

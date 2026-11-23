@@ -97,16 +97,21 @@ def test_close_uses_exact_inspected_id_and_url(ctx, monkeypatch):
     assert calls[1] == ("close", {"tab_id": 1, "expected_url": TABS[0]["url"]})
 
 
-def test_multiple_youtube_close_needs_choice(ctx, monkeypatch):
-    calls = []
+def test_close_youtube_closes_every_youtube_tab_that_is_open(ctx, monkeypatch):
+    """Policy changed on the user's request: the NAME decides which tabs, what is open decides how many ("close gmail" with two Gmail tabs closes both)."""
+    open_tabs = [{"id": i, "url": f"https://www.youtube.com/watch?v={i}", "title": str(i)} for i in (4, 5)]
+    closed = []
+
     def request(action, **args):
-        calls.append(action)
-        return {"success": True, "tabs": [{"id": i, "url": f"https://www.youtube.com/watch?v={i}", "title": str(i)} for i in (4, 5)]}
+        if action == "close":
+            closed.append(args["tab_id"])
+            open_tabs[:] = [t for t in open_tabs if t["id"] != args["tab_id"]]
+            return {"success": True, "closed": True}
+        return {"success": True, "tabs": [dict(t) for t in open_tabs]}
     monkeypatch.setattr(bridge, "request", request)
     tool = BrowserControlTool(ctx)
     result = tool.execute(tool.validate_args({"action": "close", "target": "youtube"}))
-    assert not result.success and result.output["needs_confirmation"]
-    assert calls == ["inspect"]
+    assert result.success and sorted(closed) == [4, 5] and result.output["closed_tab_ids"] == [4, 5]
 
 
 def test_disconnected_browser_never_falls_back_to_blind_hotkey(ctx, monkeypatch):

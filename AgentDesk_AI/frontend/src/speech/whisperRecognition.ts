@@ -1,5 +1,5 @@
 import { AuthError, voiceApi } from '../api';
-import { DEFAULT_VAD, VadSegmenter, downsample, encodeWav, rms } from './vad';
+import { DEFAULT_VAD, VadSegmenter, adaptiveThreshold, downsample, encodeWav, nextNoiseFloor, rms } from './vad';
 
 /** The few fields of the browser's SpeechRecognition result that App.tsx reads. */
 interface Alt {
@@ -18,9 +18,9 @@ export interface WhisperErrorEvent extends Event {
   readonly message?: string;
 }
 
-const PRE_ROLL_MS = 300;
-const MAX_UTTERANCE_MS = 30_000;
-const SPEAKING_THRESHOLD_FACTOR = 2.2; // while the assistant talks, only clearly louder speech counts
+const PRE_ROLL_MS = 700; // audio kept from BEFORE the detector fired: the soft start of the first word (a name) is part of the sentence
+const MAX_UTTERANCE_MS = 15_000; // a sentence that runs on this long is sent as it is (background noise must not keep one recording open for ever)
+const SPEAKING_THRESHOLD_FACTOR = 1.5; // while the assistant talks, only clearly louder speech counts (was 2.2: a command given over a spoken reply was heard late or not at all; echo is still dropped by isSpeechEcho)
 
 /**
  * Drop-in for `webkitSpeechRecognition` that records the microphone, finds the end of each sentence locally
@@ -108,8 +108,8 @@ export class WhisperRecognition {
     const level = rms(frame);
     this.onlevel?.(level);
     // Follow this microphone's own background noise: speech must be clearly above it (a quiet mic is not missed, a noisy room is not "speech").
-    if (!this.vad.inSpeech) this.noiseFloor = this.noiseFloor === 0 ? level : level < this.noiseFloor ? level : this.noiseFloor * 0.98 + level * 0.02;
-    const adaptive = Math.min(0.08, Math.max(0.006, this.noiseFloor * 3));
+    const adaptive = adaptiveThreshold(this.noiseFloor);
+    this.noiseFloor = nextNoiseFloor(this.noiseFloor, level, adaptive, this.vad.inSpeech);
     this.vad.options = {
       ...DEFAULT_VAD,
       threshold: adaptive * (this.assistantSpeaking ? SPEAKING_THRESHOLD_FACTOR : 1),

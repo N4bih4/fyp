@@ -5,11 +5,25 @@ from .base import Plan, PlanAction
 from .speech_commands import normalize_speech, NEGATIONS
 from .command_language import END, LINK, OPEN
 
-TAB = r"(?:tab|ٹیب|टैब)"
+TAB = r"(?:tabs?|ٹیبز|ٹیب|टैब्स|टैब)"
 CLOSE = r"(?:close|off|band|بند|کلوز|اف|آف|बंद|क्लोज|ऑफ)"
 SITES = {"یوٹیوب": "youtube", "यूट्यूब": "youtube", "گوگل ڈرائیو": "google drive", "गूगल ड्राइव": "google drive",
          "واٹس ایپ": "whatsapp", "व्हाट्सएप": "whatsapp", "جی میل": "gmail", "जीमेल": "gmail",
          "اوپن اے آئی": "openai", "ओपन एआई": "openai", "چیٹ جی پی ٹی": "chatgpt", "चैट जीपीटी": "chatgpt"}
+
+
+_QUANTIFIERS = {"all", "both", "every", "each", "the", "my", "our", "these", "those", "sab", "saare", "saari", "sare", "dono", "donon", "ke", "ki", "ka", "ko", "wale",
+                "wali", "sabhi", "सब", "सारे", "सभी", "दोनों", "दोनो", "के", "की", "का", "को", "सब", "वाले", "تمام", "سب", "دونوں", "کے", "کی", "کا"}
+
+
+def drop_quantifiers(value):
+    """"both gmail" / "gmail ke dono" / "sab youtube" -> "gmail" / "youtube": which tabs is decided by the name, how many by what is open."""
+    words = value.strip().split()
+    while words and words[0].casefold() in _QUANTIFIERS:
+        words.pop(0)
+    while words and words[-1].casefold() in _QUANTIFIERS:
+        words.pop()
+    return " ".join(words)
 
 
 def tab_target(value):
@@ -250,7 +264,8 @@ def browser_plan(command):
     # A named site's "off/close" refers to its tab, not the browser process.
     named = re.fullmatch(rf"(?:{CLOSE}\s+(.+?)|(.+?)\s+{CLOSE}){END}", raw, re.I)
     if named:
-        target = (named.group(1) or named.group(2)).strip().casefold()
+        target = drop_quantifiers((named.group(1) or named.group(2)).strip().casefold())
+        target = re.sub(r"\s+tabs?$", "", target)
         target = SITES.get(target, target)
         if target in {"youtube", "gmail", "whatsapp", "google drive", "openai", "chatgpt"}:
             return Plan(actions=[PlanAction(tool="control_browser", args={"action": "close", "target": target})])
@@ -260,7 +275,7 @@ def browser_plan(command):
     for pattern in patterns:
         match = re.fullmatch(pattern, raw, re.IGNORECASE)
         if match:
-            target = re.sub(r"^the\s+", "", match.group(1).strip(), flags=re.IGNORECASE)
+            target = drop_quantifiers(re.sub(r"^the\s+", "", match.group(1).strip(), flags=re.IGNORECASE))
             args = {"action": "close", "target": tab_target(target)}
             if target.isdecimal():
                 args["tab_id"] = int(target)
