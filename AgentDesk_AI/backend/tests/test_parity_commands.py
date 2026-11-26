@@ -724,6 +724,7 @@ def test_navigate_in_place_never_types_into_the_agentdesk_window(monkeypatch):
         spec.loader.exec_module(browser_choice)
     finally:
         sys.modules.pop(spec.name, None)
+    browser_choice._foreground_title = lambda: "Some Other Page - Google Chrome"      # the test must not depend on what is in front on the machine running it
     typed = []
     window = SimpleNamespace(process="chrome.exe", title="AgentDesk AI - Google Chrome", handle=1)
     service = SimpleNamespace(backend=SimpleNamespace(windows=lambda: [window]), window=lambda _=None: window)
@@ -859,3 +860,183 @@ def test_word_and_powerpoint_in_any_spelling_or_script(spoken, title):
 def test_spoken_app_name_drops_the_numbers_speech_to_text_appends():
     from app.ai.window_commands import spoken_app_name
     assert spoken_app_name("Axel 316") == "excel" and spoken_app_name("316") == "316" and spoken_app_name("Notepad 2") == "Notepad"
+
+
+# ------------------------------------------------------------------------------------------------ websites by name or by address
+@pytest.mark.parametrize("text,url", [
+    ("open facebook", "https://www.facebook.com"), ("facebook kholo", "https://www.facebook.com"), ("open the facebook website", "https://www.facebook.com"),
+    ("open instagram", "https://www.instagram.com"), ("go to linkedin", "https://www.linkedin.com"), ("visit google", "https://google.com"),
+    ("open j dot website", "https://j.website"), ("open J.Website", "https://j.website"), ("jay dot website kholo", "https://jay.website"),
+    ("open daraz dot pk", "https://daraz.pk"), ("open daraz.pk", "https://daraz.pk"), ("open example.com", "https://example.com"),
+])
+def test_a_website_named_or_spelled_out_is_opened(text, url):
+    plan = pc.parity_plan(text)
+    assert plan is not None and plan.actions[0].tool == "open_url" and plan.actions[0].args == {"url": url}
+
+
+@pytest.mark.parametrize("text", ["open notepad", "open word", "open discord", "open outlook", "open fyp folder", "open report.txt", "open dev ops", "open camera roll", "open my drive"])
+def test_apps_folders_and_files_are_not_taken_for_websites(text):
+    plan = pc.parity_plan(text)
+    assert plan is None or plan.actions[0].tool != "open_url"
+
+
+# ------------------------------------------------------------------------------------------------ create a folder
+@pytest.mark.parametrize("text,name,where", [
+    ("create semester six folder", "semester six", ""), ("create a folder called semester six", "semester six", ""), ("make new folder photos", "photos", ""),
+    ("create a folder called lab in documents", "lab", "Documents"), ("create lab folder on desktop", "lab", "Desktop"),
+    ("lab folder banao", "lab", ""), ("documents mein lab folder banao", "lab", "Documents"), ("लैब फोल्डर बनाओ", "लैब", ""),
+])
+def test_create_folder_sentences_give_a_name_and_an_optional_place(text, name, where):
+    intent = pc.parity_intent(text)
+    assert intent == {"op": "create", "name": name, "destination": where}
+
+
+@pytest.mark.parametrize("text", ["create folder", "new folder", "create it", "create a folder called a/b", "make folder c:x"])
+def test_create_needs_a_simple_name(text):
+    intent = pc.parity_intent(text)
+    assert intent is None or not any(c in intent["name"] for c in "/\\:")
+
+
+def test_a_folder_with_no_place_named_is_created_in_the_open_folder_or_on_the_desktop(tmp_path, monkeypatch):
+    plan = local_agent._resolve(_Task(), {"op": "create", "name": "semester six", "destination": ""}, _FakeRegistry([]))
+    assert plan.actions[0].tool == "create_folder" and plan.actions[0].args["path"].endswith("semester six")
+    assert "Approve" in plan.note and ("Desktop" in plan.note or "folder" in plan.note)
+    explicit = local_agent._resolve(_Task(), {"op": "create", "name": "lab", "destination": "Documents"}, _FakeRegistry([]))
+    assert explicit.actions[0].args["path"].endswith("Documents\\lab") and not explicit.note.startswith("'lab' folder Desktop")
+
+
+def test_deleting_a_folder_moves_it_with_its_contents_to_the_trash_behind_the_approval_card(tmp_path):
+    folder = tmp_path / "semester six"
+    folder.mkdir()
+    (folder / "notes.txt").write_text("x")
+    plan = local_agent._resolve(_Task(), {"op": "delete", "kind": "folder", "source": str(folder)}, _FakeRegistry([str(folder)]))
+    assert plan.actions[0].tool == "delete_file" and plan.actions[0].args == {"path": str(folder), "include_contents": True}
+    tool = ToolRegistry().get("delete_file")
+    assert tool.risk_for_args(tool.validate_args(plan.actions[0].args)).value == "high"           # so it always waits for Approve
+    file_plan = local_agent._resolve(_Task(), {"op": "delete", "kind": "file", "source": str(folder / "notes.txt")}, _FakeRegistry([]))
+    assert file_plan.actions[0].args["include_contents"] is False
+
+
+# ------------------------------------------------------------------------------------------------ delete / remove, however it was heard
+@pytest.mark.parametrize("text", [
+    "delete, six folder,", "delete six folder", "Delete, semester six folder.", "dilete six folder", "delet six folder", "delite the six folder", "deleat folder six",
+    "dalete six folder", "remove six folder", "removed six folder", "rimoov six folder", "remove folder six", "six folder delete karo", "six folder dilete karo",
+    "six folder hata do", "six folder hatao", "six folder mita do", "सिक्स फोल्डर डिलीट करो", "सिक्स फोल्डर हटाओ",
+])
+def test_every_way_of_saying_delete_or_remove_a_folder_is_the_delete_workflow(text):
+    intent = pc.parity_intent(text)
+    assert intent is not None and intent["op"] == "delete" and intent["kind"] == "folder"
+    assert intent["source"].casefold() in {"six", "semester six", "सिक्स"}
+
+
+@pytest.mark.parametrize("text", ["delivery six folder", "select six folder", "deliver the six folder", "delete it", "delete everything", "delete all files",
+                                  "delete", "remove this", "hata do", "mita do"])
+def test_look_alike_verbs_and_unclear_targets_are_never_a_delete(text):
+    assert pc.parity_intent(text) is None
+
+
+@pytest.mark.parametrize("text", ["move six folder to desktop", "move report.txt to documents", "report.txt ko desktop pe move karo", "copy six folder to downloads", "rename six folder to seven",
+                                  "remove" , "moved six folder", "mover six folder"])
+def test_move_copy_and_rename_are_never_mistaken_for_delete(text):
+    intent = pc.parity_intent(text)
+    assert intent is None or intent["op"] != "delete"
+
+
+# ------------------------------------------------------------------------------------------------ what Whisper REALLY wrote for this user's "delete folder"
+@pytest.mark.parametrize("text,source", [
+    ("Delayed folder 123 123", "123 123"), ("rdlead folder 123333", "123333"), ("rd late one two three folder", "123"), ("rred late 123 folder", "123"),
+    ("Delayed, Sixth Folder", "sixth"), ("Lid, Six Foller", "six"), ("delayed six folder", "six"), ("Delayed 123 folder", "123"), ("delete one two three folder", "123"),
+    ("Delayed IS Zip Folder", "IS.zip"), ("rd late report.txt", "report.txt"), ("remove, 123 folder", "123"), ("delete 6 folder", "6"),
+])
+def test_the_delete_command_as_the_microphone_really_wrote_it(text, source):
+    intent = pc.parity_intent(text)
+    assert intent is not None and intent["op"] == "delete" and intent["source"].casefold() == source.casefold()
+
+
+@pytest.mark.parametrize("text", ["open six folder", "list folder", "load folder", "date folder", "close folder", "show six folder", "play six folder", "delivery six folder",
+                                  "move six folder to desktop", "copy six folder to desktop", "rename six folder to seven", "create 123 folder", "zip six folder"])
+def test_other_commands_that_name_a_folder_are_not_taken_for_delete(text):
+    intent = pc.parity_intent(text)
+    assert intent is None or intent["op"] != "delete"
+
+
+def test_an_exact_folder_name_beats_partial_matches_but_still_waits_for_the_approval_card(tmp_path):
+    exact = str(tmp_path / "123")
+    registry = _FakeRegistry([exact, str(tmp_path / "123" / "rred late 123"), r"C:\eclipse\configuration\org.eclipse.osgi\312"])
+    plan = local_agent._resolve(_Task(), {"op": "delete", "kind": "folder", "source": "123", "include_contents": False}, registry)
+    assert plan.actions and plan.actions[0].tool == "delete_file" and plan.actions[0].args["path"] == exact
+    several = _FakeRegistry([str(tmp_path / "a" / "123"), str(tmp_path / "b" / "123")])
+    asked = local_agent._resolve(_Task(), {"op": "delete", "kind": "folder", "source": "123", "include_contents": False}, several)
+    assert not asked.actions and asked.note                                  # two folders with exactly that name: the user picks
+
+
+# ------------------------------------------------------------------------------------------------ "remove" is "delete": every form, with a clean name
+@pytest.mark.parametrize("text", [
+    "remove folder 123", "remove 123 folder", "remove the 123 folder", "remove folder named 123", "please remove 123 folder", "remove, 123 folder,", "Remove 123 Folder.",
+    "removing 123 folder", "removed 123 folder", "rimoov 123 folder", "remove karo 123 folder", "123 folder remove karo", "123 folder ko remove karo", "123 folder remove kar do",
+    "123 folder ko remove kar do", "123 folder ko remove kardo", "remove kar do 123 folder", "123 folder ko hata do", "123 folder hatao", "123 फोल्डर रिमूव करो",
+    "123 फोल्डर को रिमूव कर दो", "रिमूव फोल्डर 123", "folder 123 remove karo",
+])
+def test_remove_is_delete_and_the_name_is_clean(text):
+    intent = pc.parity_intent(text)
+    assert intent == {"op": "delete", "kind": "folder", "source": "123", "include_contents": False}
+
+
+@pytest.mark.parametrize("text", ["remove file report.txt", "report.txt remove karo", "report.txt ko remove karo"])
+def test_remove_a_file_is_delete_a_file(text):
+    assert pc.parity_intent(text) == {"op": "delete", "kind": "file", "source": "report.txt", "include_contents": False}
+
+
+# ------------------------------------------------------------------------------------------------ "open j.website" must not hang for 30 s on a busy desktop
+def _real_browser_choice():
+    """conftest replaces navigate_in_place for every test: load a private copy of the real module."""
+    import importlib.util
+    import sys
+    from app.tools import browser_choice as stubbed
+    spec = importlib.util.spec_from_file_location("app.tools._browser_choice_real2", stubbed.__file__)
+    module = importlib.util.module_from_spec(spec)
+    module.__package__ = "app.tools"
+    sys.modules[spec.name] = module
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.modules.pop(spec.name, None)
+    return module
+
+
+def test_in_front_agentdesk_means_no_ui_automation_at_all(monkeypatch):
+    bc = _real_browser_choice()
+    called = []
+    monkeypatch.setattr(bc, "_foreground_title", lambda: "AgentDesk AI - Google Chrome")
+    monkeypatch.setattr(bc, "_navigate_in_place_ui", lambda *a, **k: called.append(a) or True)
+    assert bc.navigate_in_place(type("B", (), {"key": "chrome"})(), "https://j.website") is False and called == []
+
+
+def test_a_slow_ui_automation_is_given_up_after_the_time_limit_and_types_nothing(monkeypatch):
+    import threading
+    import time
+    bc = _real_browser_choice()
+    monkeypatch.setattr(bc, "_foreground_title", lambda: "Some Page - Google Chrome")
+    monkeypatch.setattr(bc, "IN_PLACE_SECONDS", 0.1)
+    seen = {}
+
+    def slow(browser, url, cancel=None):
+        seen["cancel"] = cancel
+        time.sleep(0.6)
+        seen["typed_after_cancel"] = not cancel.is_set()
+        return True
+
+    monkeypatch.setattr(bc, "_navigate_in_place_ui", slow)
+    started = time.monotonic()
+    assert bc.navigate_in_place(type("B", (), {"key": "chrome"})(), "https://j.website") is False
+    assert time.monotonic() - started < 0.5                        # it did not wait for the slow helper
+    assert seen["cancel"].is_set()                                 # ... and told it to type nothing
+    time.sleep(0.8)
+    assert seen["typed_after_cancel"] is False
+
+
+def test_a_quick_ui_automation_result_is_used(monkeypatch):
+    bc = _real_browser_choice()
+    monkeypatch.setattr(bc, "_foreground_title", lambda: "Some Page - Google Chrome")
+    monkeypatch.setattr(bc, "_navigate_in_place_ui", lambda browser, url, cancel=None: True)
+    assert bc.navigate_in_place(type("B", (), {"key": "chrome"})(), "https://j.website") is True

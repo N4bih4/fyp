@@ -160,16 +160,41 @@ def _parse(command):
     return None
 
 
+def _default_create_location():
+    """Where a new folder goes when the user names no place: the Explorer folder of the conversation that is still open, else the Desktop."""
+    try:
+        from ..database import SessionLocal
+        from . import lanes
+        with SessionLocal() as db:
+            lane = lanes.lane_of_kind(lanes.load(db), "explorer")
+        if lane is not None and lane.folder and Path(lane.folder).is_dir():
+            return Path(lane.folder), "khuli folder mein"
+    except Exception:  # noqa: BLE001 - no conversation state: the Desktop is the plain default
+        pass
+    desktop = Path.home() / "Desktop"
+    return (desktop if desktop.is_dir() else Path.home()), "Desktop par"
+
+
 def _resolve(task, intent, registry):
     op = intent["op"]
     if op == "create":
+        where_note = ""
         if not intent.get("destination"):
-            return _ask(task, intent, "Naya folder kahan banana hai? Desktop, Documents, Downloads ya parent ka exact path batayein.")
+            default, label = _default_create_location()
+            ctx = getattr(registry, "ctx", None)
+            allowed = [Path(d).expanduser().resolve() for d in (getattr(ctx, "allowed_directories", None) or [])]
+            if allowed and not any(default.resolve() == d or d in default.resolve().parents for d in allowed):
+                return _ask(task, intent, "Naya folder kahan banana hai? Desktop, Documents, Downloads ya parent ka exact path batayein.")
+            intent["destination"] = str(default)
+            where_note = label
         dest = Path(_path(intent["destination"]))
         name = intent["name"].strip().strip('"')
         if not dest.is_absolute() or name in {".", ".."} or any(c in name for c in '/\\:'):
             return _ask(task, intent, "Folder ka simple naam aur parent ka exact path batayein; misal: create folder Lab in Documents.")
-        return _action("create_folder", {"path": str(dest / name)})
+        plan = _action("create_folder", {"path": str(dest / name)})
+        if where_note:
+            plan.note = f"'{name}' folder {where_note} ({dest}) mein banane ka plan tayyar hai. Approve karein. Kahin aur banana ho to bolein: create {name} folder in Documents."
+        return plan
     source = _path(intent["source"])
     others: list[str] = []
     heard_as = None
@@ -197,8 +222,14 @@ def _resolve(task, intent, registry):
             sure = False
             intent["candidates"] = candidates[:6]            # a guessed spelling never deletes, moves or renames anything without a yes
             return _ask(task, intent, f"'{source}' nahi mila; shayad '{heard_as}'? Number ya exact address batayein.\n" + "\n".join(f"{i+1}. {p}" for i, p in enumerate(candidates[:6])))
+        exact_name = False
+        if op in {"delete", "copy", "move", "rename"} and not unfinished:
+            wanted = Path(source).name.casefold()
+            exact = [c for c in candidates if Path(c).name.casefold() == wanted]
+            if len(exact) == 1:                              # one folder is called exactly that: the other hits only CONTAIN the words
+                candidates, exact_name = exact, True
         others = candidates[1:4] if sure and len(candidates) > 1 else []
-        if not sure and (len(candidates) > 1 or unfinished or result.output.get("alias_matches")):
+        if not sure and not exact_name and (len(candidates) > 1 or unfinished or result.output.get("alias_matches")):
             candidates = candidates[:6]   # never read out dozens of paths
             intent["candidates"] = candidates
             note = "Kaunsa path? Number ya exact address batayein. Preview ke liye 'preview 1' keh sakti hain.\n"
@@ -214,7 +245,8 @@ def _resolve(task, intent, registry):
     if op == "rename":
         return _action("rename_file", {"path": source, "new_name": intent["new_name"].strip().strip('"')})
     if op == "delete":
-        return _action("delete_file", {"path": source, "include_contents": intent.get("include_contents", False)})
+        include = bool(intent.get("include_contents")) or Path(source).is_dir()       # always behind the approval card; goes to the restorable Trash
+        return _action("delete_file", {"path": source, "include_contents": include})
     if op == "read":
         return _action("read_text_file", {"path": source})
     if op == "compress":

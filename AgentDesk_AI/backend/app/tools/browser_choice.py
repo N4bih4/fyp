@@ -212,7 +212,45 @@ def is_this_app(title: str) -> bool:
     return "agentdesk" in text or "127.0.0.1:8000" in text or "localhost:8000" in text
 
 
+def _foreground_title() -> str:
+    """The title of the window in front, read with one cheap Win32 call (no UI Automation: that can take many seconds on a busy desktop)."""
+    try:
+        import ctypes
+        user32 = ctypes.windll.user32
+        hwnd = user32.GetForegroundWindow()
+        buffer = ctypes.create_unicode_buffer(512)
+        user32.GetWindowTextW(hwnd, buffer, 512)
+        return buffer.value
+    except Exception:  # noqa: BLE001 - not Windows / no window: nothing known
+        return ""
+
+
+IN_PLACE_SECONDS = 8.0
+
+
 def navigate_in_place(browser: Browser, url: str) -> bool:
+    """The one-window behaviour with a hard time limit: if the window in front is AgentDesk itself (the usual case: the user talks to it) nothing is
+    typed and the caller opens a new tab at once; the UI Automation work runs in a helper thread and is given up after IN_PLACE_SECONDS (a slow desktop
+    made "open j.website" hang for the tool's whole 30 s). A late helper types nothing: it checks a cancel flag before every key."""
+    if is_this_app(_foreground_title()):
+        return False
+    import threading
+    cancel = threading.Event()
+    done: list[bool] = [False]
+
+    def work() -> None:
+        done[0] = _navigate_in_place_ui(browser, url, cancel)
+
+    worker = threading.Thread(target=work, daemon=True)
+    worker.start()
+    worker.join(IN_PLACE_SECONDS)
+    if worker.is_alive():
+        cancel.set()
+        return False
+    return done[0]
+
+
+def _navigate_in_place_ui(browser: Browser, url: str, cancel=None) -> bool:
     """Show `url` in the window the browser already has open (Ctrl+L, the address, Enter) instead of opening one more tab: the conversation stays in
     one browser window until the user says "new tab". False (nothing typed) when the browser has no window, or its window could not be brought to the front."""
     import time
@@ -235,9 +273,11 @@ def navigate_in_place(browser: Browser, url: str) -> bool:
             return False                       # never replace the page the assistant itself runs in: the caller opens a NEW tab
         old_clip = None
         with ui_lock():
+            if cancel is not None and cancel.is_set():
+                return False                   # the caller gave up and opened a new tab: type nothing now
             screen.focus(target)
             time.sleep(0.25)
-            if service.window(None).handle != target.handle:       # never type into a window that is not the browser
+            if service.window(None).handle != target.handle or (cancel is not None and cancel.is_set()):       # never type into a window that is not the browser
                 return False
             old_clip = get_clipboard()
             set_clipboard(url)

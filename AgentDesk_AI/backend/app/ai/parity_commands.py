@@ -170,12 +170,54 @@ def gmail_draft_plan(text: str, db=None) -> Plan | None:
     return Plan(actions=[PlanAction(tool="open_url", args={"url": compose.gmail_compose_url(address, subject, body), "new_tab": True})], note=note)
 
 
+# Pure websites (an app of the same name would be a different thing, so Discord, Spotify, Zoom, Telegram and WhatsApp are NOT here).
+_WEBSITES = {
+    "facebook": "facebook.com", "fb": "facebook.com", "instagram": "instagram.com", "insta": "instagram.com", "twitter": "twitter.com",
+    "linkedin": "linkedin.com", "snapchat": "snapchat.com", "netflix": "netflix.com", "amazon": "amazon.com", "daraz": "daraz.pk", "olx": "olx.com.pk",
+    "google": "google.com", "bing": "bing.com", "yahoo": "yahoo.com", "reddit": "reddit.com", "pinterest": "pinterest.com", "tiktok": "tiktok.com",
+    "quora": "quora.com", "medium": "medium.com", "fiverr": "fiverr.com", "upwork": "upwork.com", "udemy": "udemy.com", "coursera": "coursera.org",
+    "wikipedia": "wikipedia.org", "kaggle": "kaggle.com", "geeksforgeeks": "geeksforgeeks.org", "w3schools": "w3schools.com",
+    "yahoo mail": "mail.yahoo.com", "google maps": "maps.google.com", "maps": "maps.google.com", "google drive": "drive.google.com",
+    "google docs": "docs.google.com", "google sheets": "sheets.google.com", "google classroom": "classroom.google.com", "classroom": "classroom.google.com",
+    "google meet": "meet.google.com", "youtube music": "music.youtube.com", "twitch": "twitch.tv", "imdb": "imdb.com", "ebay": "ebay.com", "alibaba": "alibaba.com",
+    "aliexpress": "aliexpress.com", "booking": "booking.com", "uber": "uber.com", "careem": "careem.com", "ptcl": "ptcl.com.pk", "hec": "hec.gov.pk",
+}
+_TLDS = {"com", "org", "net", "edu", "gov", "pk", "io", "co", "in", "uk", "us", "info", "biz", "website", "site", "online", "app", "dev", "ai", "xyz", "me", "tv", "shop",
+         "store", "tech", "blog", "cloud", "page", "link", "live", "life", "world", "club", "top"}
+
+
+def website_url(spoken: str) -> str | None:
+    """"facebook" -> https://www.facebook.com, "j dot website" -> https://j.website, "daraz.pk" -> https://daraz.pk; None when it is not clearly a website."""
+    low = re.sub(r"^(?:the\s+|my\s+)", "", _norm(spoken).casefold())
+    for candidate in (low, re.sub(r"\s+(?:website|site|web\s*site)$", "", low)):          # "j dot website": the word website is the ending of the address
+        candidate = re.sub(r"^(?:website|site|web\s*site)\s+", "", candidate)
+        if candidate in _WEBSITES:
+            www = candidate in {"facebook", "fb", "instagram", "insta", "twitter", "linkedin", "netflix", "amazon", "reddit", "pinterest"}
+            return ("https://www." if www else "https://") + _WEBSITES[candidate]
+        domain = re.sub(r"\s+", "", re.sub(r"\s*\b(?:dot|dott|dat)\b\s*", ".", candidate))
+        m = re.fullmatch(r"(?:https?://)?(?:www\.)?([a-z0-9][a-z0-9-]*(?:\.[a-z0-9][a-z0-9-]*)*\.([a-z]{2,24}))(?:/\S*)?", domain)
+        if m and m.group(2) in _TLDS:
+            return "https://" + m.group(0).removeprefix("https://").removeprefix("http://")
+    return None
+
+
+def website_plan(low: str, original: str = "") -> Plan | None:
+    m = re.fullmatch(_FILLER + r"(?:open|visit|go\s+to|launch|browse|kholo|khol\s+do|show)\s+(.+)", low) \
+        or re.fullmatch(_FILLER + r"(.+?)\s+(?:kholo|khol\s+do|khol\s+dein|open\s+karo|open\s+kar\s+do|chalao|dikhao|par\s+jao|pe\s+jao)", low) \
+        or re.fullmatch(_FILLER + r"(.+?)\s+(?:खोलो|खोल\s+दो|चलाओ)", low)
+    if not m:
+        return None
+    tail = re.sub(r"\s+(?:kholo|khol\s+do|khol\s+dein|open\s+karo|par\s+jao|pe\s+jao)$", "", m.group(1))
+    url = website_url(tail)
+    return _plan("open_url", {"url": url}) if url else None
+
+
 def parity_plan(text: str) -> Plan | None:
     """The first rule that understands the whole sentence, or None."""
     low = _norm(text).casefold()
     if not low or len(low.split()) > 16:
         return None
-    for rule in (trash_plan, git_status_plan, show_desktop_plan, switch_app_plan, whatsapp_plan, recall_plan, find_plan):
+    for rule in (trash_plan, git_status_plan, show_desktop_plan, switch_app_plan, whatsapp_plan, recall_plan, website_plan, find_plan):
         plan = rule(low)
         if plan is not None:
             return plan
@@ -222,12 +264,113 @@ def _archive_name(name: str) -> str:
     return re.sub(r"^(.+?)\s+(?:dot\s+)?zip$", r"\1.zip", name.strip(), flags=re.I)
 
 
+_DELETE_WORDS = {"delete", "deleted", "deleting", "deletes", "remove", "removed", "removing", "erase", "erased", "dilete", "delet", "delit", "delite", "deleat", "dalete",
+                 "delate", "dilit", "dilet", "dileet", "deliit", "rimoov", "rimuv", "remuv", "remov", "rimove", "डिलीट", "डिलिट", "डीलीट", "रिमूव", "रिमूव", "हटाओ", "हटा", "मिटाओ",
+                 "ڈیلیٹ", "ڈلیٹ", "ریموو", "ہٹاؤ", "ہٹا", "مٹاؤ", "hatao", "hata", "mitao", "mita", "hatana", "mitana"}
+
+
+def is_delete_word(word: str) -> bool:
+    """True for "delete" / "remove" in any plausible mis-hearing: a listed spelling, or one that looks like it (difflib >= 0.8, 4+ letters)."""
+    import difflib
+    w = word.casefold().strip(".,!?;:")
+    if w in _DELETE_WORDS:
+        return True
+    if len(w) < 4 or not re.fullmatch(r"[a-z]+", w):
+        return False
+    # the first letter must agree: "move" is 80% like "remove" and must NEVER be taken for it (move / copy / rename are other commands)
+    return max(difflib.SequenceMatcher(None, w, v).ratio() for v in ("delete", "remove", "erase") if v[0] == w[0]) >= 0.8 if w[0] in "dre" else False
+
+
+_NOT_DELETE = {"move", "moved", "mover", "copy", "open", "close", "create", "make", "show", "list", "read", "rename", "zip", "unzip", "play", "start", "stop", "edit", "cut",
+               "date", "let", "lit", "load", "mode", "mood", "made", "meet", "melt", "rest", "run", "new", "add", "find", "go", "switch", "launch", "look", "kholo", "band"}
+_DIGIT_WORDS = {"zero": "0", "one": "1", "two": "2", "three": "3", "four": "4", "five": "5", "six": "6", "seven": "7", "eight": "8", "nine": "9", "to": "2", "too": "2",
+                "for": "4", "ek": "1", "do": "2", "teen": "3", "char": "4", "panch": "5", "chhe": "6", "che": "6", "saat": "7", "aath": "8", "nau": "9"}
+
+
+def _skeleton(word: str) -> str:
+    """The consonants of a word with doubles collapsed: delete -> dlt, delayed -> dld, "rd late" -> rdlt. Whisper keeps these and changes the vowels."""
+    s = re.sub(r"[^a-z]", "", word.casefold())
+    s = re.sub(r"[aeiouywh]", "", s)
+    return re.sub(r"(.)\1+", r"\1", s)
+
+
+def _distance(a: str, b: str) -> int:
+    row = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        prev, row[0] = row[0], i
+        for j, cb in enumerate(b, 1):
+            prev, row[j] = row[j], min(row[j] + 1, row[j - 1] + 1, prev + (ca != cb))
+    return row[-1]
+
+
+def sounds_like_delete(word: str) -> bool:
+    """For a sentence that also names a folder or file: a first word whose consonants are those of "delete" (+/- one) is "delete" ("Delayed folder 123")."""
+    w = word.casefold().strip(".,!?;:")
+    if w in _NOT_DELETE or not re.fullmatch(r"[a-z]+", w):
+        return False
+    if w in {"lid", "delayed", "delay", "rdlead", "dilait"}:                 # heard for this user's "delete" (the consonant check alone misses "lid")
+        return True
+    s = _skeleton(w)
+    if len(s) < 2:
+        return False
+    options = {s} | ({s[1:]} if s.startswith("r") and len(s) > 3 else set())          # "rdlead": a stray r in front
+    return any(_distance(o, "dlt") <= 1 for o in options)
+
+
+def _spoken_digits(name: str) -> str:
+    """"one two three" -> "123", "semester six" stays: only a name made of digit words alone (or ending in them after a word) is turned into digits."""
+    words = name.split()
+    tail = []
+    while words and words[-1].casefold() in _DIGIT_WORDS and words[-1].casefold() not in {"to", "too", "for", "do", "char", "che"} | set():
+        tail.insert(0, _DIGIT_WORDS[words.pop().casefold()])
+    if len(tail) >= 2:                                           # one digit word alone ("six") stays a word: the folder search treats six and 6 alike
+        return " ".join(words + ["".join(tail)]) if words else "".join(tail)
+    return name
+
+
+def _delete_parts(raw: str) -> tuple[str, str | None] | None:
+    """(name, noun) of "delete the six folder" / "six folder delete karo" / "six folder hata do"; None when it is not a delete sentence."""
+    text = re.sub(_FILLER, "", raw, count=1)
+    text = re.sub(r"\b(?:foller|foler|folda|folde|fodler|follder|fouldar|foldar|folders)\b", "folder", text, flags=re.I)         # "Six Foller" is "six folder"
+    words = text.split()
+    has_noun = bool(re.search(r"\b(?:file|folder)\b|फाइल|फोल्डर", text, re.I)) or bool(re.search(r"\.[a-z0-9]{1,5}\b", text))
+    name_part = None
+    verb_words = 0
+    if len(words) >= 2 and (is_delete_word(words[0]) or (has_noun and sounds_like_delete(words[0]))):
+        verb_words = 1
+    elif len(words) >= 3 and has_noun and len(words[0]) <= 4 and sounds_like_delete(words[0] + words[1]) and words[0].casefold() not in _NOT_DELETE:
+        verb_words = 2                                          # "rd late folder", "rred late 123 folder": the verb came out as two words
+    if verb_words:
+        name_part = " ".join(words[verb_words:])
+    else:
+        m = re.fullmatch(r"(.+?)\s+(\S+)\s+(?:karo|kar\s+do|kro|kardo|kijiye|kar\s+dein|करो|कर\s+दो|dena|दो)", text)
+        if m and is_delete_word(m.group(2)):
+            name_part = m.group(1)
+        else:
+            m = re.fullmatch(r"(.+?)\s+(?:hata\s+do|hata\s+dein|hatao|mita\s+do|mitao|हटा\s+दो|हटाओ|मिटा\s+दो|مٹا\s+دو|ہٹا\s+دو)", text)
+            if m:
+                name_part = m.group(1)
+    if not name_part:
+        return None
+    particle = r"(?:ko|ka|ke|ki|को|का|के|की|کو|کا|کے|کی)"
+    name_part = name_part.strip()
+    for _ in range(2):                                         # "karo 123 folder", "the 123 folder ko", "kar do six folder": the filler words are not part of the name
+        name_part = re.sub(r"^(?:karo|kar\s+do|kardo|kro|kar\s+dein|dena|do|dein|please|plz|the|this|that|my|aap|ap)\s+", "", name_part, flags=re.I)
+        name_part = re.sub(rf"\s+{particle}$", "", name_part, flags=re.I)
+    m = re.fullmatch(r"(?:(file|folder|फाइल|फोल्डर)\s+(?:(?:named|called|naam(?:\s+ka)?)\s+)?)?(.+?)(?:\s+(file|folder|फाइल|फोल्डर))?", name_part, re.I)
+    if not m:
+        return None
+    name = re.sub(rf"\s+{particle}$", "", m.group(2).strip(), flags=re.I)
+    name = re.sub(r"^(?:named|called|naam(?:\s+ka)?)\s+", "", name, flags=re.I)
+    return _spoken_digits(name), (m.group(1) or m.group(3))
+
+
 _PRONOUN = re.compile(r"(?:it|this|that|these|those|ise|isko|usko|ye|yeh|woh|wo|इसे|इसको|उसे|यह|वह)", re.I)
 
 
 def parity_intent(text: str) -> dict | None:
     """copy / move / rename / read written without "file"/"folder" -> the intent dict local_agent._resolve understands."""
-    raw = _norm(text)
+    raw = re.sub(r"\s*[,;\u060c]\s*", " ", _norm(text))               # "delete, six folder," -> "delete six folder"
     noun = r"(?:(file|folder|फाइल|फोल्डर)\s+)?"
     m = re.fullmatch(_FILLER + rf"(copy|move)\s+(?:the\s+)?{noun}(.+?)\s+(?:to|into|in)\s+(.+)", raw, re.I)
     if m:
@@ -248,14 +391,26 @@ def parity_intent(text: str) -> dict | None:
         if new_name and not re.search(r"[\\/:]", new_name):
             return {"op": "rename", "kind": _kind(m.group(1), m.group(2)), "source": m.group(2).strip(), "new_name": new_name}
         return None
-    # delete: "delete is zip folder", "delete notes.txt", "report.txt delete karo", "report.txt डिलीट करो" (the noun may come before or after the name)
-    m = (re.fullmatch(_FILLER + r"(?:delete[ds]?|deleting|remove[ds]?|removing)\s+(?:the\s+|this\s+|that\s+)?(?:(file|folder)\s+)?(.+?)(?:\s+(file|folder))?", raw, re.I)
-         or re.fullmatch(_FILLER + r"(?:(file|folder|फाइल|फोल्डर)\s+)?(.+?)(?:\s+(file|folder|फाइल|फोल्डर))?\s+(?:delete|dilete)\s+(?:karo|kar\s+do|kro|kardo|kijiye)", raw, re.I)
-         or re.fullmatch(_FILLER + r"(?:(file|folder|फाइल|फोल्डर)\s+)?(.+?)(?:\s+(file|folder|फाइल|फोल्डर))?\s+डिलीट\s+(?:करो|कर\s+दो)", raw, re.I))
-    if m:
-        name = _archive_name(m.group(2))
-        noun = m.group(1) or m.group(3)
-        if name and name.casefold() not in {"file", "folder", "फाइल", "फोल्डर"} and not _PRONOUN.fullmatch(name) and not re.search(r"\b(?:everything|all|sab|सब)\b", name, re.I):
+    # create: "create semester six folder", "make a folder called lab in documents", "lab folder banao", "documents mein lab folder banao", "लैब फोल्डर बनाओ"
+    en = re.fullmatch(_FILLER + r"(?:create|make|new|add)\s+(?:a\s+|an\s+)?(?:new\s+)?(?:folder\s+(?:called\s+|named\s+|with\s+(?:the\s+)?name\s+)?(.+?)|(.+?)\s+folder)"
+                              r"(?:\s+(?:in|on|at|inside|under)\s+(.+))?", raw, re.I)
+    other = None if en else (re.fullmatch(_FILLER + r"(?:(.+?)\s+(?:mein|me|main|par|pe|per)\s+)?(.+?)\s+(?:naam\s+(?:ka|se)\s+)?folder\s+(?:banao|bana\s+do|bnao|bana\s+dena|bana\s+dein|create\s+karo|create\s+kar\s+do)", raw, re.I)
+                             or re.fullmatch(_FILLER + r"(?:(.+?)\s+(?:में|पर)\s+)?(.+?)\s+(?:नाम\s+का\s+)?फोल्डर\s+(?:बनाओ|बना\s+दो|बनाइए)", raw, re.I))
+    if en or other:
+        if en:
+            name, where = (en.group(1) or en.group(2) or ""), (en.group(3) or "")
+        else:                                      # Roman Urdu / Hindi: (where) (name) folder banao
+            where, name = (other.group(1) or ""), (other.group(2) or "")
+        name = re.sub(r"^(?:the|my|a|an|naya|naye|new)\s+", "", _norm(name), flags=re.I).strip()
+        if name and not re.search(r"[\\/:]", name) and name.casefold() not in {"folder", "a", "new"} and len(name) <= 80:
+            return {"op": "create", "name": name, "destination": _place(where) if where else ""}
+        return None
+    # delete / remove, however it was heard ("dilete", "delet", "delite", "rimoov", "हटाओ"), the verb before the name or after it
+    found = _delete_parts(raw)
+    if found is not None:
+        name, noun = found
+        name = _archive_name(name)
+        if name and name.casefold() not in {"file", "folder", "फाइल", "फोल्डर", "do", "dein", "karo", "kar", "kro", "dena", "दो", "करो"} and not _PRONOUN.fullmatch(name) and not re.search(r"\b(?:everything|all|sab|सब)\b", name, re.I):
             kind = "file" if name.casefold().endswith(".zip") else _kind(noun, name)   # a zip is a file even when the user says "folder"
             return {"op": "delete", "kind": kind, "source": name, "include_contents": False}
         return None
