@@ -10,6 +10,8 @@ import { Rail, type View } from './components/Rail';
 import { TaskHistory } from './components/TaskHistory';
 import { TaskPanel } from './components/TaskPanel';
 import { SessionCard } from './components/SessionCard';
+import { PlanBadge, PlansModal } from './components/PlansModal';
+import { loadSubscription, saveSubscription, type Subscription } from './plans';
 import { CharactersPage } from './pages/CharactersPage';
 import { MailDraftCard } from './components/MailDraftCard';
 import { MemoryPage } from './pages/MemoryPage';
@@ -25,6 +27,8 @@ export default function App() {
   const [banner, setBanner] = useState<string | null>(null);
   const [view, setView] = useState<View>('assistant');
   const [voiceLanguage, setVoiceLanguage] = useState('auto');
+  const [subscription, setSubscription] = useState<Subscription>(() => loadSubscription());
+  const [plansOpen, setPlansOpen] = useState(false);
   const commandInputRef = useRef<HTMLInputElement | null>(null);
   const toggleVoiceRef = useRef<() => void>(() => {});
   const commandFailedRef = useRef<() => void>(() => {});
@@ -240,6 +244,14 @@ export default function App() {
           Agent X AI · Local desktop assistant
         </p>
       </footer>
+      {!modalOpen && !plansOpen && <PlanBadge subscription={subscription} onOpen={() => setPlansOpen(true)} />}
+      {plansOpen && (
+        <PlansModal
+          subscription={subscription}
+          onClose={() => setPlansOpen(false)}
+          onSubscribe={(next) => { setSubscription(next); saveSubscription(next); }}
+        />
+      )}
     </div>
   );
 }

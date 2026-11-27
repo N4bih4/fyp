@@ -12,7 +12,7 @@ SITES = {"یوٹیوب": "youtube", "यूट्यूब": "youtube", "گوگ�
          "اوپن اے آئی": "openai", "ओपन एआई": "openai", "چیٹ جی پی ٹی": "chatgpt", "चैट जीपीटी": "chatgpt"}
 
 
-_QUANTIFIERS = {"all", "both", "every", "each", "the", "my", "our", "these", "those", "sab", "saare", "saari", "sare", "dono", "donon", "ke", "ki", "ka", "ko", "wale",
+_QUANTIFIERS = {"all", "both", "every", "each", "the", "my", "our", "these", "those", "sab", "saare", "saari", "sare", "dono", "donon", "ke", "ki", "ka", "ko", "wale", "wala", "waala", "waali",
                 "wali", "sabhi", "सब", "सारे", "सभी", "दोनों", "दोनो", "के", "की", "का", "को", "सब", "वाले", "تمام", "سب", "دونوں", "کے", "کی", "کا"}
 
 
@@ -241,7 +241,8 @@ def youtube_tab_search_plan(raw):
 
 
 def browser_plan(command):
-    raw = command.strip().rstrip("۔।!?")
+    raw = command.strip().rstrip("۔।!?.")
+    raw = re.sub(r"\s*[,;\u060c]\s*", " ", raw).strip()            # "close, Khadi tab" (Whisper puts commas anywhere)
     if any(word in NEGATIONS for word in normalize_speech(raw).split()):
         return None
     chrome = r"(?:chrome|google chrome|کروم|گوگل کروم|क्रोम|गूगल क्रोम)"
@@ -271,11 +272,15 @@ def browser_plan(command):
             return Plan(actions=[PlanAction(tool="control_browser", args={"action": "close", "target": target})])
     patterns = [rf"(.+?){LINK}\s+{TAB}\s+{CLOSE}{END}",
                 rf"{CLOSE}\s+(.+?){LINK}\s+{TAB}{END}",
-                rf"{CLOSE}\s+{TAB}\s+(.+?){END}"]
+                rf"{CLOSE}\s+{TAB}\s+(.+?){END}",
+                # "close khaadi website" / "khaadi website band karo": a website that was opened is a tab
+                rf"{CLOSE}\s+(?:the\s+)?(.+?){LINK}\s+(?:web\s*site|site){END}",
+                rf"(.+?){LINK}\s+(?:web\s*site|site)\s+{CLOSE}{END}"]
     for pattern in patterns:
         match = re.fullmatch(pattern, raw, re.IGNORECASE)
         if match:
             target = drop_quantifiers(re.sub(r"^the\s+", "", match.group(1).strip(), flags=re.IGNORECASE))
+            target = re.sub(r"\s+(?:web\s*site|site)$", "", target, flags=re.IGNORECASE)         # "close the khaadi website tab": the tab of khaadi
             args = {"action": "close", "target": tab_target(target)}
             if target.isdecimal():
                 args["tab_id"] = int(target)

@@ -1,4 +1,5 @@
 """Exact browser tab matching and idempotent YouTube pause/resume."""
+import re
 from typing import Literal
 from urllib.parse import urlencode, urlsplit
 from pydantic import BaseModel, Field, model_validator
@@ -20,6 +21,21 @@ def select_tabs(tabs, target):
         return [t for t in tabs if any((urlsplit(t.get("url", "")).hostname or "").casefold() == host or (urlsplit(t.get("url", "")).hostname or "").casefold().endswith("." + host) for host in domains)]
     # Exact title or URL only for unfamiliar names; never arbitrary substring closing.
     return [t for t in tabs if target and target in {t.get("title", "").casefold(), t.get("url", "").casefold()}]
+
+
+_NEWEST_WORDS = {"this", "that", "ye", "yeh", "ye wali", "yeh wali", "ye wala", "yeh wala", "last", "latest", "newest", "new", "recent", "just opened", "pichli", "pichla", "pichhli",
+                 "aakhri", "akhri", "naya", "nayi", "nai", "abhi khuli", "abhi khula", "you just opened", "just now opened", "you opened", "opened now"}
+
+
+def newest_tab(tabs):
+    """The tab opened most recently (highest id), never this app's own page: what "close this tab" / "the one you just opened" means."""
+    others = [t for t in tabs if not str(t.get("url", "")).startswith(("http://127.0.0.1:8000", "http://localhost:8000"))]
+    return max(others, key=lambda t: int(t.get("id") or 0)) if others else None
+
+
+def _is_newest_target(target: str) -> bool:
+    low = " ".join(str(target or "").casefold().split())
+    return low in _NEWEST_WORDS or bool(re.search(r"just\s+opened|abhi\s+khol|abhi\s+khuli|abhi\s+khula", low))
 
 
 def similar_tabs(tabs, target):
@@ -240,7 +256,10 @@ class BrowserControlTool(BaseTool):
         if (a.action in PAGE_ACTIONS or a.action in WEB_ACTIONS) and not bridge.supports(a.action):
             return ToolResult(success=False, error="The browser extension is older than 1.2 (2.0 for the newest controls): reload it at chrome://extensions "
                                                    "(it updates itself when connected), then repeat.")
-        if a.action in {"read", *WEB_ACTIONS} and a.tab_id is None and a.target.strip().casefold() in ("", "active", "this", "current"):
+        if a.action == "close" and a.tab_id is None and _is_newest_target(a.target):
+            newest = newest_tab(tabs)                      # "close this tab" / "the last tab" / "the one you just opened": the newest tab, never AgentDesk itself
+            matches = [newest] if newest else []
+        elif a.action in {"read", *WEB_ACTIONS} and a.tab_id is None and a.target.strip().casefold() in ("", "active", "this", "current"):
             matches = [t for t in tabs if t.get("active")]
         else:
             matches = [t for t in tabs if t["id"] == a.tab_id] if a.tab_id is not None else select_tabs(tabs, a.target)

@@ -20,7 +20,7 @@ from typing import Any
 from difflib import SequenceMatcher
 from pydantic import BaseModel, Field
 
-from ..security.paths import is_allowed_root, is_executable_path, resolve_within_allowed
+from ..security.paths import is_allowed_root, is_app_folder, is_executable_path, resolve_within_allowed
 from . import platform as _platform
 from ..verification import failed_result, file_evidence, text_sha256, verdict, window_check
 from .base import BaseTool, RiskLevel, ToolContext, ToolResult, Verification
@@ -517,6 +517,8 @@ class MoveFileTool(BaseTool):
             return ToolResult(success=False, error=f"Source does not exist: {src}")
         if is_allowed_root(src, self.ctx.allowed_directories):
             return ToolResult(success=False, error=f"Refused: {src} is an allowed root folder and cannot be moved")
+        if is_app_folder(src):
+            return ToolResult(success=False, error=f"Refused: {src} is the folder AgentDesk itself runs from (or contains it); moving it would break the running app.")
         if dst.is_dir():
             dst = dst / src.name
         if dst.exists():
@@ -559,6 +561,9 @@ class RenameFileTool(BaseTool):
             return ToolResult(success=False, error=f"Path does not exist: {src}")
         if is_allowed_root(src, self.ctx.allowed_directories):
             return ToolResult(success=False, error=f"Refused: {src} is an allowed root folder and cannot be renamed")
+        if is_app_folder(src):
+            return ToolResult(success=False, error=f"Refused: {src} is the folder AgentDesk itself runs from (or contains it); renaming it would break the running app. "
+                                                   "Name another folder.")
         dst = src.parent / a.new_name
         if dst.exists():
             return ToolResult(success=False, error=f"Destination already exists: {dst} (not overwritten)")
@@ -704,6 +709,8 @@ class DeleteFileTool(BaseTool):
             return ToolResult(success=False, error="Refusing to delete a filesystem root")
         if is_allowed_root(target, self.ctx.allowed_directories):
             return ToolResult(success=False, error="Refusing to delete an allowed root directory")
+        if is_app_folder(target):
+            return ToolResult(success=False, error=f"Refused: {target} is the folder AgentDesk itself runs from (or contains it); deleting it would destroy the running app.")
         if _is_in_internal_trash(target, self.ctx.allowed_directories):
             return ToolResult(success=False, error="Refusing to delete items already inside AgentDesk Trash")
         if not target.exists():

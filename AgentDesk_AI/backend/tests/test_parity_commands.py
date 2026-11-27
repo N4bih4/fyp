@@ -5,6 +5,8 @@ negative cases, because a new parser that misroutes is worse than a missing one.
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from app.ai import parity_commands as pc
@@ -866,7 +868,7 @@ def test_spoken_app_name_drops_the_numbers_speech_to_text_appends():
 @pytest.mark.parametrize("text,url", [
     ("open facebook", "https://www.facebook.com"), ("facebook kholo", "https://www.facebook.com"), ("open the facebook website", "https://www.facebook.com"),
     ("open instagram", "https://www.instagram.com"), ("go to linkedin", "https://www.linkedin.com"), ("visit google", "https://google.com"),
-    ("open j dot website", "https://j.website"), ("open J.Website", "https://j.website"), ("jay dot website kholo", "https://jay.website"),
+    ("open J.Website", "https://www.junaidjamshed.com"), ("open j.website", "https://www.junaidjamshed.com"), ("j dot ki website kholo", "https://www.junaidjamshed.com"), ("open j dot website", "https://www.junaidjamshed.com"), ("open j. website", "https://www.junaidjamshed.com"),
     ("open daraz dot pk", "https://daraz.pk"), ("open daraz.pk", "https://daraz.pk"), ("open example.com", "https://example.com"),
 ])
 def test_a_website_named_or_spelled_out_is_opened(text, url):
@@ -1040,3 +1042,237 @@ def test_a_quick_ui_automation_result_is_used(monkeypatch):
     monkeypatch.setattr(bc, "_foreground_title", lambda: "Some Page - Google Chrome")
     monkeypatch.setattr(bc, "_navigate_in_place_ui", lambda browser, url, cancel=None: True)
     assert bc.navigate_in_place(type("B", (), {"key": "chrome"})(), "https://j.website") is True
+
+
+# ------------------------------------------------------------------------------------------------ "open khardi website": a website named by sound, never an app
+@pytest.mark.parametrize("text,url", [
+    ("open khardi website", "https://pk.khaadi.com"), ("open kaadi website", "https://pk.khaadi.com"), ("open khadi site", "https://pk.khaadi.com"),
+    ("open khaadi website", "https://pk.khaadi.com"), ("open sapphire website", "https://pk.sapphireonline.pk"), ("open pak wheels website", "https://www.pakwheels.com"),
+    ("open ryphah website", "https://www.riphah.edu.pk"), ("open darazz website", "https://daraz.pk"), ("open goggle website", "https://google.com"),
+    ("open outfiters website", "https://outfitters.com.pk"), ("open zameen", "https://www.zameen.com"),
+])
+def test_a_brand_said_with_the_word_website_opens_even_when_misheard(text, url):
+    plan = pc.parity_plan(text)
+    assert plan is not None and plan.actions[0].tool == "open_url" and plan.actions[0].args == {"url": url} and plan.actions[0].confirm is False
+
+
+def test_a_looser_likeness_goes_through_the_approve_popup():
+    for text in ("open kherdi website", "open khari website"):                      # not certain: the URL is shown and the user decides
+        plan = pc.parity_plan(text)
+        action = plan.actions[0]
+        assert action.tool == "open_url" and action.confirm is True and "Approve" in plan.note and action.args["url"] in plan.note
+
+
+def test_quora_is_not_taken_for_khari_and_unknown_names_become_a_web_search():
+    assert pc.parity_plan("open quora website").actions[0].args == {"url": "https://quora.com"}
+    plan = pc.parity_plan("open zzxqv website")
+    assert plan.actions[0].tool == "web_search" and plan.actions[0].args == {"query": "zzxqv website"}
+
+
+def test_the_word_website_never_leads_to_an_app_but_a_plain_app_name_still_does():
+    for text in ("open khardi website", "open notepad website"):
+        assert pc.parity_plan(text).actions[0].tool in {"open_url", "web_search"}
+    assert pc.parity_plan("open khardi") is None and pc.parity_plan("open notepad") is None and pc.parity_plan("open word") is None
+
+
+def test_the_start_menu_list_is_loaded_once_and_cached(monkeypatch):
+    import subprocess
+    from app.tools.apps import OpenApplicationTool
+    calls = []
+
+    def fake_run(*args, **kwargs):
+        calls.append(args)
+        return subprocess.CompletedProcess(args, 0, stdout='[{"Name": "Word", "AppID": "x"}]', stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    monkeypatch.setattr(OpenApplicationTool, "_start_apps_cache", {"at": 0.0, "apps": []})
+    assert OpenApplicationTool._load_start_apps() == [{"Name": "Word", "AppID": "x"}]
+    assert OpenApplicationTool._load_start_apps() == [{"Name": "Word", "AppID": "x"}] and len(calls) == 1
+
+
+# ------------------------------------------------------------------------------------------------ "J. website" is a name, not the address j.website
+@pytest.mark.parametrize("text", ["open j.website", "open j. website", "open j dot website", "open j website", "open J.Website", "J dot website kholo", "j site kholo"])
+def test_j_website_in_any_spelling_is_junaid_jamshed_not_an_address_that_does_not_exist(text):
+    plan = pc.parity_plan(text)
+    assert plan.actions[0].tool == "open_url" and plan.actions[0].args == {"url": "https://www.junaidjamshed.com"}
+
+
+def test_an_odd_ending_that_does_not_exist_becomes_a_name_lookup_and_one_that_exists_is_opened(monkeypatch):
+    monkeypatch.setattr(pc, "_resolves", lambda host, seconds=3.0: False)
+    plan = pc.parity_plan("open zork dot website")
+    assert plan.actions[0].tool == "web_search" and plan.actions[0].args == {"query": "zork website"}      # unknown name: a search, not a dead address
+    monkeypatch.setattr(pc, "_resolves", lambda host, seconds=3.0: True)
+    plan = pc.parity_plan("open zork dot website")
+    assert plan.actions[0].tool == "open_url" and plan.actions[0].args == {"url": "https://zork.website"}
+    plan = pc.parity_plan("open example.com")                                                             # an ordinary ending is never looked up first
+    assert plan.actions[0].args == {"url": "https://example.com"}
+
+
+def test_dns_lookup_has_a_hard_time_limit(monkeypatch):
+    import socket
+    import time
+    monkeypatch.setattr(socket, "getaddrinfo", lambda *a, **k: time.sleep(2))
+    started = time.monotonic()
+    assert pc._resolves("slow.example", seconds=0.2) is False and time.monotonic() - started < 1.0
+
+
+@pytest.mark.parametrize("text", ["open cardi website", "open kherdi website", "open kardi website", "open gardi website", "cardi ki website khol do", "Open Cardi Website"])
+def test_looser_spellings_of_khaadi_reach_it_through_the_approve_popup_or_directly(text):
+    action = pc.parity_plan(text).actions[0]
+    assert action.tool == "open_url" and action.args == {"url": "https://pk.khaadi.com"}
+
+
+def test_a_page_title_with_spaces_still_proves_the_site_opened():
+    from app.verification import WindowInfo, find_windows
+    class _Probe:
+        def windows(self):
+            return [WindowInfo(hwnd=1, title="J. Junaid Jamshed Official Website - Google Chrome", pid=1, process="chrome.exe", minimized=False, maximized=False, foreground=True)]
+    assert find_windows(_Probe(), title_contains=["junaidjamshed"], processes={"chrome.exe"})
+    assert not find_windows(_Probe(), title_contains=["khaadi"], processes={"chrome.exe"})
+
+
+# ------------------------------------------------------------------------------------------------ "close, Khadi tab": the tab of a website that was opened
+@pytest.mark.parametrize("text,target", [
+    ("close, Khadi tab", "khadi"), ("close Khadi tab", "khadi"), ("Close Khaadi tab.", "khaadi"), ("close the khaadi website tab", "khaadi"), ("close khaadi website", "khaadi"),
+    ("khadi wala tab band karo", "khadi"), ("khadi ka tab band karo", "khadi"), ("khaadi website band karo", "khaadi"), ("close, google drive tab", "google drive"),
+    ("close the cardi tab", "cardi"), ("close daraz tab", "daraz"), ("close pakwheels tab", "pakwheels"), ("close riphah website", "riphah"),
+    ("close, this tab", "this"), ("close that tab", "that"), ("close the last tab", "last"), ("close the new tab", "new"), ("ye wali tab band karo", "ye"), ("pichli tab band karo", "pichli"),
+])
+def test_close_tab_sentences_with_commas_wala_and_website(text, target):
+    from app.ai.browser_commands import browser_plan
+    plan = browser_plan(text)
+    assert plan is not None and plan.actions[0].args["action"] == "close" and plan.actions[0].args["target"].casefold() == target
+
+
+def _tabs_world():
+    def tab(i, title, url):
+        return {"id": i, "title": title, "url": url, "active": False, "audible": False}
+    return [tab(10, "AgentDesk AI", "http://127.0.0.1:8000/"), tab(20, "Home - Google Drive", "https://drive.google.com/drive/u/0/home"),
+            tab(30, "Khaadi PK Online | Women Clothing | New Arrivals Every Week", "https://pk.khaadi.com/"), tab(40, "J. Junaid Jamshed Official Website", "https://www.junaidjamshed.com/")]
+
+
+@pytest.mark.parametrize("target,closed", [("khadi", {30}), ("khaadi", {30}), ("junaid jamshed", {40}), ("this", {40}), ("that", {40}), ("last", {40}), ("new", {40}), ("pichli", {40}),
+                                           ("you just opened", {40}), ("drive", {20})])
+def test_the_tab_of_an_opened_website_and_the_newest_tab_are_closed_never_agentdesk(monkeypatch, target, closed):
+    from app.tools.base import ToolContext
+    from app.tools.browser import BrowserControlTool
+    tabs = _tabs_world()
+    log = _browser(monkeypatch, tabs)
+    tool = BrowserControlTool(ToolContext.from_settings())
+    result = tool.execute(tool.validate_args({"action": "close", "target": target}))
+    assert result.success and set(log) == closed and 10 not in log
+
+
+def test_close_this_tab_with_only_agentdesk_open_closes_nothing(monkeypatch):
+    from app.tools.base import ToolContext
+    from app.tools.browser import BrowserControlTool
+    tabs = [_tabs_world()[0]]
+    log = _browser(monkeypatch, tabs)
+    tool = BrowserControlTool(ToolContext.from_settings())
+    result = tool.execute(tool.validate_args({"action": "close", "target": "this"}))
+    assert not result.success and log == [] and len(tabs) == 1
+
+
+def test_close_my_drive_without_the_word_tab_closes_the_drive_tab_when_no_window_has_that_name(monkeypatch):
+    from app.ai.window_commands import window_plan
+    tabs = _tabs_world()
+    _browser(monkeypatch, tabs)
+    from app.browser_bridge import bridge
+    monkeypatch.setattr(bridge, "clients", {"x": object()}, raising=False)
+    plan = window_plan(_Task(), _WindowRegistry(["Calculator"]), "close, my drive")
+    assert plan.actions and plan.actions[0].tool == "control_browser" and plan.actions[0].args["target"] == "drive"
+
+
+# ------------------------------------------------------------------------------------------------ rename in every shape; the folder AgentDesk runs from is never touched
+@pytest.mark.parametrize("text", [
+    "rename Fyp folder to Fyp1", "rename fyp folder to fyp1", "Rename, FYP folder, to FYP 1", "rename folder fyp to fyp1", "re name fyp folder to fyp1", "renam fyp folder to fyp1",
+    "rainame fyp folder to fyp1", "fyp folder ka naam fyp1 kar do", "fyp folder ka naam badal kar fyp1 kar do", "fyp folder ka naam fyp1 rakh do", "fyp folder rename karo fyp1",
+    "fyp folder ko fyp1 mein rename karo", "fyp folder ko rename karke fyp1 kar do", "फोल्डर fyp का नाम fyp1 करो", "change fyp folder name to fyp1", "change the name of fyp folder to fyp1",
+])
+def test_every_way_of_asking_to_rename_a_folder(text):
+    intent = pc.parity_intent(text)
+    assert intent is not None and intent["op"] == "rename" and intent["kind"] == "folder"
+    assert intent["source"].casefold() == "fyp" and intent["new_name"].casefold() == "fyp1"
+
+
+@pytest.mark.parametrize("text", ["rename it to fyp1", "rename this to x", "rename", "remove fyp1 folder", "move fyp folder to desktop", "delete fyp folder"])
+def test_other_commands_and_unclear_targets_are_not_a_rename(text):
+    intent = pc.parity_intent(text)
+    assert intent is None or intent["op"] != "rename"
+
+
+def test_the_folder_agentdesk_runs_from_is_protected_but_a_same_named_folder_elsewhere_is_not(tmp_path):
+    from app.security.paths import is_app_folder
+    here = Path(__file__).resolve().parents[1]                    # .../AgentDesk_AI/backend
+    for protected in (here, here.parent, here.parent.parent, here / "app", here.parent / "docs", here / "app" / "tools" / "apps.py"):
+        assert is_app_folder(protected), protected
+    other = tmp_path / "fyp"
+    other.mkdir()
+    assert not is_app_folder(other) and not is_app_folder(tmp_path) and not is_app_folder(Path(here.anchor))
+
+
+def test_two_folders_called_fyp_rename_the_users_own_not_the_running_project(tmp_path):
+    own = str(tmp_path / "fyp")
+    project = str(Path(__file__).resolve().parents[2])             # a folder called fyp that CONTAINS the running app
+    Path(own).mkdir()
+    registry = _FakeRegistry([own, project])
+    plan = local_agent._resolve(_Task(), {"op": "rename", "kind": "folder", "source": "fyp", "new_name": "fyp1"}, registry)
+    assert plan.actions and plan.actions[0].tool == "rename_file" and plan.actions[0].args == {"path": own, "new_name": "fyp1"}
+
+
+def test_only_the_running_project_matches_so_nothing_is_offered_and_nothing_is_planned(tmp_path):
+    project = str(Path(__file__).resolve().parents[2])
+    for op in ("rename", "move", "delete"):
+        intent = {"op": op, "kind": "folder", "source": "fyp", "new_name": "x", "destination": "Desktop", "include_contents": False}
+        plan = local_agent._resolve(_Task(), intent, _FakeRegistry([project]))
+        assert not plan.actions and "AgentDesk ka apna folder" in plan.note
+
+
+@pytest.mark.parametrize("tool_name,args", [("rename_file", {"new_name": "x"}), ("move_file", {"destination": "DEST"}), ("delete_file", {"include_contents": True})])
+def test_the_tools_themselves_refuse_the_running_project(tool_name, args):
+    from pathlib import Path as P
+    from app.tools.base import ToolContext
+    project = P(__file__).resolve().parents[2]
+    context = ToolContext(allowed_directories=[project.anchor and P(project.anchor)], test_dir=P(__file__).parent)
+    tool = ToolRegistry(context).get(tool_name)
+    key = "source" if tool_name == "move_file" else "path"
+    payload = {key: str(project), **{k: (str(project.parent / "elsewhere") if v == "DEST" else v) for k, v in args.items()}}
+    result = tool.execute(tool.validate_args(payload))
+    assert result.success is False and ("AgentDesk itself" in (result.error or "") or "allowed root" in (result.error or ""))
+    assert project.is_dir()
+
+
+# ---------------------------------------------------------------- "mera IS folder D drive mein move kar do"
+@pytest.mark.parametrize("text,source,letter", [
+    ("mera IS folder D drive mein move kar do", "is", "D"), ("mera IS folder ko D drive me move kar do", "is", "D"), ("move my IS folder to D drive", "is", "D"),
+    ("move IS folder to drive D", "is", "D"), ("IS folder ko D drive par rakh do", "is", "D"), ("IS folder D drive me shift kar do", "is", "D"),
+    ("IS ka folder D drive mein bhej do", "is", "D"), ("cut IS folder and paste in D drive", "is", "D"), ("move IS folder to D:", "is", "D"),
+    ("मेरा आईएस का फोल्डर डी ड्राइव में मूव कर दो", "IS", "D"), ("मेरा आईएस फोल्डर सी ड्राइव में मूव कर दो", "IS", "C"),
+    ("आई एस फोल्डर को डी ड्राइव में शिफ्ट करो", "IS", "D"), ("move uzma folder to E drive", "uzma", "E"), ("move report.docx to D drive", "report.docx", "D"),
+    ("dee drive mein IS folder move kar do", "is", "D"),
+])
+def test_move_a_folder_to_a_drive_in_any_wording(text, source, letter):
+    intent = pc.drive_transfer(text)
+    assert intent and intent["op"] == "move" and intent["source"].casefold() == source.casefold() and intent["destination"] == f"{letter}:\\"
+
+
+def test_copy_to_a_drive_and_non_transfers():
+    assert pc.drive_transfer("copy NSCT folder to D drive")["op"] == "copy"
+    for text in ("open D drive", "D drive kholo", "show me my D drive", "move IS folder to desktop", "open google drive", "move it to D drive", "move to D drive"):
+        assert pc.drive_transfer(text) is None, text
+
+
+def test_devanagari_letter_names_become_the_latin_folder_name():
+    assert pc.latin_letters("आईएस") == "IS" and pc.latin_letters("आई एस") == "IS" and pc.latin_letters("एफवाईपी") == "FYP"
+    assert pc.latin_letters("fyp") == "fyp" and pc.latin_letters("नमस्ते") == "नमस्ते"
+
+
+def test_a_drive_move_plans_move_file_to_the_drive_root(tmp_path, monkeypatch):
+    own = str(tmp_path / "IS")
+    Path(own).mkdir()
+    registry = _FakeRegistry([own])
+    drive = tmp_path.anchor
+    plan = local_agent._resolve(_Task(), {"op": "move", "kind": "folder", "source": "IS", "destination": drive}, registry)
+    assert plan.actions and plan.actions[0].tool == "move_file" and plan.actions[0].args == {"source": own, "destination": drive}
+    gone = local_agent._resolve(_Task(), {"op": "move", "kind": "folder", "source": "IS", "destination": "Q:\\"}, registry)
+    assert not gone.actions and "drive" in gone.note

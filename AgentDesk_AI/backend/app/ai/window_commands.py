@@ -25,8 +25,11 @@ def close_request(command):
     if all_powershell_request(command):
         return "__all_powershell__"
     text = re.sub(POLITE, "", command.strip().rstrip("۔।!?"), flags=re.I)
+    text = re.sub(r"\s*[,;\u060c]\s*", " ", text).strip()                 # "close, my drive"
     if any(word in NEGATIONS for word in normalize_speech(text).split()):
         return None
+    if re.search(r"(?:^|\s)(?:web\s*site|site)(?:$|\s)", text, re.I):
+        return None                                                          # a website that was opened is a tab: the browser integration decides
     text = re.sub(r"^(?:turn|ٹرن)\s+", "", text, flags=re.I)
     match = re.fullmatch(rf"{CLOSE}\s+(.+?){END}", text, re.I)
     if not match:
@@ -127,6 +130,18 @@ def window_plan(task, registry, command=None):
     if matches:
         task.agent_state_json = json.dumps({"provider": "local", "window_choices": matches})
         return Plan(note="Kaunsi window band karni hai? Number batayein.\n" + "\n".join(f"{i+1}. {title}" for i, title in enumerate(matches)))
+    # No window of that name: a website that was opened is a TAB. If the browser has a tab like it, that is what "close my drive" meant.
+    try:
+        from ..browser_bridge import bridge
+        from ..tools.browser import _clean_tabs, select_tabs, similar_tabs
+        if bridge.clients:
+            observed = bridge.request("inspect")
+            tabs = _clean_tabs(observed.get("tabs")) if observed.get("success") else []
+            wanted = re.sub(r"^(?:my|the|our)\s+", "", target, flags=re.I)
+            if select_tabs(tabs, wanted) or any(plain for _, plain in similar_tabs(tabs, wanted)):
+                return Plan(actions=[PlanAction(tool="control_browser", args={"action": "close", "target": wanted})])
+    except Exception:  # noqa: BLE001 - the browser is optional here: fall through to the window answer
+        pass
     guesses, plain = window_guess(target, titles)
     if len(guesses) == 1:
         plan = close_action(guesses[0])

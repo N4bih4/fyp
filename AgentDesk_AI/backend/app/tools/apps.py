@@ -536,26 +536,35 @@ class OpenApplicationTool(BaseTool):
 
     _start_apps_cache: dict = {"at": 0.0, "apps": []}
 
+    @classmethod
+    def _load_start_apps(cls) -> list:
+        """Windows' own list of Start-menu apps (Store apps included). One PowerShell call takes ~10 s, so it is cached for 10 minutes and loaded in advance."""
+        import json
+        import subprocess
+        import time
+        cache = cls._start_apps_cache
+        if cache["apps"] and time.monotonic() - cache["at"] <= 600:
+            return cache["apps"]
+        try:
+            out = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", "Get-StartApps | ConvertTo-Json -Compress"],
+                                 capture_output=True, text=True, timeout=25, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+            data = json.loads(out.stdout or "[]")
+            cache.update(at=time.monotonic(), apps=[data] if isinstance(data, dict) else data)
+        except Exception:  # noqa: BLE001 - this lookup is only a fallback
+            return cache["apps"]
+        return cache["apps"]
+
     def _uwp_app(self, app_name: str) -> str | None:
         """Any app Windows lists in its Start menu, including Store apps (Calculator, WhatsApp, Spotify, Settings):
         returns the shell address ("shell:AppsFolder\\<id>") that starts it."""
         if platform.system() != "Windows":
             return None
-        import json
-        import subprocess
-        import time
-        cache = OpenApplicationTool._start_apps_cache
-        if not cache["apps"] or time.monotonic() - cache["at"] > 600:
-            try:
-                out = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", "Get-StartApps | ConvertTo-Json -Compress"],
-                                     capture_output=True, text=True, timeout=25, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
-                data = json.loads(out.stdout or "[]")
-                cache.update(at=time.monotonic(), apps=[data] if isinstance(data, dict) else data)
-            except Exception:  # noqa: BLE001 - this lookup is only a fallback
-                return None
+        apps = self._load_start_apps()
+        if not apps:
+            return None
         keys = {k for k in (self._normalize_search_name(app_name), self._normalize_search_name(self._canonical_app_name(app_name))) if len(k) >= 3}
         scored = []
-        for app in cache["apps"]:
+        for app in apps:
             label = self._normalize_search_name(str(app.get("Name", "")))
             if not label or not app.get("AppID"):
                 continue

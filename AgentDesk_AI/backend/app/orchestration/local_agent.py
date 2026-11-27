@@ -195,7 +195,8 @@ def _resolve(task, intent, registry):
         if where_note:
             plan.note = f"'{name}' folder {where_note} ({dest}) mein banane ka plan tayyar hai. Approve karein. Kahin aur banana ho to bolein: create {name} folder in Documents."
         return plan
-    source = _path(intent["source"])
+    from ..ai.parity_commands import latin_letters
+    source = _path(latin_letters(intent["source"]))      # "आईएस" is the folder called IS
     others: list[str] = []
     heard_as = None
     if not Path(source).is_absolute():
@@ -222,6 +223,13 @@ def _resolve(task, intent, registry):
             sure = False
             intent["candidates"] = candidates[:6]            # a guessed spelling never deletes, moves or renames anything without a yes
             return _ask(task, intent, f"'{source}' nahi mila; shayad '{heard_as}'? Number ya exact address batayein.\n" + "\n".join(f"{i+1}. {p}" for i, p in enumerate(candidates[:6])))
+        if op in {"delete", "move", "rename"}:
+            from ..security.paths import is_app_folder
+            safe = [c for c in candidates if not is_app_folder(c)]
+            if len(safe) != len(candidates):
+                if not safe:
+                    return _ask(task, intent, "Yeh AgentDesk ka apna folder hai (app isi se chal rahi hai); ise rename, move ya delete karne se app toot jayegi, isliye main yeh nahi karungi. Kisi aur folder ka naam ya exact path batayein.")
+                candidates = safe                          # the user's OWN folder of the same name is the one that is meant
         exact_name = False
         if op in {"delete", "copy", "move", "rename"} and not unfinished:
             wanted = Path(source).name.casefold()
@@ -241,6 +249,18 @@ def _resolve(task, intent, registry):
             intent["source"] = source
             intent["awaiting_destination"] = True
             return _ask(task, intent, "Destination ka exact path ya Desktop/Documents/Downloads batayein.")
+        drive_root = re.fullmatch(r"([A-Za-z]):[\\/]*", destination)
+        if drive_root and not Path(destination).exists():
+            intent["source"] = source
+            intent["awaiting_destination"] = True
+            return _ask(task, intent, f"{drive_root.group(1).upper()} drive is PC par nahi mili. Kaunsi drive ya kaunsa folder? (D, E ya exact path)")
+        ctx = getattr(registry, "ctx", None)
+        allowed = [Path(d).expanduser().resolve() for d in (getattr(ctx, "allowed_directories", None) or [])]
+        if allowed and not any(Path(destination).resolve() == d or d in Path(destination).resolve().parents for d in allowed):
+            intent["source"] = source
+            intent["awaiting_destination"] = True
+            return _ask(task, intent, f"{destination} mere allowed folders mein nahi hai (C drive par sirf aap ka user folder allowed hai, system folders nahi). "
+                                      "Desktop, Documents, Downloads, D ya E drive, ya kisi folder ka exact path batayein.")
         return _action(op + "_file", {"source": source, "destination": destination})
     if op == "rename":
         return _action("rename_file", {"path": source, "new_name": intent["new_name"].strip().strip('"')})
@@ -296,7 +316,10 @@ def prepare_local_request(db, task, registry):
     from ..ai.document_commands import document_followup, document_plan
     from ..ai.coverage_commands import coverage_plan
     from ..ai.profile_commands import drive_plan, profile_followup, profile_plan
-    from ..ai.parity_commands import gmail_draft_plan, parity_intent, parity_plan
+    from ..ai.parity_commands import drive_transfer, gmail_draft_plan, parity_intent, parity_plan
+    moved = drive_transfer(spoken)                       # "mera IS folder D drive mein move kar do": before anything reads "D drive" as "open the D drive"
+    if moved is not None:
+        return _resolve(task, moved, registry)
     media = gmail_draft_plan(spoken, db) or document_followup(spoken, recent) or profile_followup(routed, _last_acting_task(db, task)) or profile_plan(routed) or drive_plan(routed) or coverage_plan(routed) or document_plan(routed) or youtube_followup(routed, recent) or browser_plan(routed) or device_plan(routed) or parity_plan(routed)
     if media is not None:
         return media
@@ -346,6 +369,11 @@ def prepare_local_request(db, task, registry):
                 return _resolve(task, workflow, registry)
             resolved = relative_candidates(raw, registry)
             path = str(resolved[0]) if len(resolved) == 1 else _path(raw)
+            if workflow.get("awaiting_destination") and not Path(path).is_absolute():
+                from ..ai.parity_commands import drive_of
+                named = drive_of(raw) or (re.fullmatch(r"([A-Za-z]):?", raw.strip()) and (raw.strip()[0].upper(), ""))
+                if named:                                  # "D drive" / "D" as the answer to "kahan?"
+                    path = f"{named[0]}:\\"
             if Path(path).is_absolute():
                 workflow["destination" if workflow.pop("awaiting_destination", False) else "source"] = path
                 workflow.pop("candidates", None)

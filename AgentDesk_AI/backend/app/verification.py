@@ -274,7 +274,9 @@ def find_windows(probe: SystemProbe, *, title_contains: list[str] | None = None,
     for w in probe.windows():
         checks = []
         if needles:
-            checks.append(any(n in (w.title or "").casefold() for n in needles))
+            title = (w.title or "").casefold()
+            squashed = "".join(ch for ch in title if ch.isalnum())          # "j. junaid jamshed" also contains "junaidjamshed"
+            checks.append(any(n in title or "".join(ch for ch in n if ch.isalnum()) in squashed for n in needles))
         if procs:
             checks.append((w.process or "").casefold() in procs)
         if pid:

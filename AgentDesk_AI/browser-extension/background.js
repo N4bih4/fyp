@@ -636,6 +636,7 @@ async function connect() {
 
 chrome.runtime.onInstalled.addListener(() => { chrome.alarms.create('reconnect', { periodInMinutes: 0.5 }); void connect(); });
 chrome.runtime.onStartup.addListener(() => { void connect(); });
+try { chrome.alarms.create('reconnect', { periodInMinutes: 0.5 }); } catch { /* not available in tests */ }   // every time the worker wakes: the watchdog must exist even when the extension was not (re)installed, e.g. after the app restarted
 chrome.alarms.onAlarm.addListener((alarm) => { if (alarm.name === 'reconnect') void connect(); });   // a watchdog even if every timer was lost with the worker
 chrome.action.onClicked.addListener(() => { void connect(); });
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

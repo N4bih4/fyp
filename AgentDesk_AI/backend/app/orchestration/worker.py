@@ -83,7 +83,26 @@ def request_stop(action_ids: list[str], reason: str) -> list[str]:
 
 
 # ------------------------------------------------------------------ child side
+def _prewarm() -> None:  # pragma: no cover - runs in the child process
+    """A fresh worker used to pay ~9 s to import the desktop libraries and ~10 s to read the Start-menu app list on its FIRST app command, which together
+    with the work itself hit the 30 s limit ("open khardi website" was killed). They are loaded now, in the background, before the first job arrives."""
+    import os
+    if os.environ.get("AGENTDESK_WORKER_PREWARM", "1") == "0":
+        return                                      # tests: no background imports competing with the timing of the job under test
+    try:
+        import pyautogui  # noqa: F401
+        import pygetwindow  # noqa: F401
+    except Exception:  # noqa: BLE001 - optional on other platforms
+        pass
+    try:
+        from ..tools.apps import OpenApplicationTool
+        OpenApplicationTool._load_start_apps()
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def _worker_main(conn) -> None:  # pragma: no cover - runs in the child process
+    threading.Thread(target=_prewarm, name="worker-prewarm", daemon=True).start()
     while True:
         try:
             job = conn.recv()

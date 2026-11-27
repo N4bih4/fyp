@@ -56,3 +56,21 @@ EXECUTABLE_EXTENSIONS = frozenset({
 
 def is_executable_path(path: str | Path) -> bool:
     return Path(str(path)).suffix.lower() in EXECUTABLE_EXTENSIONS
+
+
+def is_app_folder(path) -> bool:
+    """True for the folder AgentDesk RUNS from, every folder above it (the git repository, the project folder) and everything inside the project: renaming,
+    moving or deleting any of them breaks the running app. A second, unrelated folder with the same name (the user's own "fyp") is not protected."""
+    import os
+    from pathlib import Path
+    if os.environ.get("AGENTDESK_ALLOW_APP_FOLDER_CHANGES") == "1":
+        return False
+    try:
+        target = Path(path).expanduser().resolve()
+        backend = Path(__file__).resolve().parents[2]            # .../AgentDesk_AI/backend
+        project = backend.parent                                 # .../AgentDesk_AI
+    except (OSError, ValueError, IndexError):
+        return False
+    inside_project = target == project or project in target.parents
+    above_backend = target == backend or target in backend.parents
+    return inside_project or (above_backend and target.parent != target)
