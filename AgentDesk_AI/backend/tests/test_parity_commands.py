@@ -1276,3 +1276,25 @@ def test_a_drive_move_plans_move_file_to_the_drive_root(tmp_path, monkeypatch):
     assert plan.actions and plan.actions[0].tool == "move_file" and plan.actions[0].args == {"source": own, "destination": drive}
     gone = local_agent._resolve(_Task(), {"op": "move", "kind": "folder", "source": "IS", "destination": "Q:\\"}, registry)
     assert not gone.actions and "drive" in gone.note
+
+
+# ---------------------------------------------------------------- "named Supervisor folder to Ms. Uzma": the "re" of rename was not heard
+@pytest.mark.parametrize("text,source,new", [
+    ("named Supervisor folder to Ms. Uzma.", "supervisor", "ms. uzma"), ("named supervisor folder to uzma", "supervisor", "uzma"),
+    ("name supervisor folder to uzma", "supervisor", "uzma"), ("naming fyp folder to fyp1", "fyp", "fyp1"), ("nayme the zain folder to zainab", "zain", "zainab"),
+    ("renamed the supervisor folder to Uzma", "supervisor", "uzma"), ("named report file to final", "report", "final"),
+])
+def test_a_rename_with_the_re_missing_is_still_a_rename(text, source, new):
+    intent = pc.parity_intent(text)
+    assert intent and intent["op"] == "rename" and intent["source"].casefold() == source and intent["new_name"].casefold() == new
+
+
+@pytest.mark.parametrize("text", ["name", "name to uzma", "named it to uzma", "my name is nabiha", "name the file", "what is your name"])
+def test_a_name_without_a_folder_and_a_target_is_not_a_rename(text):
+    intent = pc.parity_intent(text)
+    assert intent is None or intent["op"] != "rename"
+
+
+def test_the_cloud_prompt_says_renaming_is_supported():
+    from app.ai.groq_provider import SYSTEM_PROMPT
+    assert "rename_file" in SYSTEM_PROMPT and "never answer that renaming is not supported" in SYSTEM_PROMPT

@@ -469,6 +469,9 @@ def is_rename_word(word: str) -> bool:
     return _distance(_skeleton(w), "rnm") <= 1 and _skeleton(w) not in {"rmv", "rm"}
 
 
+_CLIPPED_RENAME = {"named", "name", "naming", "nayme", "naymed", "naimed", "namd", "ranamed", "reamed", "rainamed", "re-named", "renamed", "reamed"}
+
+
 def _rename_parts(raw: str) -> tuple[str, str | None, str] | None:
     """(source, noun, new name) of every way of asking for a rename; None when it is not one."""
     text = re.sub(_FILLER, "", raw, count=1)
@@ -480,6 +483,9 @@ def _rename_parts(raw: str) -> tuple[str, str | None, str] | None:
     elif len(words) >= 2 and words[0].casefold() in {"re", "ri", "ra"} and is_rename_word(words[0] + words[1]):
         verb = 2                                                  # "re name"
     noun = r"(?:file|folder|फाइल|फोल्डर)"
+    # Whisper often drops the "re": "named Supervisor folder to Ms. Uzma". With a file/folder and a "to ..." that is still a rename.
+    if not verb and words and words[0].casefold().strip(".,") in _CLIPPED_RENAME and re.search(rf"\b{noun}\b.*\s(?:to|as|into)\s+\S", " ".join(words[1:]), re.I):
+        verb = 1
     source = new = found_noun = None
     if verb:
         m = re.fullmatch(rf"(?:the\s+)?(?:({noun})\s+)?(.+?)(?:\s+({noun}))?\s+(?:to|as|into|ko)\s+(.+)", " ".join(words[verb:]), re.I)

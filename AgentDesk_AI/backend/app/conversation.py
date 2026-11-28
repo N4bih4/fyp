@@ -100,6 +100,7 @@ def memory_facts(db, prefs, limit: int = 20) -> list[str]:
 
 
 def system_prompt(prefs, facts: list[str], now: datetime | None = None) -> str:
+    from . import about
     from .voice import personas
     p = prefs.persona
     now = now or datetime.now()
@@ -108,6 +109,7 @@ def system_prompt(prefs, facts: list[str], now: datetime | None = None) -> str:
         "reply in English or Roman Urdu (Latin letters only: never Hindi/Devanagari or Urdu script), plain text only, no lists or markdown.",
         f"Today is {now:%A %d %B %Y}, {now:%H:%M}.",
         personas.personality_prompt(p.personality, p.user_name, p.custom_description, p.formality, p.humour, p.verbosity),
+        about.FACT,
         "You can also open apps, manage files and search the web when the user gives a command; for a question just answer it.",
         "Never claim you did something on the PC in an answer. If you do not know, say so briefly.",
     ]
@@ -119,6 +121,10 @@ def system_prompt(prefs, facts: list[str], now: datetime | None = None) -> str:
 
 def answer_chat(db, command: str, settings: Settings, history: list[tuple[str, str]] | None = None) -> str:
     """A short spoken answer to a question or small talk."""
+    from .about import own_answer
+    own = own_answer(command)                          # "who made AgentDesk?", "who is the supervisor?": known without asking the cloud
+    if own:
+        return own
     from .preferences import get_preferences
     prefs = get_preferences(db)
     messages: list[dict[str, str]] = [{"role": "system", "content": system_prompt(prefs, memory_facts(db, prefs))}]
